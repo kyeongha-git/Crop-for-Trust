@@ -32,6 +32,20 @@ This script will:
 conda activate tf_env
 ```
 
+#### 🔑 Gemini API Key Configuration
+
+> The Annotation Cleaning module uses the Google Gemini API for removing human-drawn annotations via generative inpainting.
+Before running the pipeline, set your Gemini API key as an environment variable:
+
+```bash
+export GEMINI_API_KEY="your_api_key_here"
+```
+
+The utils/config.yaml automatically loads this key through the following line:
+```bash
+api_key: ${GEMINI_API_KEY}
+```
+
 ## 2️⃣ Run the Main Pipeline
 
 Once the setup is complete, execute the unified dual-pipeline using:
@@ -58,8 +72,7 @@ The main script supports several command-line options for flexible execution:
 | --annot_clean [on/off]  | Performs annotation cleaning to remove human-drawn marks from original images. |
 | --test [on/off]  | Runs the pipeline in test mode, processing only a few images (default: 3) to avoid unnecessary API costs.  |
 | --yolo_crop [on/off]  | Enables ROI cropping using a fine-tuned YOLO model. |
-| --yolo_model [model_name]  | Specifies which YOLO model to use for cropping.
-Available: yolov2, yolov4, yolov5, yolov8s, yolov8m, yolov8l, yolov8x.  |
+| --yolo_model [model_name]  | Specifies which YOLO model to use for cropping. Available: yolov2, yolov4, yolov5, yolov8s, yolov8m, yolov8l, yolov8x.  |
 
 ### 💡 Example Usage
 
@@ -90,6 +103,14 @@ This configuration file centrally controls every module:
 Since the full dataset cannot be shared publicly, training and evaluation cannot be executed end-to-end.
 However, you can customize input paths in utils/config.yaml to apply the implemented pipeline on your own dataset.
 
+> 📁 AnnotationCleaner Input Directory
+> - The folder data/sample/annotation_cleaner/only_annotation_image/ is used to store images for the annotation cleaning process.
+> - This design helps prevent unnecessary API costs by allowing selective cleaning instead of processing the entire dataset.
+> - In the provided sample, all test images are included in this folder by default.
+> - If you wish to perform annotation cleaning on your own images, simply place them inside this directory before running:
+```bash
+python src/main.py --annot_clean on
+```
 
 ### ⚠️ Note on Data Privacy
 The dataset used in this study is private and cannot be distributed publicly.
@@ -166,7 +187,7 @@ allowing the model to focus more precisely on the true damage areas during learn
 
 ### 📈 2️⃣ Classification Accuracy & Data Reliability Analysis
 
-This section presents the quantitative comparison of classification performance and dataset reliability across the four experimental settings.
+> This section presents the quantitative comparison of classification performance and dataset reliability across the four experimental settings.
 - Each configuration is evaluated using the best-performing model checkpoint obtained from ten independent runs.
 - In this study, Data Reliability is defined as (\( 1 - \text{(Bias Ratio)} \)), where bias refers to human annotations or artificial artifacts such as hand markings, needles, or other non-damage elements included in the images.
 

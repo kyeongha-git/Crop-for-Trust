@@ -42,6 +42,27 @@ else
     echo "✅ Darknet already exists. Skipping clone."
 fi
 
+# 6️⃣ Download YOLO Weights (YOLOv2 / YOLOv4)
+echo "🎯 Downloading YOLO pretrained weights..."
+DARKNET_DIR="third_party/darknet"
+mkdir -p "$DARKNET_DIR"
+
+# YOLOv2 weights
+if [ ! -f "$DARKNET_DIR/yolov2.weights" ]; then
+    echo "⬇️ Downloading YOLOv2 weights..."
+    wget -O "$DARKNET_DIR/yolov2.weights" "https://github.com/hank-ai/darknet/releases/download/v2.0/yolov2.weights"
+else
+    echo "✅ YOLOv2 weights already exist. Skipping download."
+fi
+
+# YOLOv4 pretrained weights
+if [ ! -f "$DARKNET_DIR/yolov4.conv.137" ]; then
+    echo "⬇️ Downloading YOLOv4 pretrained weights..."
+    wget -O "$DARKNET_DIR/yolov4.conv.137" "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.conv.137"
+else
+    echo "✅ YOLOv4 pretrained weights already exist. Skipping download."
+fi
+
 echo "🎉 Setup complete!"
 echo "➡️ To activate environment, run:"
 echo "   conda activate tf_env"
