@@ -56,7 +56,7 @@ class YOLOCropper:
         ).resolve()
         self.predict_list = Path(f"{self.dataset_cfg.get('results_dir', 'outputs/json_results')}/predict.txt"
         ).resolve()
-        self.output_dir = Path(f"data/{self.dataset_name}_crop/{self.model_name}")
+        self.output_dir = Path(self.main_cfg.get('output_dir', "data/generation_crop"))
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 

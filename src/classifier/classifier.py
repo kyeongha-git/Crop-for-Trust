@@ -43,7 +43,7 @@ class Classifier:
 
     def __init__(self, config_path: str):
         setup_logging("logs/classifier")
-        self.logger = get_logger("Classifier")
+        self.logger = get_logger("classifier")
 
         # ✅ config 로드
         self.config_path = Path(config_path)
@@ -51,7 +51,7 @@ class Classifier:
 
         if "Classifier" not in self.cfg_all:
             raise KeyError("❌ Config 파일에 'Classifier' 섹션이 없습니다.")
-        self.cfg = self.cfg_all["Classifier"]
+        self.cfg = self.cfg_all["classifier"]
 
         # ✅ 하위 설정 구분
         self.data_cfg = self.cfg.get("data", {})

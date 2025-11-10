@@ -44,7 +44,7 @@ class YOLOv8Predictor:
         # --------------------------------------------------------
         saved_model_dir = Path(self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")).resolve()
         self.weights_path = (saved_model_dir / f"{self.model_name}.pt").resolve()
-        self.detect_root = Path(self.dataset_cfg.get("detect_dir", "runs/detect")).resolve()
+        self.detect_root = Path(self.dataset_cfg.get("detect_output_dir", "runs/detect")).resolve()
         self.output_root = Path(self.dataset_cfg.get("results_dir", "outputs/json_results"))
         self.output_dir = (self.output_root / self.model_name).resolve()
 

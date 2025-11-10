@@ -46,7 +46,7 @@ class YOLOv5Predictor:
         self.yolov5_dir = Path(self.yolov5_cfg.get("yolov5_dir", "third_party/yolov5")).resolve()
         self.saved_model_dir = Path(self.dataset_cfg.get('saved_model_dir', 'saved_model/yolo_cropper')).resolve()
         self.input_root = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
-        self.detect_root = Path(self.dataset_cfg.get("detect_dir", "runs/detect")).resolve()
+        self.detect_root = Path(self.dataset_cfg.get("detect_output_dir", "runs/detect")).resolve()
 
         self.saved_model_path = self.saved_model_dir / f"{self.model_name}.pt"
         self.logs_dir = self.yolov5_dir / "logs"

@@ -2,18 +2,17 @@
 # -*- coding: utf-8 -*-
 
 """
-darknet.py
+yolov5.py
 ----------
-DarknetPipeline (Config-driven)
-Unified YOLOv2 / YOLOv4 workflow manager.
+YOLO v5 Pipeline (Config-driven)
 
 Steps:
-1️⃣ cfg_manager
-2️⃣ make_manager
-3️⃣ data_prepare
-4️⃣ train (skip if saved_model exists)
-5️⃣ evaluate
-6️⃣ predict
+1️⃣ train
+2️⃣ evaluate
+3️⃣ predict
+4️⃣ generate predict.txt for Cropping
+5️⃣ Convert txt to json
+6️⃣ Crop
 """
 
 import sys
@@ -25,7 +24,7 @@ sys.path.append(str(ROOT_DIR))
 from utils.load_config import load_yaml_config
 from utils.logging import get_logger, setup_logging
 
-# === Darknet Submodules ===
+# === YOLO Submodules ===
 from src.yolo_cropper.models.yolov5.train import YOLOv5Trainer
 from src.yolo_cropper.models.yolov5.evaluate import YOLOv5Evaluator
 from src.yolo_cropper.models.yolov5.predict import YOLOv5Predictor
@@ -39,7 +38,7 @@ class YOLOv5Pipeline:
 
     def __init__(self, config_path: str = "utils/config.yaml"):
         setup_logging("logs/yolo_cropper")
-        self.logger = get_logger("yolo_cropper.DarknetPipeline")
+        self.logger = get_logger("yolo_cropper.YOLOv5Pipeline")
 
         # --------------------------------------------------------
         # Load Configuration
@@ -58,21 +57,21 @@ class YOLOv5Pipeline:
         self.yolov5_dir = Path(self.yolov5_cfg.get("yolov5_dir", "third_party/yolov5")).resolve()
         self.saved_model_dir = Path(self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")).resolve()
         self.train_dataset_dir = Path(
-            f"{self.dataset_cfg.get('train_data_dir', 'data/yolo_cropper')}/{self.model_name}"
+            f"{self.yolov5_cfg.get('data_yaml', 'data/yolo_cropper/yolov5/data.yaml')}"
         ).resolve()
 
-        self.input_dir = Path(self.dataset_cfg.get("input_dir", "data/original")).resolve()
+        self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
 
         # Derived paths
         self.saved_weight_path = self.saved_model_dir / f"{self.model_name}.pt"
 
 
         # Logging info
-        self.logger.info(f"Initialized DarknetPipeline ({self.model_name.upper()})")
+        self.logger.info(f"Initialized YOLO v5 Pipeline ({self.model_name.upper()})")
         self.logger.info(f" - Config path    : {self.config_path}")
-        self.logger.info(f" - Darknet dir    : {self.yolov5_dir}")
+        self.logger.info(f" - YOLO v5 dir    : {self.yolov5_dir}")
         self.logger.info(f" - Training Dataset dir    : {self.train_dataset_dir}")
-        self.logger.info(f" - Saved model dir: {self.saved_model_dir}")
+        self.logger.info(f" - Saved model dir: {self.saved_weight_path}")
         self.logger.info(f" - Input dir      : {self.input_dir}")
 
     # --------------------------------------------------------
@@ -101,7 +100,7 @@ class YOLOv5Pipeline:
     # Step 3️⃣ Predict (auto multi-folder)
     # --------------------------------------------------------
     def step_predict(self):
-        self.logger.info("[STEP 3] Preparing dataset for Darknet...")
+        self.logger.info("[STEP 3] Preparing dataset for YOLOv5...")
         predictor = YOLOv5Predictor(config=self.cfg)
         predictor.run()
         self.logger.info("[✓] Prediction step done")
@@ -138,14 +137,14 @@ class YOLOv5Pipeline:
     # --------------------------------------------------------
     def run(self):
         self.logger.info("🚀 Running YOLOv5 Pipeline")
-        self.step_train()
-        metrics = self.step_evaluate()
+        # self.step_train()
+        # metrics = self.step_evaluate()
         self.step_predict()
         self.step_make_predict()
         self.step_converter()
         self.step_cropper()
         self.logger.info("=== ✅ YOLOv5 PIPELINE COMPLETE ===")
-        return metrics
+        # return metrics
 
 # --------------------------------------------------------
 # CLI Entry Point

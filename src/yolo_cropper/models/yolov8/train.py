@@ -40,7 +40,7 @@ class YOLOv8Trainer:
         self.batch = self.train_cfg.get("batch", 16)
 
         # Directory setup
-        self.runs_dir = Path(self.dataset_cfg.get("train_dir", "runs/train")).resolve()
+        self.runs_dir = Path(self.dataset_cfg.get("train_output_dir", "runs/train")).resolve()
         self.checkpoint_dir = Path(self.dataset_cfg.get("checkpoint_dir", "checkpoints/yolo_cropper")) / self.model_name
         self.saved_model_dir = Path(self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")).resolve()
 

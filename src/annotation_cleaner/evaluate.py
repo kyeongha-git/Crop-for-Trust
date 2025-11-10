@@ -145,6 +145,12 @@ class Evaluator:
 
         df = pd.DataFrame(results)
         avg = df.drop(columns=["split", "file"]).mean().to_dict()
+
+        avg_row = {**{k: "" for k in df.columns}, **avg}
+        avg_row["split"] = "AVG"
+        avg_row["file"] = "AVG" 
+        df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
+
         self.metric_dir.mkdir(parents=True, exist_ok=True)
         df.to_csv(save_path, index=False)
         self.logger.info(f"📁 Full Image 결과 저장 → {save_path}")
@@ -234,6 +240,13 @@ class Evaluator:
 
         df = pd.DataFrame(results)
         avg = df.drop(columns=["split", "file", "crop_idx"]).mean().to_dict()
+
+        avg_row = {**{k: "" for k in df.columns}, **avg}
+        avg_row["split"] = "AVG"
+        avg_row["file"] = "AVG"
+        avg_row["crop_idx"] = "AVG"
+        df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
+
         df.to_csv(save_path, index=False)
         self.logger.info(f"📁 YOLO Crop 결과 저장 → {save_path}")
         return avg

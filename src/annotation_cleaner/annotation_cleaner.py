@@ -166,16 +166,16 @@ class AnnotationCleaner:
         self.cleanup_temp_dirs()
 
         # 5️⃣ Evaluate
-        self.logger.info("[5/5] 📊 EVALUATION 단계")
-        Evaluator(
-            orig_dir=self.evaluate_cfg["orig_dir"],
-            gen_dir=self.evaluate_cfg["gen_dir"],
-            metric_dir=self.evaluate_cfg["metric_dir"],
-            metrics=self.evaluate_cfg.get("metrics", ["ssim", "l1", "edge_iou"]),
-            yolo_model=self.evaluate_cfg.get("yolo_model", "./saved_model/yolo_cropper/yolov8s.pt"),
-            imgsz=self.evaluate_cfg.get("imgsz", 416),
-            categories=self.categories,
-        ).run()
+        # self.logger.info("[5/5] 📊 EVALUATION 단계")
+        # Evaluator(
+        #     orig_dir=self.evaluate_cfg["orig_dir"],
+        #     gen_dir=self.evaluate_cfg["gen_dir"],
+        #     metric_dir=self.evaluate_cfg["metric_dir"],
+        #     metrics=self.evaluate_cfg.get("metrics", ["ssim", "l1", "edge_iou"]),
+        #     yolo_model=self.evaluate_cfg.get("yolo_model", "./saved_model/yolo_cropper/yolov8s.pt"),
+        #     imgsz=self.evaluate_cfg.get("imgsz", 416),
+        #     categories=self.categories,
+        # ).run()
 
         self.logger.info("🎉 Annotation Cleaner 전체 파이프라인 완료!")
 

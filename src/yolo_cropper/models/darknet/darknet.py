@@ -59,6 +59,9 @@ class DarknetPipeline:
         self.darknet_dir = Path(self.darknet_cfg.get("darknet_dir", "third_party/darknet")).resolve()
         self.saved_model_dir = Path(self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")).resolve()
         self.base_dataset_dir = Path(self.dataset_cfg.get("train_data_dir", "data/yolo_cropper")).resolve()
+        self.train_dataset_dir = Path(
+            f"{self.dataset_cfg.get('train_data_dir', 'data/yolo_cropper')}/{self.model_name}"
+        ).resolve()
         self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
 
         # Derived paths
@@ -70,7 +73,7 @@ class DarknetPipeline:
         self.logger.info(f" - Config path    : {self.config_path}")
         self.logger.info(f" - Darknet dir    : {self.darknet_dir}")
         self.logger.info(f" - Dataset dir    : {self.base_dataset_dir}")
-        self.logger.info(f" - Saved model dir: {self.saved_model_dir}")
+        self.logger.info(f" - Saved model dir: {self.saved_weight_path}")
         self.logger.info(f" - Input dir      : {self.input_dir}")
 
     # --------------------------------------------------------
@@ -148,10 +151,10 @@ class DarknetPipeline:
     def run(self):
         self.logger.info(f"🚀 Starting Darknet Pipeline ({self.model_name.upper()})")
         self.step_cfg_manager()
-        self.step_make_manager()
+        # self.step_make_manager()
         self.step_data_prepare()
-        self.step_train()
-        self.step_evaluate()
+        # self.step_train()
+        # self.step_evaluate()
         result_json, predict_txt = self.step_predict()
         self.step_cropping()
         self.logger.info("=== ✅ PIPELINE COMPLETE ===")

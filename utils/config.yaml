@@ -1,32 +1,29 @@
 main:
   input_dir: data/original
-  annot_clen: 'on'
-  yolo_crop: 'off'
-  yolo_model: yolov8s
+  annot_clean: 'on'
+  yolo_crop: 'on'
+  yolo_model: yolov5
   classify_model: vgg16
   saved_model: saved_model/
   metrics_dir: metrics/
-  annot_clean: 'on'
 annotation_cleaner:
-  control:
-    use_virtual_temp: true
   main:
-    input_dir: ./data/original
-    output_dir: ./data/generation
+    input_dir: data/original
+    output_dir: data/generation
     categories:
     - repair
     - replace
     metadata_name: padding_info.json
     keep_metadata: false
   image_padding:
-    input_dir: ./data/annotation_cleaner/only_annotation_image
-    output_dir: ./data/annotation_cleaner/only_annotation_image_padded
+    input_dir: data/annotation_cleaner/only_annotation_image
+    output_dir: data/annotation_cleaner/only_annotation_image_padded
     target_size: 1024
   annotation_clean:
-    input_dir: ./data/annotation_cleaner/only_annotation_image_padded
-    output_dir: ./data/annotation_cleaner/generated_image_padded
-    test_mode: 'on'
-    test_limit: 3
+    input_dir: data/annotation_cleaner/only_annotation_image_padded
+    output_dir: data/annotation_cleaner/generated_image_padded
+    test_mode: 'off'
+    test_limit: 6
     model: gemini-2.5-flash-image-preview
     api_key: ${GEMINI_API_KEY}
     prompt: 'In this image, do not alter or modify the cracked or damaged area of
@@ -43,12 +40,12 @@ annotation_cleaner:
     max_retries: 3
     timeout: 60
   restore_crop:
-    input_dir: ./data/annotation_cleaner/generated_image_padded
-    output_dir: ./data/annotation_cleaner/generated_image
-    metadata_root: ./data/annotation_cleaner/only_annotation_image_padded
+    input_dir: data/annotation_cleaner/generated_image_padded
+    output_dir: data/annotation_cleaner/generated_image
+    metadata_root: data/annotation_cleaner/only_annotation_image_padded
   evaluate:
-    orig_dir: ./data/annotation_cleaner/only_annotation_image
-    gen_dir: ./data/annotation_cleaner/generated_image
+    orig_dir: data/annotation_cleaner/only_annotation_image
+    gen_dir: data/annotation_cleaner/generated_image
     metric_dir: ./metrics/annotation_cleaner
     metrics:
     - ssim
@@ -58,18 +55,17 @@ annotation_cleaner:
     imgsz: 416
 yolo_cropper:
   main:
-    model_name: yolov8s
-    input_dir: data/generation
-    output_dir: data/{input_dir.name}_crop/{model_name}
+    model_name: yolov5
+    input_dir: data/original
+    output_dir: data/original_crop/yolov5
   dataset:
     results_dir: outputs/json_results
     train_data_dir: data/yolo_cropper
     saved_model_dir: saved_model/yolo_cropper
     checkpoint_dir: checkpoints/yolo_cropper
     metrics_dir: metrics/yolo_cropper
-    detect_dir: runs/detect
-    train_dir: runs/train
-    input_dir: data/generation
+    detect_output_dir: runs/detect
+    train_output_dir: runs/train
   train:
     batch_size: 16
     epochs: 400
@@ -128,8 +124,8 @@ yolo_cropper:
     data_yaml: data/yolo_cropper/yolov8/data.yaml
 data_augmentor:
   data:
-    input_dir: data/generation
-    output_dir: data/generation
+    input_dir: data/original_crop/yolov5
+    output_dir: data/original_crop/yolov5
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -158,9 +154,9 @@ data_augmentor:
     hue_delta: 0.03
   dataset:
     input_dir: data/generation_crop/yolov8s
-Classifier: &id001
+classifier:
   data:
-    input_dir: data/generation
+    input_dir: data/original_crop/yolov5
   train:
     model_name: mobilenet_v2
     batch_size: 32
@@ -176,4 +172,3 @@ Classifier: &id001
     entity: kyeonghah-university-of-suwon
     run_name_pattern: '{model}_{input_dir}'
     notes: Crop&Conquer Paper
-classifier: *id001

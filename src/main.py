@@ -111,24 +111,24 @@ def main():
     # --------------------------------------------------------
     # 6️⃣ DataAugmentor
     # --------------------------------------------------------
-    try:
-        print("\n🧩 [3단계] DataAugmentor 시작...")
-        augmentor = DataAugmentor(config_path=args.config)
-        augmentor.run()
-    except Exception as e:
-        logger.error(f"[DataAugmentor] 실패: {e}")
-        traceback.print_exc()
+    # try:
+    #     print("\n🧩 [3단계] DataAugmentor 시작...")
+    #     augmentor = DataAugmentor(config_path=args.config)
+    #     augmentor.run()
+    # except Exception as e:
+    #     logger.error(f"[DataAugmentor] 실패: {e}")
+    #     traceback.print_exc()
 
     # --------------------------------------------------------
     # 7️⃣ Classifier
     # --------------------------------------------------------
-    try:
-        print(f"\n🎯 [4단계] Classifier ({classify_model}) 시작...")
-        classifier = Classifier(config_path=args.config)
-        classifier.run()
-    except Exception as e:
-        logger.error(f"[Classifier] 실패: {e}")
-        traceback.print_exc()
+    # try:
+    #     print(f"\n🎯 [4단계] Classifier ({classify_model}) 시작...")
+    #     classifier = Classifier(config_path=args.config)
+    #     classifier.run()
+    # except Exception as e:
+    #     logger.error(f"[Classifier] 실패: {e}")
+    #     traceback.print_exc()
 
     # --------------------------------------------------------
     # ✅ 완료
