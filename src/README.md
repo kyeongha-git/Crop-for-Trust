@@ -26,7 +26,7 @@ Please refer to the **root README** for details on how to execute the pipeline.
 
 The following diagram summarizes the overall code flow and experimental process used in the paper:
 
-<p align="center"> <img src="assets/FlowChart/img.png" width="800"> </p>
+<p align="center"> <img src="../assets/FlowChart/img.png" width="800"> </p>
 
 🔍 Figure:
 - The Crop-and-Conquer framework consists of four sequential yet modular stages
