@@ -46,7 +46,7 @@ The utils/config.yaml automatically loads this key through the following line:
 api_key: ${GEMINI_API_KEY}
 ```
 
-## 2️⃣ Run the Main Pipeline
+### 2️⃣ Run the Main Pipeline
 
 Once the setup is complete, execute the unified dual-pipeline using:
 
@@ -64,7 +64,7 @@ This command launches the Crop-and-Conquer pipeline, consisting of:
 
 4. Classification & Evaluation — Trains CNN-based classifiers and measures performance.
 
-### ⚙️ CLI Options
+#### ⚙️ CLI Options
 The main script supports several command-line options for flexible execution:
 
 | Option        | Description   |
@@ -112,7 +112,7 @@ However, you can customize input paths in utils/config.yaml to apply the impleme
 python src/main.py --annot_clean on
 ```
 
-### ⚠️ Note on Data Privacy
+## ⚠️ Note on Data Privacy
 The dataset used in this study is private and cannot be distributed publicly.
 Therefore, only a small sample dataset is provided under:
 
