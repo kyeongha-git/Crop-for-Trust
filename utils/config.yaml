@@ -8,20 +8,20 @@ main:
   metrics_dir: metrics/
 annotation_cleaner:
   main:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original
-    output_dir: /home/stu_hwang_kh/Research/data/sample/generation
+    input_dir: data/sample/original
+    output_dir: data/sample/generation
     categories:
     - repair
     - replace
     metadata_name: padding_info.json
     keep_metadata: false
   image_padding:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/only_annotation_image
-    output_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: data/sample/annotation_cleaner/only_annotation_image
+    output_dir: data/sample/annotation_cleaner/only_annotation_image_padded
     target_size: 1024
   annotation_clean:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/only_annotation_image_padded
-    output_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/generated_image_padded
+    input_dir: data/sample/annotation_cleaner/only_annotation_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image_padded
     test_mode: 'off'
     test_limit: 6
     model: gemini-2.5-flash-image-preview
@@ -40,12 +40,12 @@ annotation_cleaner:
     max_retries: 3
     timeout: 60
   restore_crop:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/generated_image_padded
-    output_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/generated_image
-    metadata_root: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: data/sample/annotation_cleaner/generated_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image
+    metadata_root: data/sample/annotation_cleaner/only_annotation_image_padded
   evaluate:
-    orig_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/only_annotation_image
-    gen_dir: /home/stu_hwang_kh/Research/data/sample/annotation_cleaner/generated_image
+    orig_dir: data/sample/annotation_cleaner/only_annotation_image
+    gen_dir: data/sample/annotation_cleaner/generated_image
     metric_dir: ./metrics/annotation_cleaner
     metrics:
     - ssim
@@ -56,8 +56,8 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov8s
-    input_dir: /home/stu_hwang_kh/Research/data/sample/generation
-    output_dir: /home/stu_hwang_kh/Research/data/sample/generation_crop/yolov8s
+    input_dir: data/sample/generation
+    output_dir: data/sample/generation_crop/yolov8s
   dataset:
     results_dir: outputs/json_results
     train_data_dir: data/yolo_cropper
@@ -124,8 +124,8 @@ yolo_cropper:
     data_yaml: data/yolo_cropper/yolov8/data.yaml
 data_augmentor:
   data:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/generation_crop/yolov8s
-    output_dir: /home/stu_hwang_kh/Research/data/sample/generation_crop/yolov8s
+    input_dir: data/sample/generation_crop/yolov8s
+    output_dir: data/sample/generation_crop/yolov8s
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -156,7 +156,7 @@ data_augmentor:
     input_dir: data/generation_crop/yolov8s
 classifier:
   data:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/generation_crop/yolov8s
+    input_dir: data/sample/generation_crop/yolov8s
   train:
     model_name: mobilenet_v2
     batch_size: 32
