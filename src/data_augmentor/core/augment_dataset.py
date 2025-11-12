@@ -9,11 +9,6 @@ Core module for automated data augmentation and class balancing.
 This module detects class imbalance between `train/repair` and `train/replace`
 and performs augmentation based on parameters defined in `config.yaml`.
 
-Main features:
-    - Automatically detects minority class and balances dataset
-    - Config-driven augmentation pipeline
-    - Includes cropping, rotation, translation, and color jitter operations
-
 Usage:
     from data_augmentor.core.augment_dataset import balance_augmentation
 """

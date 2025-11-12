@@ -11,9 +11,9 @@ It standardizes image resizing, normalization, and optional augmentation
 based on the target architecture.
 
 Supported models:
-- VGG family
-- ResNet family
-- MobileNet (v1, v2, v3)
+- VGG
+- ResNet
+- MobileNet (v2, v3)
 """
 
 from typing import Dict, Tuple

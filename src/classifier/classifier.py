@@ -10,9 +10,6 @@ This script builds an end-to-end training–evaluation pipeline driven by
 `config.yaml`. It automatically configures data loading, model setup,
 optimizer initialization, checkpoint management, and optional Weights & Biases (wandb)
 logging for experiment tracking.
-
-Run via CLI:
-    python src/classifier/classifier.py --config_path utils/config.yaml
 """
 
 import argparse

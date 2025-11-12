@@ -8,8 +8,6 @@ End-to-end data augmentation pipeline script.
 
 Features:
 - Automates dataset splitting and augmentation based on `config.yaml`
-- Unified CLI entry point (input_dir, output_dir, config_path)
-- Integrated with utils.load_config and utils.logging
 - Links `split_dataset` and `augment_dataset` modules for full workflow
 """
 

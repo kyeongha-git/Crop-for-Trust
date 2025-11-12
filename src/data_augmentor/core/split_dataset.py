@@ -6,11 +6,6 @@ split_dataset.py
 -----------------
 Module for splitting a dataset into train / valid / test sets.
 
-Features:
-- Automatically resolves dataset path structure
-- Loads split ratios from `config.yaml`
-- Integrated with utils.load_config / utils.logging
-- Ensures reproducibility via fixed random seed
 """
 
 import random
