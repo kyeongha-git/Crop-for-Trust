@@ -98,7 +98,7 @@ class DarknetEvaluator:
         )
 
         self.logger.info(
-            f"🚀 Starting Darknet evaluation ({self.model_name.upper()})..."
+            f"Starting Darknet evaluation ({self.model_name.upper()})..."
         )
         self.logger.debug(f"[CMD] {command}")
 
@@ -110,14 +110,14 @@ class DarknetEvaluator:
 
         if process.returncode not in (0, 1):
             raise RuntimeError(
-                f"❌ Darknet evaluation failed (code: {process.returncode})"
+                f"Darknet evaluation failed (code: {process.returncode})"
             )
         elif process.returncode == 1:
             self.logger.warning(
                 "Darknet exited with code 1 (non-fatal). Evaluation likely succeeded."
             )
 
-        self.logger.info(f"[✓] Evaluation complete! Log saved → {log_path}")
+        self.logger.info(f"Evaluation complete! Log saved → {log_path}")
 
         parser = get_metrics_parser(self.model_name)
         metrics = parser(str(log_path))
@@ -156,4 +156,4 @@ class DarknetEvaluator:
                 writer.writeheader()
             writer.writerow(row)
 
-        self.logger.info(f"[✓] Metrics saved → {csv_path}")
+        self.logger.info(f"Metrics saved → {csv_path}")

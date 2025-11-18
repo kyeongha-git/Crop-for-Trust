@@ -1,14 +1,14 @@
-# 🧪 Tests Directory
+# Tests Directory
 
 This directory contains **unit tests** for verifying the functionality and stability of each module in the pipeline.
 
-> ✅ All tests are written using **pytest** and ensure that the core components  
+> All tests are written using **pytest** and ensure that the core components  
 > of the project (annotation cleaning, YOLO cropping, data augmentation, and classification)  
 > behave as expected and maintain reproducibility across updates.
 
 ---
 
-## 📁 Folder Structure
+## Folder Structure
 
 tests/
 ├── annotation_cleaner/ # Unit tests for annotation cleaning (SSIM, L1, Edge IoU metrics)
@@ -19,7 +19,7 @@ tests/
 
 ---
 
-## ⚙️ Test Overview
+## Test Overview
 
 - **Annotation Cleaner Tests** → Verify image cleaning, metric computation, and directory output consistency.  
 - **YOLO Cropper Tests** → Validate detection inference, cropping accuracy, and directory structure creation.  
@@ -30,7 +30,7 @@ tests/
 
 ---
 
-## 🧩 Running Tests
+## Running Tests
 
 To run all tests:
 
@@ -42,7 +42,7 @@ To run a specific module’s tests:
 
 ---
 
-## 🧠 Notes
+## Notes
 
 - All tests use **mock data** or **sample datasets** to avoid dependency on private data.  
 - Heavy GPU operations (training/inference) are replaced with **lightweight mocks** for speed and reproducibility.  

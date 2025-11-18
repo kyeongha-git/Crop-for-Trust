@@ -22,7 +22,7 @@ from src.classifier.data.data_preprocessing import DataPreprocessor
 
 
 # ==========================================================
-# 1️⃣ Data Loader Unit Tests
+# Data Loader Unit Tests
 # ==========================================================
 def test_list_image_paths(tmp_path):
     """list_image_paths(): should traverse directory and detect classes."""
@@ -44,7 +44,7 @@ def test_list_image_paths(tmp_path):
     assert set(labels) == {"repair", "replace"}
     assert all(
         count >= 2 for count in label_counts.values()
-    ), f"❌ Each class should have ≥2 samples: {label_counts}"
+    ), f"Each class should have ≥2 samples: {label_counts}"
 
 
 def test_build_label_mappings():
@@ -95,7 +95,7 @@ def test_classification_dataset_getitem(tmp_path):
 
 
 # ==========================================================
-# 2️⃣ Data Preprocessor Unit Tests
+# Data Preprocessor Unit Tests
 # ==========================================================
 @pytest.fixture(scope="module")
 def preprocessor():

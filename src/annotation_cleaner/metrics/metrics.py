@@ -18,7 +18,7 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
 # ============================================================
-# 🔹 Metric Functions
+# Metric Functions
 # ============================================================
 
 
@@ -81,7 +81,7 @@ def edge_iou(a: np.ndarray, b: np.ndarray) -> float:
 
 
 # ============================================================
-# 🔹 Wrapper
+# Wrapper
 # ============================================================
 
 

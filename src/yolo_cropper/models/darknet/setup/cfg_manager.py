@@ -171,9 +171,9 @@ class CfgManager:
         Returns:
             str: Path to the generated cfg file.
         """
-        self.logger.info(f"🔧 Generating cfg for {self.model_name.upper()} ...")
+        self.logger.info(f"Generating cfg for {self.model_name.upper()} ...")
         self._copy_base_cfg()
         self._apply_cfg_overrides()
         self._update_filters_and_classes()
-        self.logger.info(f"✅ Config generated → {self.target_cfg}")
+        self.logger.info(f"Config generated → {self.target_cfg}")
         return str(self.target_cfg)

@@ -1,15 +1,15 @@
-# ⚙️ Utils Directory
+# Utils Directory
 
 This directory contains utility scripts for **configuration management**, **logging**, and **global control**  
 across all modules in the AI pipeline.
 
-> 🧠 **Note:**  
+> **Note:**  
 > The `utils` package enables centralized configuration and logging so that  
 > users can control the entire pipeline behavior through a single configuration file (`config.yaml`).
 
 ---
 
-## 📁 Folder Structure
+## Folder Structure
 
 utils/
 ├── config_manager.py # Dynamically manages config paths and synchronizes modules
@@ -19,7 +19,7 @@ utils/
 
 ---
 
-## 🧩 Description
+## Description
 
 ### 1️⃣ config.yaml
 - The **core configuration file** of the entire project.  
@@ -50,7 +50,7 @@ utils/
 
 ---
 
-## 🧠 Summary
+## Summary
 
 - The `utils/` directory provides the **foundation** for project-wide control and logging.  
 - Users only need to modify **`config.yaml` once** to adapt the entire pipeline to a new dataset or environment.  

@@ -11,10 +11,10 @@ Modules tested:
 - src.data_augmentor.core.augment_dataset
 
 Test Goals:
-✅ Verify correct split ratios and folder structures for train/valid/test sets
-✅ Ensure deterministic behavior given fixed random seeds
-✅ Confirm graceful handling of empty or invalid class folders
-✅ Validate correctness of augmentation primitives and pipelines
+- Verify correct split ratios and folder structures for train/valid/test sets
+- Ensure deterministic behavior given fixed random seeds
+- Confirm graceful handling of empty or invalid class folders
+- Validate correctness of augmentation primitives and pipelines
 """
 
 import random
@@ -165,8 +165,6 @@ def test_split_dataset_invalid_ratios(dummy_dataset, tmp_path):
 # ============================================================
 # Augmentation Tests
 # ============================================================
-
-
 @pytest.fixture
 def temp_dir():
     """Create a temporary directory fixture for augmentation tests."""
@@ -193,8 +191,6 @@ def sample_image(temp_dir):
 # ============================================================
 # Helper Utilities
 # ============================================================
-
-
 def _img_to_array(img: Image.Image) -> np.ndarray:
     """Convert a PIL Image to a NumPy array."""
     return np.asarray(img, dtype=np.uint8).copy()
@@ -220,8 +216,6 @@ def count_images_in_dir(directory: Path) -> int:
 # ============================================================
 # Unit Tests — Augmentation Primitives
 # ============================================================
-
-
 def test_list_images_filters_correctly(temp_dir):
     """Ensure list_images() returns only image files with correct extensions."""
     (temp_dir / "a.jpg").touch()

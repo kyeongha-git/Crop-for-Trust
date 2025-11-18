@@ -27,7 +27,7 @@ IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
 
 # ============================================================
-# 🔹 Utility Functions
+# Utility Functions
 # ============================================================
 def list_images(folder: Path):
     """Return a list of valid image files within the given folder."""
@@ -44,7 +44,7 @@ def clamp(v, lo, hi):
 
 
 # ============================================================
-# 🔹 Augmentation Primitives
+# Augmentation Primitives
 # ============================================================
 def random_resized_crop(
     img: Image.Image, scale=(0.9, 1.0), ratio=(0.95, 1.05), trials=10
@@ -121,7 +121,7 @@ def color_jitter(
 
 
 # ============================================================
-# 🔹 Augmentation Pipeline
+# Augmentation Pipeline
 # ============================================================
 def augment_pipeline(img: Image.Image, aug_cfg: Dict) -> Image.Image:
     """
@@ -148,7 +148,7 @@ def augment_pipeline(img: Image.Image, aug_cfg: Dict) -> Image.Image:
 
 
 # ============================================================
-# 🔹 Class Balancing by Augmentation
+# Class Balancing by Augmentation
 # ============================================================
 def _augment_until_equal(
     src_dir: Path, target_count: int, aug_cfg: Dict, seed: int = 42, logger=None
@@ -186,7 +186,7 @@ def _augment_until_equal(
         except Exception as e:
             logger.warning(f"Skip {src.name}: {e}")
 
-    logger.info(f"🎉 Completed! {src_dir.name} balanced to {cur} images.")
+    logger.info(f"Completed! {src_dir.name} balanced to {cur} images.")
 
 
 def balance_augmentation(root_dir: Path, aug_cfg: Dict, seed: int = 42, logger=None):
@@ -219,6 +219,6 @@ def balance_augmentation(root_dir: Path, aug_cfg: Dict, seed: int = 42, logger=N
     target_count = max(repair_count, replace_count)
 
     logger.info(
-        f"📈 Class '{smaller_dir.name}' is smaller. ({len(list_images(smaller_dir))} → {target_count})"
+        f"Class '{smaller_dir.name}' is smaller. ({len(list_images(smaller_dir))} → {target_count})"
     )
     _augment_until_equal(smaller_dir, target_count, aug_cfg, seed=seed, logger=logger)

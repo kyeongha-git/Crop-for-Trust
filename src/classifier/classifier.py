@@ -57,34 +57,34 @@ class Classifier:
         setup_logging("logs/classifier")
         self.logger = get_logger("classifier")
 
-        # ✅ Load configuration file
+        # Load configuration file
         self.config_path = Path(config_path)
         self.cfg_all = load_yaml_config(self.config_path)
 
         if "classifier" not in self.cfg_all:
-            raise KeyError("❌ Missing 'Classifier' section in config.yaml.")
+            raise KeyError("Missing 'Classifier' section in config.yaml.")
         self.cfg = self.cfg_all["classifier"]
 
-        # ✅ Split sub-sections
+        # Split sub-sections
         self.data_cfg = self.cfg.get("data", {})
         self.train_cfg = self.cfg.get("train", {})
         self.wandb_cfg = self.cfg.get("wandb", {})
 
-        # ✅ Extract values
+        # Extract values
         self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
         self.model_name = self.train_cfg.get("model_name", "mobilenet_v2").lower()
         self.use_wandb = self.wandb_cfg.get("enabled", True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # ✅ Automatically resolve output paths
+        # Automatically resolve output paths
         self._resolve_output_paths()
 
-        self.logger.info(f"🚀 Device: {self.device}")
-        self.logger.info(f"🧠 Model: {self.model_name}")
-        self.logger.info(f"📂 Input Dir: {self.input_dir}")
+        self.logger.info(f"Device: {self.device}")
+        self.logger.info(f"Model: {self.model_name}")
+        self.logger.info(f"Input Dir: {self.input_dir}")
 
     # ==========================================================
-    # 🧩 Path Resolution
+    # Path Resolution
     # ==========================================================
     def _resolve_output_paths(self):
         """
@@ -116,12 +116,12 @@ class Classifier:
         os.makedirs(resolved_metric, exist_ok=True)
         os.makedirs(resolved_check, exist_ok=True)
 
-        self.logger.info(f"📂 Resolved Save Dir: {resolved_save}")
-        self.logger.info(f"📂 Resolved Metric Dir: {resolved_metric}")
-        self.logger.info(f"📂 Resolved Check Dir: {resolved_check}")
+        self.logger.info(f"Resolved Save Dir: {resolved_save}")
+        self.logger.info(f"Resolved Metric Dir: {resolved_metric}")
+        self.logger.info(f"Resolved Check Dir: {resolved_check}")
 
     # ==========================================================
-    # 🧩 wandb Initialization
+    # wandb Initialization
     # ==========================================================
     def _init_wandb(self):
         """
@@ -129,7 +129,7 @@ class Classifier:
         Returns None if disabled.
         """
         if not self.use_wandb:
-            self.logger.warning("⚠️ wandb logging disabled.")
+            self.logger.warning("wandb logging disabled.")
             return None
 
         project_root = ROOT_DIR
@@ -162,7 +162,7 @@ class Classifier:
         return wandb_run
 
     # ==========================================================
-    # 🧩 Data Loading
+    # Data Loading
     # ==========================================================
     def _load_data(self):
         """Load train and validation datasets based on config paths."""
@@ -188,12 +188,12 @@ class Classifier:
         )
 
         self.logger.info(
-            f"✅ Data Loaded: train={len(train_dataset)}, valid={len(valid_dataset)}"
+            f"Data Loaded: train={len(train_dataset)}, valid={len(valid_dataset)}"
         )
         return train_loader, valid_loader
 
     # ==========================================================
-    # 🧩 Model & Optimizer Setup
+    # Model & Optimizer Setup
     # ==========================================================
     def _build_model(self):
         """Initialize model, loss function, and optimizer."""
@@ -207,7 +207,7 @@ class Classifier:
         return model, criterion, optimizer
 
     # ==========================================================
-    # 🧩 Training Wrapper
+    # Training Wrapper
     # ==========================================================
     def _train_model(
         self, model, criterion, optimizer, train_loader, valid_loader, wandb_run
@@ -223,8 +223,8 @@ class Classifier:
         save_path = os.path.join(save_dir, f"{self.model_name}.pt")
         check_path = os.path.join(check_dir, f"{self.model_name}_last.pt")
 
-        self.logger.info(f"💾 Save Path: {save_path}")
-        self.logger.info(f"🧩 Checkpoint Dir: {check_dir}")
+        self.logger.info(f"Save Path: {save_path}")
+        self.logger.info(f"Checkpoint Dir: {check_dir}")
 
         best_acc = train_model(
             model=model,
@@ -239,11 +239,11 @@ class Classifier:
             wandb_run=wandb_run,
         )
 
-        self.logger.info(f"🏁 Training Complete — Best Val Acc: {best_acc:.4f}")
+        self.logger.info(f"Training Complete — Best Val Acc: {best_acc:.4f}")
         return best_acc
 
     # ==========================================================
-    # 🚀 Full Pipeline (Train + Evaluate)
+    # Full Pipeline (Train + Evaluate)
     # ==========================================================
     def run(self):
         """
@@ -257,18 +257,18 @@ class Classifier:
             5. Save metrics and finish session
         """
         self.logger.info(
-            f"🚀 Start Training {self.model_name.upper()} on {self.input_dir}"
+            f"Start Training {self.model_name.upper()} on {self.input_dir}"
         )
         train_loader, valid_loader = self._load_data()
         model, criterion, optimizer = self._build_model()
         wandb_run = self._init_wandb()
 
-        # ✅ Training phase
+        # Training phase
         best_acc = self._train_model(
             model, criterion, optimizer, train_loader, valid_loader, wandb_run
         )
 
-        # ✅ Evaluation phase
+        # Evaluation phase
         evaluator = Evaluator(
             input_dir=self.input_dir,
             model=self.model_name,
@@ -277,7 +277,7 @@ class Classifier:
         )
         acc, f1 = evaluator.run()
 
-        # ✅ Log and finalize
+        # Log and finalize
         if wandb_run:
             wandb_run.log(
                 {
@@ -288,12 +288,12 @@ class Classifier:
             )
             wandb_run.finish()
 
-        self.logger.info("🏁 Pipeline Finished Successfully")
+        self.logger.info("🎉 Classifier Pipeline Finished Successfully")
         return best_acc, acc, f1
 
 
 # ==========================================================
-# ✅ CLI Entry Point
+# CLI Entry Point
 # ==========================================================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Classifier Training Entry Point")

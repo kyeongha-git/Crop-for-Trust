@@ -31,14 +31,14 @@ from typing import List, Optional
 from google import genai
 from PIL import Image
 
-ROOT_DIR = Path(__file__).resolve().parents[3]  # Research/
+ROOT_DIR = Path(__file__).resolve().parents[3]
 sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger, setup_logging
 
 
 # ============================================================
-# 🔐 Gemini Client Initialization
+# Gemini Client Initialization
 # ============================================================
 def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
     """
@@ -60,15 +60,15 @@ def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
     """
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
-        raise EnvironmentError("❌ GEMINI_API_KEY environment variable is not set.")
+        raise EnvironmentError("GEMINI_API_KEY environment variable is not set.")
     try:
         return genai.Client(api_key=key)
     except Exception as e:
-        raise RuntimeError(f"❌ Failed to initialize Gemini client: {e}")
+        raise RuntimeError(f"Failed to initialize Gemini client: {e}")
 
 
 # ============================================================
-# 🧩 CleanAnnotation Class
+# CleanAnnotation Class
 # ============================================================
 class CleanAnnotation:
     """
@@ -112,12 +112,12 @@ class CleanAnnotation:
 
         self.client = client or get_gemini_client()
 
-        self.logger.info(f"📂 Input directory: {self.input_root}")
-        self.logger.info(f"💾 Output directory: {self.output_root}")
-        self.logger.info(f"🧩 Model: {self.model}")
+        self.logger.info(f"Input directory: {self.input_root}")
+        self.logger.info(f"Output directory: {self.output_root}")
+        self.logger.info(f"Model: {self.model}")
 
     # ============================================================
-    # 🔧 Internal Utility
+    # Internal Utility
     # ============================================================
     def _generate_clean_image(self, image_path: Path, output_path: Path) -> bool:
         """
@@ -134,21 +134,21 @@ class CleanAnnotation:
                 if getattr(part, "inline_data", None):
                     gen_img = Image.open(BytesIO(part.inline_data.data))
                     gen_img.save(output_path)
-                    self.logger.info(f"✅ Saved cleaned image: {output_path.name}")
+                    self.logger.info(f"Saved cleaned image: {output_path.name}")
                     return True
                 elif getattr(part, "text", None):
                     self.logger.warning(
-                        f"📝 Text response for {image_path.name}: {part.text}"
+                        f"Text response for {image_path.name}: {part.text}"
                     )
                     return False
 
         except Exception as e:
-            self.logger.error(f"⚠️ Error processing {image_path.name}: {e}")
+            self.logger.error(f"Error processing {image_path.name}: {e}")
             return False
         return False
 
     # ============================================================
-    # 🚀 Public API
+    # Public API
     # ============================================================
     def run(self):
         """
@@ -159,7 +159,7 @@ class CleanAnnotation:
         and saves the cleaned images to the output directory.
         """
         if not self.input_root.exists():
-            raise FileNotFoundError(f"❌ Input folder not found: {self.input_root}")
+            raise FileNotFoundError(f"Input folder not found: {self.input_root}")
 
         self.output_root.mkdir(parents=True, exist_ok=True)
         processed_count = 0
@@ -170,7 +170,7 @@ class CleanAnnotation:
             out_dir.mkdir(parents=True, exist_ok=True)
 
             if not in_dir.exists():
-                self.logger.warning(f"⚠️ Missing folder: {in_dir}")
+                self.logger.warning(f"Missing folder: {in_dir}")
                 continue
 
             image_files = [
@@ -184,7 +184,7 @@ class CleanAnnotation:
                 output_path = out_dir / filename
 
                 if output_path.exists():
-                    self.logger.info(f"⏩ Skipping existing file: {filename}")
+                    self.logger.info(f"Skipping existing file: {filename}")
                     continue
 
                 success = self._generate_clean_image(input_path, output_path)
@@ -196,7 +196,7 @@ class CleanAnnotation:
                     and processed_count >= self.test_limit
                 ):
                     self.logger.info(
-                        f"🧪 Test mode limit reached ({self.test_limit}). Stopping early."
+                        f"Test mode limit reached ({self.test_limit}). Stopping early."
                     )
                     return
 

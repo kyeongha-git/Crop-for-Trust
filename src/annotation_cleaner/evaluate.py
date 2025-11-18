@@ -28,7 +28,7 @@ from utils.logging import get_logger, setup_logging
 
 
 # ============================================================
-# 🧠 Evaluator Class
+# Evaluator Class
 # ============================================================
 class Evaluator:
     """
@@ -85,14 +85,14 @@ class Evaluator:
         self.conf_thres = conf_thres
 
         # --- Log Setup ---
-        self.logger.info(f"📂 Original images: {self.orig_dir}")
-        self.logger.info(f"💾 Generated images: {self.gen_dir}")
-        self.logger.info(f"📁 Metric output: {self.metric_dir}")
-        self.logger.info(f"🧠 YOLO model: {self.yolo_model}")
-        self.logger.info(f"📏 Active metrics: {', '.join(self.metrics)}")
+        self.logger.info(f"Original images: {self.orig_dir}")
+        self.logger.info(f"Generated images: {self.gen_dir}")
+        self.logger.info(f"Metric output: {self.metric_dir}")
+        self.logger.info(f"YOLO model: {self.yolo_model}")
+        self.logger.info(f"Active metrics: {', '.join(self.metrics)}")
 
     # ============================================================
-    # 📏 Metric Computation
+    # Metric Computation
     # ============================================================
     def _compute_metrics(self, orig_img, gen_img) -> Dict[str, float]:
         """
@@ -105,7 +105,7 @@ class Evaluator:
         for metric_name in self.metrics:
             func = self.METRIC_MAP.get(metric_name)
             if not func:
-                self.logger.warning(f"⚠️ Unsupported metric: {metric_name} — skipped")
+                self.logger.warning(f"Unsupported metric: {metric_name} — skipped")
                 continue
 
             try:
@@ -113,11 +113,11 @@ class Evaluator:
                 key = metric_name.upper() if metric_name != "edge_iou" else "Edge_IoU"
                 results[key] = float(val)
             except Exception as e:
-                self.logger.error(f"❌ Metric computation failed ({metric_name}): {e}")
+                self.logger.error(f"Metric computation failed ({metric_name}): {e}")
         return results
 
     # ============================================================
-    # 🧩 Full Image Evaluation
+    # Full Image Evaluation
     # ============================================================
     def evaluate_full_images(self, save_path: Path) -> Optional[Dict[str, float]]:
         """
@@ -126,7 +126,7 @@ class Evaluator:
         Iterates through each category, matches images by filename,
         computes metrics, and aggregates average scores across all samples.
         """
-        self.logger.info("📊 [1/2] Starting Full Image Evaluation...")
+        self.logger.info("[1/2] Starting Full Image Evaluation...")
         results = []
 
         for split in self.categories:
@@ -134,7 +134,7 @@ class Evaluator:
             gen_split = self.gen_dir / split
 
             if not orig_split.exists() or not gen_split.exists():
-                self.logger.warning(f"⚠️ Missing folder: {split} — skipped")
+                self.logger.warning(f"Missing folder: {split} — skipped")
                 continue
 
             o_files = {f.stem: f for f in orig_split.glob("*.[jp][pn]g")}
@@ -153,7 +153,7 @@ class Evaluator:
                 results.append({"split": split, "file": name, **metric_vals})
 
         if not results:
-            self.logger.warning("❌ No images found for evaluation.")
+            self.logger.warning("No images found for evaluation.")
             return None
 
         df = pd.DataFrame(results)
@@ -166,11 +166,11 @@ class Evaluator:
 
         self.metric_dir.mkdir(parents=True, exist_ok=True)
         df.to_csv(save_path, index=False)
-        self.logger.info(f"📁 Full Image results saved → {save_path}")
+        self.logger.info(f"Full Image results saved → {save_path}")
         return avg
 
     # ============================================================
-    # 🧩 YOLO-Based Crop Evaluation
+    # YOLO-Based Crop Evaluation
     # ============================================================
     def evaluate_with_yolo_crop(self, save_path: Path) -> Optional[Dict[str, float]]:
         """
@@ -179,11 +179,11 @@ class Evaluator:
         Each generated image is passed through YOLO to extract regions of interest (ROIs).
         Corresponding regions from original images are compared using the same metrics.
         """
-        self.logger.info("📊 [2/2] Starting YOLO Crop Evaluation...")
+        self.logger.info("[2/2] Starting YOLO Crop Evaluation...")
         yolo = YOLO(self.yolo_model)
         results = []
 
-        # ✅ Temporary working directory for intermediate crops
+        # Temporary working directory for intermediate crops
         with tempfile.TemporaryDirectory(prefix="eval_yolo_") as temp_root:
             temp_root = Path(temp_root)
             crop_dir = temp_root / "crops"
@@ -191,7 +191,7 @@ class Evaluator:
             crop_dir.mkdir(parents=True, exist_ok=True)
             bbox_dir.mkdir(parents=True, exist_ok=True)
 
-            self.logger.info(f"🧩 Temporary folder created: {temp_root}")
+            self.logger.info(f"Temporary folder created: {temp_root}")
 
             image_list = [
                 img
@@ -221,7 +221,7 @@ class Evaluator:
                 bbox_txt.parent.mkdir(parents=True, exist_ok=True)
                 crop_split_dir.mkdir(parents=True, exist_ok=True)
 
-                # ✅ Record bounding box coordinates for traceability
+                # Record bounding box coordinates for traceability
                 with open(bbox_txt, "w") as f:
                     for idx, box in enumerate(preds[0].boxes.xyxy):
                         x1, y1, x2, y2 = map(int, box)
@@ -241,7 +241,7 @@ class Evaluator:
                 if o_img is None:
                     continue
 
-                # ✅ Evaluate metrics for each detected region
+                # Evaluate metrics for each detected region
                 for idx, box in enumerate(preds[0].boxes.xyxy):
                     x1, y1, x2, y2 = map(int, box)
                     c1, c2 = o_img[y1:y2, x1:x2], img[y1:y2, x1:x2]
@@ -260,13 +260,13 @@ class Evaluator:
                         }
                     )
 
-            self.logger.info(f"🧹 Temporary YOLO crop data cleaned up: {temp_root}")
+            self.logger.info(f"Temporary YOLO crop data cleaned up: {temp_root}")
 
         self.metric_dir.mkdir(parents=True, exist_ok=True)
 
-        # ✅ Aggregate results
+        # Aggregate results
         if not results:
-            self.logger.warning("❌ No YOLO crop evaluation results.")
+            self.logger.warning("No YOLO crop evaluation results.")
             return None
 
         df = pd.DataFrame(results)
@@ -279,11 +279,11 @@ class Evaluator:
         df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
 
         df.to_csv(save_path, index=False)
-        self.logger.info(f"📁 YOLO Crop results saved → {save_path}")
+        self.logger.info(f"YOLO Crop results saved → {save_path}")
         return avg
 
     # ============================================================
-    # 🚀 Run All Evaluations
+    # Run All Evaluations
     # ============================================================
     def run(self) -> Dict[str, Optional[Dict[str, float]]]:
         """
@@ -298,7 +298,7 @@ class Evaluator:
         avg_full = self.evaluate_full_images(full_path)
         avg_crop = self.evaluate_with_yolo_crop(crop_path)
 
-        self.logger.info("\n=== ✅ Final Average Results ===")
+        self.logger.info("\n=== Final Average Results ===")
         self.logger.info(f"Full Image: {avg_full}")
         self.logger.info(f"YOLO Crop:  {avg_crop}")
 

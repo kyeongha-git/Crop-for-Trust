@@ -9,9 +9,9 @@ Comprehensive unit tests for:
     • `utils.logging` (setup_logging, get_logger)
 
 Goals:
-    ✅ Validate YAML loading and error handling
-    ✅ Ensure logging setup and file generation work correctly
-    ✅ Verify logger instances and handler behavior
+    - Validate YAML loading and error handling
+    - Ensure logging setup and file generation work correctly
+    - Verify logger instances and handler behavior
 """
 
 import logging
@@ -23,10 +23,8 @@ from utils.load_config import load_yaml_config
 from utils.logging import get_logger, setup_logging
 
 # ==============================================================
-# 🔹 Tests for load_yaml_config
+# Tests for load_yaml_config
 # ==============================================================
-
-
 def test_load_valid_yaml(tmp_path):
     """
     Verify that a valid YAML file is successfully loaded.
@@ -130,15 +128,13 @@ def test_stdout_message_contains_loaded_path(tmp_path, capsys):
     _ = load_yaml_config(yaml_path)
     out, _ = capsys.readouterr()
 
-    assert "[✓] Loaded configuration from:" in out
+    assert "Loaded configuration from:" in out
     assert str(yaml_path.resolve()) in out
 
 
 # ==============================================================
-# 🔹 Tests for utils.logging
+# Tests for utils.logging
 # ==============================================================
-
-
 def test_setup_logging_creates_log_dir_and_file(tmp_path):
     """
     Verify that setup_logging() creates a log directory and a log file.

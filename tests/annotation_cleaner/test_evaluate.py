@@ -26,7 +26,7 @@ from src.annotation_cleaner.evaluate import Evaluator
 
 
 # ============================================================
-# 🧱 Helper Functions
+# Helper Functions
 # ============================================================
 def create_dummy_image(path: Path, color=(128, 128, 128), size=(64, 64)):
     """Create a uniform-color dummy image for testing."""
@@ -36,7 +36,7 @@ def create_dummy_image(path: Path, color=(128, 128, 128), size=(64, 64)):
 
 
 # ============================================================
-# 🧩 PyTest Fixture
+# PyTest Fixture
 # ============================================================
 @pytest.fixture
 def temp_dataset(tmp_path):
@@ -71,7 +71,7 @@ def temp_dataset(tmp_path):
 
 
 # ============================================================
-# 🧪 Test 1: Initialization
+# Test 1: Initialization
 # ============================================================
 def test_evaluator_initialization(temp_dataset):
     """Evaluator should initialize correctly with injected config."""
@@ -91,7 +91,7 @@ def test_evaluator_initialization(temp_dataset):
 
 
 # ============================================================
-# 🧪 Test 2: Metric Computation
+# Test 2: Metric Computation
 # ============================================================
 def test_compute_metrics_returns_values(temp_dataset):
     """_compute_metrics should return numeric metric results."""
@@ -113,7 +113,7 @@ def test_compute_metrics_returns_values(temp_dataset):
 
 
 # ============================================================
-# 🧪 Test 3: Full Image Evaluation
+# Test 3: Full Image Evaluation
 # ============================================================
 def test_evaluate_full_images_creates_csv(temp_dataset):
     """Full-image evaluation should produce valid CSV output."""
@@ -136,7 +136,7 @@ def test_evaluate_full_images_creates_csv(temp_dataset):
 
 
 # ============================================================
-# 🧪 Test 4: YOLO Crop Evaluation
+# Test 4: YOLO Crop Evaluation
 # ============================================================
 @patch("src.annotation_cleaner.evaluate.YOLO")
 def test_evaluate_with_yolo_crop_uses_tempdir(mock_yolo, temp_dataset):

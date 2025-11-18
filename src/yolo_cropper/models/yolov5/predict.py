@@ -100,7 +100,7 @@ class YOLOv5Predictor:
         # Remove old results (avoid exp/exp2 duplication)
         if exp_dir.exists():
             shutil.rmtree(exp_dir)
-            self.logger.warning(f"[!] Existing result folder deleted → {exp_dir}")
+            self.logger.warning(f"Existing result folder deleted → {exp_dir}")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"detect_{folder_path.name}_{timestamp}.log"
@@ -127,7 +127,7 @@ class YOLOv5Predictor:
         if self.save_conf:
             cmd.append("--save-conf")
 
-        self.logger.info(f"🚀 Running YOLOv5 detection → {folder_path.name}")
+        self.logger.info(f"Running YOLOv5 detection → {folder_path.name}")
         self.logger.debug(f"Command: {' '.join(cmd)}")
 
         with open(log_path, "w", encoding="utf-8") as log_f:
@@ -137,10 +137,10 @@ class YOLOv5Predictor:
 
         if process.returncode != 0:
             self.logger.error(
-                f"[!] Detection failed ({folder_path.name}), code={process.returncode}. See log: {log_path}"
+                f"Detection failed ({folder_path.name}), code={process.returncode}. See log: {log_path}"
             )
         else:
-            self.logger.info(f"[✓] Detection complete → {exp_dir}")
+            self.logger.info(f"Detection complete → {exp_dir}")
 
     def run(self):
         """
@@ -156,9 +156,9 @@ class YOLOv5Predictor:
             raise FileNotFoundError(f"No subfolders found under {self.input_root}")
 
         self.logger.info(
-            f"🔍 Found {len(subfolders)} folders → {[p.name for p in subfolders]}"
+            f"Found {len(subfolders)} folders → {[p.name for p in subfolders]}"
         )
         for folder in subfolders:
             self._run_inference(folder)
 
-        self.logger.info("[✓] All detections complete.")
+        self.logger.info("All detections complete.")

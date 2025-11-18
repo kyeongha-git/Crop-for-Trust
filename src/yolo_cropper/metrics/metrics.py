@@ -99,7 +99,7 @@ def parse_yolov5_eval_log(log_path: str):
     )
 
     if not match:
-        print("[!] Could not find 'all' metrics line in YOLOv5 log.")
+        print("Could not find 'all' metrics line in YOLOv5 log.")
         return {"precision": None, "recall": None, "mAP@0.5": None}
 
     precision = float(match.group(1))
@@ -155,4 +155,4 @@ def get_metrics_parser(model_name: str):
     elif "yolov8" in model_name:
         return parse_yolov8_results
     else:
-        raise ValueError(f"❌ Unsupported model_name for metrics parsing: {model_name}")
+        raise ValueError(f"Unsupported model_name for metrics parsing: {model_name}")

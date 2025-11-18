@@ -6,7 +6,7 @@ config_manager.py
 -----------------
 Dynamic Config Manager (with CLI Overrides)
 
-💡 Key Features
+Features
 ---------------
 - Automatically updates all submodule paths relative to `main.input_dir`
 - Updates annotation_cleaner paths only when `annot_clean == "on"`
@@ -117,7 +117,7 @@ class ConfigManager:
             crop_output_dir = annot_output_dir
 
         # ==================================================================
-        # 🧼 AnnotationCleaner (update only when active)
+        # AnnotationCleaner
         # ==================================================================
         if self.annot_clean == "on":
             annotation_cfg = self.cfg.get("annotation_cleaner", {})
@@ -145,10 +145,10 @@ class ConfigManager:
 
             self.cfg["annotation_cleaner"] = annotation_cfg
         else:
-            print("[⚪] AnnotationCleaner OFF → Skipping path updates")
+            print("AnnotationCleaner OFF → Skipping path updates")
 
         # ==================================================================
-        # 🔍 YOLO Cropper
+        # YOLO Cropper
         # ==================================================================
         yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         yolo_cropper_cfg.setdefault("main", {})
@@ -157,7 +157,7 @@ class ConfigManager:
         yolo_cropper_cfg["main"]["model_name"] = self.yolo_model
 
         # ==================================================================
-        # 🧩 DataAugmentor
+        # DataAugmentor
         # ==================================================================
         data_augmentor_cfg = self.cfg.get("data_augmentor", {})
         data_augmentor_cfg.setdefault("data", {})
@@ -165,14 +165,14 @@ class ConfigManager:
         data_augmentor_cfg["data"]["output_dir"] = str(crop_output_dir)
 
         # ==================================================================
-        # 🎯 Classifier
+        # Classifier
         # ==================================================================
         classifier_cfg = self.cfg.get("classifier", {})
         classifier_cfg.setdefault("data", {})
         classifier_cfg["data"]["input_dir"] = str(crop_output_dir)
 
         # ==================================================================
-        # 🧩 Main Config Update
+        # Main Config Update
         # ==================================================================
         self.cfg["main"]["annot_clean"] = self.annot_clean
         self.cfg["main"]["yolo_crop"] = self.yolo_crop
@@ -195,4 +195,4 @@ class ConfigManager:
         target_path = Path(output_path or self.config_path)
         with open(target_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(self.cfg, f, sort_keys=False, allow_unicode=True)
-        print(f"[✓] Updated config saved → {target_path}")
+        print(f"Updated config saved → {target_path}")

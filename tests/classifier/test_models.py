@@ -7,7 +7,7 @@ test_models.py
 Unit and integration tests for all classification models.
 
 Covers:
-- ✅ VGG16 / ResNet152 / MobileNetV2 / MobileNetV3
+- VGG16 / ResNet152 / MobileNetV2 / MobileNetV3
 - Verifies forward pass, parameter freezing, dropout behavior,
   and end-to-end data → transform → model pipeline.
 """
@@ -24,7 +24,7 @@ from src.classifier.models.factory import get_model
 
 
 # ==============================================================
-# 🧩 Helper Functions
+# Helper Functions
 # ==============================================================
 def run_forward_pass(
     model_name: str, num_classes: int = 1, input_size=(1, 3, 360, 360)
@@ -48,7 +48,7 @@ def compute_loss(output: torch.Tensor):
     criterion = nn.BCEWithLogitsLoss()
     target = torch.ones_like(output)
     loss = criterion(output, target)
-    assert not torch.isnan(loss), "❌ NaN detected during loss computation"
+    assert not torch.isnan(loss), "NaN detected during loss computation"
     return loss.item()
 
 
@@ -60,7 +60,7 @@ def count_parameters(model: nn.Module):
 
 
 # ==============================================================
-# ① Unit Test: Model Structure & Forward
+# Test Model Structure & Forward
 # ==============================================================
 @pytest.mark.parametrize(
     "model_name, expect_dropout",
@@ -73,32 +73,32 @@ def count_parameters(model: nn.Module):
 )
 def test_model_forward_and_structure(model_name, expect_dropout):
     """Verify model forward pass, output shape, and dropout presence."""
-    print(f"\n🧠 [TEST] {model_name.upper()} forward pass & structure validation")
+    print(f"\n[TEST] {model_name.upper()} forward pass & structure validation")
 
     model, output = run_forward_pass(model_name)
 
-    # ✅ Validate output dimension
+    # Validate output dimension
     assert (
         output.ndim == 2 and output.shape[1] == 1
     ), f"{model_name} output shape invalid: {output.shape}"
 
-    # ✅ Validate dropout presence
+    # Validate dropout presence
     has_dropout = any(isinstance(m, nn.Dropout) for m in model.modules())
     assert has_dropout == expect_dropout, (
         f"{model_name}: Dropout mismatch "
         f"(expected={expect_dropout}, found={has_dropout})"
     )
 
-    # ✅ Compute sample loss
+    # Compute sample loss
     loss_val = compute_loss(output)
     total_params, trainable_params = count_parameters(model)
     print(f" - BCE Loss: {loss_val:.4f}")
     print(f" - Params: total={total_params:,}, trainable={trainable_params:,}")
-    print(f"✅ {model_name.upper()} structure & forward test passed")
+    print(f"{model_name.upper()} structure & forward test passed")
 
 
 # ==============================================================
-# ② Unit Test: Backbone Freezing
+# Test Backbone Freezing
 # ==============================================================
 @pytest.mark.parametrize("model_name", ["resnet152", "mobilenet_v2", "mobilenet_v3"])
 def test_freeze_backbone_option(model_name):
@@ -118,7 +118,7 @@ def test_freeze_backbone_option(model_name):
 
 
 # ==============================================================
-# ③ Integration Test: Data → Transform → Model Pipeline
+# Test Data → Transform → Model Pipeline
 # ==============================================================
 @pytest.mark.parametrize(
     "model_name",
@@ -133,9 +133,9 @@ def test_real_end_to_end_pipeline(tmp_path, model_name):
         2️⃣ Load transform for the target model.
         3️⃣ Perform forward pass through model.
     """
-    print(f"\n🔗 [REAL TEST] {model_name.upper()} full data pipeline test")
+    print(f"\n{model_name.upper()} full data pipeline test")
 
-    # 1️⃣ Create dummy dataset
+    # Create dummy dataset
     data_dir = tmp_path / "data" / "original_crop" / "yolov2" / "train" / "repair"
     data_dir.mkdir(parents=True, exist_ok=True)
     dummy_path = data_dir / "dummy.jpg"
@@ -145,7 +145,7 @@ def test_real_end_to_end_pipeline(tmp_path, model_name):
     )
     img.save(dummy_path)
 
-    # 2️⃣ Load dataset + transform
+    # Load dataset + transform
     dp = DataPreprocessor(img_size=(360, 360))
     transform = dp.get_transform(model_name=model_name, mode="train")
 
@@ -156,27 +156,27 @@ def test_real_end_to_end_pipeline(tmp_path, model_name):
         verbose=True,
     )
 
-    # 3️⃣ Verify sample shape
+    # Verify sample shape
     img_tensor, label = dataset[0]
-    assert isinstance(img_tensor, torch.Tensor), "❌ Transform did not return a Tensor"
+    assert isinstance(img_tensor, torch.Tensor), "Transform did not return a Tensor"
     assert img_tensor.shape == (
         3,
         360,
         360,
-    ), f"❌ Image shape mismatch: {img_tensor.shape}"
+    ), f"Image shape mismatch: {img_tensor.shape}"
 
     x = img_tensor.unsqueeze(0)
 
-    # 4️⃣ Forward pass
+    # Forward pass
     model = get_model(model_name, num_classes=1)
     model.eval()
     with torch.no_grad():
         y = model(x)
 
-    # 5️⃣ Validate results
+    # Validate results
     assert (
         y.ndim == 2 and y.shape[1] == 1
     ), f"{model_name} output shape invalid: {y.shape}"
     loss_val = compute_loss(y)
 
-    print(f"✅ {model_name.upper()} end-to-end pipeline passed (loss={loss_val:.4f})")
+    print(f"{model_name.upper()} end-to-end pipeline passed (loss={loss_val:.4f})")

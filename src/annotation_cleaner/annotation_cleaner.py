@@ -17,12 +17,12 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
 
 from src.annotation_cleaner.core.clean_annotation import \
-    CleanAnnotation  # noqa: E402
-from src.annotation_cleaner.core.image_padding import ImagePadder  # noqa: E402
+    CleanAnnotation
+from src.annotation_cleaner.core.image_padding import ImagePadder
 from src.annotation_cleaner.core.restore_crop import \
-    RestoreCropper  # noqa: E402
-from utils.load_config import load_yaml_config  # noqa: E402
-from utils.logging import get_logger, setup_logging  # noqa: E402
+    RestoreCropper
+from utils.load_config import load_yaml_config
+from utils.logging import get_logger, setup_logging
 
 
 class AnnotationCleaner:
@@ -64,10 +64,10 @@ class AnnotationCleaner:
         self.input_dir = Path(self.main_cfg.get("input_dir", "./data/original"))
         self.output_dir = Path(self.main_cfg.get("output_dir", "./data/generation"))
 
-        self.logger.info("⚙️ [INIT] AnnotationCleaner initialized.")
-        self.logger.info(f"📄 Config file: {self.config_path}")
-        self.logger.info(f"📂 Input folder: {self.input_dir}")
-        self.logger.info(f"📦 Output folder: {self.output_dir}")
+        self.logger.info("[INIT] AnnotationCleaner initialized.")
+        self.logger.info(f"Config file: {self.config_path}")
+        self.logger.info(f"Input folder: {self.input_dir}")
+        self.logger.info(f"Output folder: {self.output_dir}")
 
     # --------------------------------------------------------
     # Cleanup
@@ -86,7 +86,7 @@ class AnnotationCleaner:
         ]
 
         if main_cfg.get("keep_metadata", False):
-            self.logger.info("🧩 keep_metadata=True → preserving padding folder")
+            self.logger.info("keep_metadata=True → preserving padding folder")
             temp_dirs.pop(0)
 
         for d in temp_dirs:
@@ -94,9 +94,9 @@ class AnnotationCleaner:
                 continue
             try:
                 shutil.rmtree(d)
-                self.logger.info(f"✅ Deleted: {d}")
+                self.logger.info(f"Deleted: {d}")
             except Exception as e:
-                self.logger.error(f"⚠️ Failed to delete: {d} ({e})")
+                self.logger.error(f"Failed to delete: {d} ({e})")
 
     # --------------------------------------------------------
     # Replace & Export
@@ -131,7 +131,7 @@ class AnnotationCleaner:
                     if dst.exists():
                         shutil.copy2(rest_file, dst)
 
-        self.logger.info(f"✅ Merging complete → {output_dir}")
+        self.logger.info(f"Merging complete → {output_dir}")
 
     # --------------------------------------------------------
     # Main Pipeline
@@ -143,10 +143,10 @@ class AnnotationCleaner:
         Args:
             test_mode (bool): If True, limits cleaning to a small sample for testing.
         """
-        self.logger.info("===== 🚀 Starting Annotation Cleaner Pipeline =====")
+        self.logger.info("===== Starting Annotation Cleaner Pipeline =====")
 
         # 1️⃣ Image Padding
-        self.logger.info("[1/4] 🧱 IMAGE PADDING")
+        self.logger.info("[1/4] IMAGE PADDING")
         ImagePadder(
             input_dir=self.img_padd_cfg["input_dir"],
             output_dir=self.img_padd_cfg["output_dir"],
@@ -156,7 +156,7 @@ class AnnotationCleaner:
         ).run()
 
         # 2️⃣ Annotation Cleaning
-        self.logger.info("[2/4] 🎨 ANNOTATION CLEANING")
+        self.logger.info("[2/4] ANNOTATION CLEANING")
 
         # Enable test mode if requested
         if test_mode:
@@ -180,7 +180,7 @@ class AnnotationCleaner:
         ).run()
 
         # 3️⃣ Restore Crop
-        self.logger.info("[3/4] ✂️ RESTORE CROP")
+        self.logger.info("[3/4] RESTORE CROP")
         RestoreCropper(
             input_dir=self.restore_crop_cfg["input_dir"],
             output_dir=self.restore_crop_cfg["output_dir"],
@@ -190,12 +190,12 @@ class AnnotationCleaner:
         ).run()
 
         # 4️⃣ Merge & Cleanup
-        self.logger.info("[4/4] 🔄 MERGE RESULTS AND CLEANUP")
+        self.logger.info("[4/4] MERGE RESULTS AND CLEANUP")
         self.replace_and_export()
         self.cleanup_temp_dirs()
 
         # 5️⃣ Evaluation
-        # self.logger.info("[5/5] 📊 EVALUATION")
+        # self.logger.info("[5/5] EVALUATION")
         # Evaluator(
         #     orig_dir=self.evaluate_cfg["orig_dir"],
         #     gen_dir=self.evaluate_cfg["gen_dir"],

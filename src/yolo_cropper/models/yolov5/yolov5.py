@@ -104,7 +104,7 @@ class YOLOv5Pipeline:
             return
         trainer = YOLOv5Trainer(config=self.cfg)
         trainer.run()
-        self.logger.info("[✓] Training step done")
+        self.logger.info("Training step done")
 
     # --------------------------------------------------------
     # Step 2️⃣ Evaluate
@@ -113,7 +113,7 @@ class YOLOv5Pipeline:
         self.logger.info("[STEP 2] Evaluation starts")
         evaluator = YOLOv5Evaluator(config=self.cfg)
         metrics = evaluator.run()
-        self.logger.info("[✓] Evaluation step done")
+        self.logger.info("Evaluation step done")
         return metrics
 
     # --------------------------------------------------------
@@ -123,7 +123,7 @@ class YOLOv5Pipeline:
         self.logger.info("[STEP 3] Preparing dataset for YOLOv5...")
         predictor = YOLOv5Predictor(config=self.cfg)
         predictor.run()
-        self.logger.info("[✓] Prediction step done")
+        self.logger.info("Prediction step done")
 
     # --------------------------------------------------------
     # Step 4️⃣ Make predict.txt
@@ -132,7 +132,7 @@ class YOLOv5Pipeline:
         self.logger.info("[STEP 4] Generating predict.txt")
         maker = YOLOPredictListGenerator(config=self.cfg)  # config-driven
         maker.run()
-        self.logger.info("[✓] predict.txt generated")
+        self.logger.info("predict.txt generated")
 
     # --------------------------------------------------------
     # Step 5️⃣ Converter (YOLOv5 detect → unified result.json)
@@ -141,7 +141,7 @@ class YOLOv5Pipeline:
         self.logger.info("[STEP 5] Converting YOLOv5 detects → result.json")
         conv = YOLOConverter(config=self.cfg)  # config-driven
         conv.run()
-        self.logger.info("[✓] Conversion step done")
+        self.logger.info("Conversion step done")
 
     # -------------------------------------------------
     # Step 6️⃣ Cropper (result.json 기반 ROI crop)
@@ -150,20 +150,20 @@ class YOLOv5Pipeline:
         self.logger.info("[STEP 6] Cropping from result.json")
         cropper = YOLOCropper(config=self.cfg)  # config-driven
         cropper.crop_from_json()
-        self.logger.info("[✓] Cropping step done")
+        self.logger.info("Cropping step done")
 
     # --------------------------------------------------------
     # Unified Runner
     # --------------------------------------------------------
     def run(self):
-        self.logger.info("🚀 Running YOLOv5 Pipeline")
+        self.logger.info("Running YOLOv5 Pipeline")
         # self.step_train()
         # metrics = self.step_evaluate()
         self.step_predict()
         self.step_make_predict()
         self.step_converter()
         self.step_cropper()
-        self.logger.info("=== ✅ YOLOv5 PIPELINE COMPLETE ===")
+        self.logger.info("\n🎉 YOLOv5 pipeline completed successfully!")
         # return metrics
 
 

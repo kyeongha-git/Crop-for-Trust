@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 
 # ==============================================================
-# 🧩 Training Loop (Single Epoch)
+# Training Loop
 # ==============================================================
 def train_one_epoch(
     model: nn.Module, dataloader, criterion, optimizer, device: torch.device
@@ -39,7 +39,7 @@ def train_one_epoch(
 
 
 # ==============================================================
-# 🧩 Validation Loop
+# Validation Loop
 # ==============================================================
 def validate(model: nn.Module, dataloader, criterion, device: torch.device):
     """Evaluate the model on validation data."""
@@ -65,7 +65,7 @@ def validate(model: nn.Module, dataloader, criterion, device: torch.device):
 
 
 # ==============================================================
-# 🧩 Full Training Pipeline
+# Full Training Pipeline
 # ==============================================================
 def train_model(
     model: nn.Module,
@@ -95,15 +95,15 @@ def train_model(
     best_ckpt = check_path.replace("_last.pt", "_best.pt")
 
     for epoch in range(epochs):
-        print(f"\n📘 Epoch {epoch + 1}/{epochs}")
+        print(f"\nEpoch {epoch + 1}/{epochs}")
 
         train_loss, train_acc = train_one_epoch(
             model, train_loader, criterion, optimizer, device
         )
         val_loss, val_acc = validate(model, valid_loader, criterion, device)
 
-        print(f"📊 Train Loss: {train_loss:.4f} | Acc: {train_acc:.4f}")
-        print(f"📈 Valid Loss: {val_loss:.4f} | Acc: {val_acc:.4f}")
+        print(f"Train Loss: {train_loss:.4f} | Acc: {train_acc:.4f}")
+        print(f"Valid Loss: {val_loss:.4f} | Acc: {val_acc:.4f}")
 
         if wandb_run is not None:
             wandb_run.log(
@@ -122,12 +122,12 @@ def train_model(
         if val_acc > best_acc:
             best_acc = val_acc
             torch.save(model.state_dict(), best_ckpt)
-            print(f"💾 Best checkpoint updated: {best_ckpt}")
+            print(f"Best checkpoint updated: {best_ckpt}")
 
     if os.path.exists(best_ckpt):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         shutil.copy2(best_ckpt, save_path)
-        print(f"📦 Copied final best model to: {save_path}")
+        print(f"Copied final best model to: {save_path}")
 
-    print(f"\n🎯 Training Complete! Best Validation Accuracy: {best_acc:.4f}")
+    print(f"\nTraining Complete! Best Validation Accuracy: {best_acc:.4f}")
     return best_acc

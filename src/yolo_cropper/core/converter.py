@@ -26,7 +26,7 @@ sys.path.append(str(ROOT_DIR))
 from utils.logging import get_logger
 
 # ============================================================
-# 🔹 Folder → Class Mapping
+# Folder → Class Mapping
 # ============================================================
 FOLDER_TO_CLASS = {
     "repair": {"id": 0, "name": "repair"},
@@ -44,7 +44,7 @@ def infer_class_from_folder(path: Path) -> Dict[str, Any]:
 
 
 # ============================================================
-# 🔹 Main Converter Class
+# Main Converter Class
 # ============================================================
 class YOLOConverter:
     """
@@ -170,7 +170,7 @@ class YOLOConverter:
 
         if not detect_dirs:
             raise FileNotFoundError(
-                f"❌ No detection folders found in {self.detect_root}"
+                f"No detection folders found in {self.detect_root}"
             )
 
         all_results = []
@@ -186,5 +186,5 @@ class YOLOConverter:
         with open(self.output_json, "w", encoding="utf-8") as f:
             json.dump(all_results, f, ensure_ascii=False, indent=4)
 
-        self.logger.info(f"[✓] All detection results saved → {self.output_json}")
+        self.logger.info(f"All detection results saved → {self.output_json}")
         self.logger.info(f"   - Total frames: {len(all_results)}")

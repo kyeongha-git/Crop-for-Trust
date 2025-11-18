@@ -50,14 +50,14 @@ class MakeManager:
         self.makefile = self.darknet_dir / "Makefile"
 
         if not self.makefile.exists():
-            raise FileNotFoundError(f"❌ Makefile not found in {self.darknet_dir}")
+            raise FileNotFoundError(f"Makefile not found in {self.darknet_dir}")
 
         self.build_mode = self.darknet_cfg.get("build_mode", "cpu").lower()
         self.mode_flags = self.darknet_cfg.get("modes", {}).get(self.build_mode)
 
         if not self.mode_flags:
             raise ValueError(
-                f"❌ Invalid build_mode '{self.build_mode}' — must be one of: {list(self.darknet_cfg.get('modes', {}).keys())}"
+                f"Invalid build_mode '{self.build_mode}' — must be one of: {list(self.darknet_cfg.get('modes', {}).keys())}"
             )
 
         self.jobs = self.mode_flags.get("MAKE_JOBS", 4)
@@ -75,7 +75,7 @@ class MakeManager:
         patch_flags = {k: v for k, v in self.mode_flags.items() if k != "MAKE_JOBS"}
         self._patch_makefile(patch_flags, quiet=quiet)
 
-        self.logger.info(f"[✓] Makefile configured for {self.build_mode.upper()} mode")
+        self.logger.info(f"Makefile configured for {self.build_mode.upper()} mode")
 
     def rebuild(self, quiet: bool = True):
         """
@@ -98,7 +98,7 @@ class MakeManager:
         _run(["make", "clean"])
         _run(["make", f"-j{self.jobs}"])
         self.logger.info(
-            f"[✓] Darknet build complete ({self.build_mode.upper()} mode, jobs={self.jobs})"
+            f"Darknet build complete ({self.build_mode.upper()} mode, jobs={self.jobs})"
         )
 
     def verify_darknet(self, quiet: bool = True):
@@ -109,7 +109,7 @@ class MakeManager:
         darknet_exec = self.darknet_dir / "darknet"
         if not darknet_exec.exists():
             raise FileNotFoundError(
-                "❌ Darknet executable not found. Did you build it?"
+                "Darknet executable not found. Did you build it?"
             )
 
         subprocess.run(
@@ -119,7 +119,7 @@ class MakeManager:
             stderr=subprocess.DEVNULL if quiet else None,
             check=True,
         )
-        self.logger.info("[✓] Darknet executable verified successfully")
+        self.logger.info("Darknet executable verified successfully")
 
     def _patch_makefile(self, flags: dict, quiet: bool = True):
         """
@@ -136,7 +136,7 @@ class MakeManager:
                     stderr=subprocess.DEVNULL if quiet else None,
                 )
             except subprocess.CalledProcessError as e:
-                self.logger.error(f"❌ Failed to patch {key} in Makefile: {e}")
+                self.logger.error(f"Failed to patch {key} in Makefile: {e}")
                 raise
 
-        self.logger.info(f"[✓] Patched Makefile with flags: {flags}")
+        self.logger.info(f"Patched Makefile with flags: {flags}")

@@ -109,12 +109,12 @@ class YOLOv8Evaluator:
 
         """
         if not self.weights_path.exists():
-            raise FileNotFoundError(f"❌ Model weights not found → {self.weights_path}")
+            raise FileNotFoundError(f"Model weights not found → {self.weights_path}")
         if not self.data_yaml.exists():
-            raise FileNotFoundError(f"❌ Dataset YAML not found → {self.data_yaml}")
+            raise FileNotFoundError(f"Dataset YAML not found → {self.data_yaml}")
 
         self.logger.info(
-            f"🚀 Evaluating {self.model_name} on dataset: {self.data_yaml}"
+            f"Evaluating {self.model_name} on dataset: {self.data_yaml}"
         )
 
         # Run YOLOv8 validation
@@ -139,7 +139,7 @@ class YOLOv8Evaluator:
                 writer.writeheader()
             writer.writerow({**result_dict, "timestamp": timestamp})
 
-        self.logger.info(f"[✓] Metrics saved → {self.csv_path}")
+        self.logger.info(f"Metrics saved → {self.csv_path}")
         self.logger.info(
             f"Precision: {result_dict['precision']:.4f} | Recall: {result_dict['recall']:.4f} | "
             f"mAP@0.5: {result_dict['mAP@0.5']:.4f} | mAP@0.5:0.95: {result_dict['mAP@0.5:0.95']:.4f}"

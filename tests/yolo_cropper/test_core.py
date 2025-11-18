@@ -30,7 +30,7 @@ from src.yolo_cropper.core.converter import (YOLOConverter,
 from src.yolo_cropper.core.cropper import YOLOCropper
 
 # ==============================================================
-# 🔹 Fixtures
+# Fixtures
 # ==============================================================
 
 
@@ -177,7 +177,7 @@ def tmp_results_json(tmp_path, tmp_dataset):
 
 
 # ==============================================================
-# 🔹 Unit Tests for YOLOConverter
+# Unit Tests for YOLOConverter
 # ==============================================================
 
 
@@ -245,15 +245,14 @@ def test_run_raises_if_no_detect_folder(tmp_path, config_template):
 
     with pytest.raises(FileNotFoundError) as excinfo:
         converter.run()
-
-    # ✅ Updated to match actual raised message
+        
     assert "No detection folders found" in str(
         excinfo.value
     ), f"Unexpected error message: {excinfo.value}"
 
 
 # ==============================================================
-# 🔹 Unit Tests for YOLOCropper
+# Unit Tests for YOLOCropper
 # ==============================================================
 
 

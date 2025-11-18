@@ -56,5 +56,5 @@ def load_yaml_config(config_path: str | Path) -> dict:
             f"[Config] Invalid YAML structure (expected dict): {config_path}"
         )
 
-    print(f"[✓] Loaded configuration from: {config_path}")
+    print(f"Loaded configuration from: {config_path}")
     return config

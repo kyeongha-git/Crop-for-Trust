@@ -22,14 +22,14 @@ import matplotlib
 import pytest
 import torch
 
-# ✅ Enable headless backend for CI/server environments
+# Enable headless backend for CI/server environments
 matplotlib.use("Agg")
 
 from src.classifier.evaluate import Evaluator
 
 
 # ======================================================
-# ✅ 0️⃣ Dummy Config Fixtures
+# Dummy Config Fixtures
 # ======================================================
 @pytest.fixture
 def dummy_cfg(tmp_path):
@@ -60,7 +60,7 @@ def evaluator(tmp_path, dummy_cfg):
 
 
 # ======================================================
-# ✅ 1️⃣ _get_transform() Tests
+# _get_transform() Tests
 # ======================================================
 def test_get_transform_vgg(evaluator):
     """_get_transform(): should return valid transform pipeline for VGG."""
@@ -70,11 +70,11 @@ def test_get_transform_vgg(evaluator):
     ops = [t.__class__.__name__ for t in transform.transforms]
     has_aug = any("Affine" in o or "Random" in o for o in ops)
     assert not has_aug, "_get_transform() should not include random augmentations"
-    print(f"✅ _get_transform() passed — ops: {ops}")
+    print(f"_get_transform() passed — ops: {ops}")
 
 
 # ======================================================
-# ✅ 2️⃣ _load_model() Tests
+# _load_model() Tests
 # ======================================================
 def test_load_model_file_exists(evaluator):
     """_load_model(): should successfully load model when checkpoint exists."""
@@ -86,11 +86,11 @@ def test_load_model_file_exists(evaluator):
         model = evaluator._load_model()
 
     assert model is not None
-    print("✅ _load_model() passed")
+    print("_load_model() passed")
 
 
 # ======================================================
-# ✅ 3️⃣ _load_data() Tests
+# _load_data() Tests
 # ======================================================
 def test_load_data_returns_loader(evaluator):
     """_load_data(): should return an iterable DataLoader object."""
@@ -103,11 +103,11 @@ def test_load_data_returns_loader(evaluator):
         loader = evaluator._load_data(transform)
 
     assert loader is not None and hasattr(loader, "__iter__")
-    print(f"✅ _load_data() passed — batch count: {len(loader)}")
+    print(f"_load_data() passed — batch count: {len(loader)}")
 
 
 # ======================================================
-# ✅ 4️⃣ _save_results() Tests
+# _save_results() Tests
 # ======================================================
 def test_save_results_creates_files(evaluator, tmp_path):
     """_save_results(): should save metrics.json and confusion matrix image."""
@@ -124,17 +124,17 @@ def test_save_results_creates_files(evaluator, tmp_path):
     metrics_path = os.path.join(temp_metrics_dir, "classifier", "vgg16", "metrics.json")
     cm_path = os.path.join(temp_metrics_dir, "classifier", "vgg16", "cm.png")
 
-    assert os.path.exists(metrics_path), f"❌ metrics.json missing: {metrics_path}"
-    assert os.path.exists(cm_path), f"❌ confusion matrix image missing: {cm_path}"
+    assert os.path.exists(metrics_path), f"metrics.json missing: {metrics_path}"
+    assert os.path.exists(cm_path), f"confusion matrix image missing: {cm_path}"
 
     with open(metrics_path, "r") as f:
         data = json.load(f)
     assert "accuracy" in data and "f1_score" in data
-    print("✅ _save_results() passed (metrics written to tmp_path)")
+    print("_save_results() passed (metrics written to tmp_path)")
 
 
 # ======================================================
-# ✅ 5️⃣ run() Integration Tests
+# run() Integration Tests
 # ======================================================
 def test_run_integration_mock(evaluator, tmp_path):
     """run(): should execute the full pipeline using mocks without errors."""
@@ -157,5 +157,5 @@ def test_run_integration_mock(evaluator, tmp_path):
     metrics_json = os.path.join(
         evaluator.metric_root, "classifier", "vgg16", "metrics.json"
     )
-    assert os.path.exists(metrics_json), f"❌ metrics.json missing: {metrics_json}"
-    print(f"✅ run() integration mock passed — ACC={acc:.4f}, F1={f1:.4f}")
+    assert os.path.exists(metrics_json), f"metrics.json missing: {metrics_json}"
+    print(f"run() integration mock passed — ACC={acc:.4f}, F1={f1:.4f}")

@@ -7,10 +7,10 @@ test_yolov8.py
 Lightweight smoke test for the `YOLOv8Pipeline` module.
 
 Purpose:
-    ✅ Verify that `YOLOv8Pipeline.run()` executes successfully without raising exceptions,
+    - Verify that `YOLOv8Pipeline.run()` executes successfully without raising exceptions,
        regardless of whether internal steps are commented out or skipped.
-    ⚙️ All heavy operations (training, evaluation, prediction, etc.) are mocked out.
-    ❌ This test does NOT verify model performance or internal computation.
+    - All heavy operations (training, evaluation, prediction, etc.) are mocked out.
+    - This test does NOT verify model performance or internal computation.
 
 Success Criteria:
     - No exceptions raised during pipeline execution.
@@ -24,7 +24,7 @@ import pytest
 from src.yolo_cropper.models.yolov8.yolov8 import YOLOv8Pipeline
 
 # ==============================================================
-# 🔹 Fixture: Mock Configuration
+# Fixture: Mock Configuration
 # ==============================================================
 
 
@@ -58,7 +58,7 @@ def mock_yolov8_config(tmp_path):
 
 
 # ==============================================================
-# 🔹 Smoke Test: YOLOv8 Pipeline
+# Smoke Test: YOLOv8 Pipeline
 # ==============================================================
 
 
@@ -103,4 +103,4 @@ def test_yolov8_pipeline_runs_without_errors(tmp_path, mock_yolov8_config):
             result, dict
         ), "YOLOv8Pipeline should complete successfully (return None or dict)"
 
-        print(f"[✓] YOLOv8Pipeline smoke test passed → result: {result}")
+        print(f"YOLOv8Pipeline smoke test passed → result: {result}")

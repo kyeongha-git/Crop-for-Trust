@@ -115,7 +115,7 @@ class DataPreprocessor:
             transforms.Compose: Model-specific preprocessing pipeline.
         """
         if model_name not in self._NORMALIZATION_MAP:
-            raise ValueError(f"❌ Unsupported model: {model_name}")
+            raise ValueError(f"Unsupported model: {model_name}")
 
         mean, std = self._NORMALIZATION_MAP[model_name]
         augment = mode.lower() == "train"

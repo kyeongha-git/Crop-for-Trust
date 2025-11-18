@@ -57,35 +57,35 @@ class DataAugmentor:
         self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
         self.output_dir = Path(self.data_cfg.get("output_dir", "data/original"))
 
-        self.logger.info(f"✅ Config loaded from: {self.config_path}")
-        self.logger.info(f"📂 Input dir : {self.input_dir}")
-        self.logger.info(f"📁 Output dir: {self.output_dir}")
+        self.logger.info(f"Config loaded from: {self.config_path}")
+        self.logger.info(f"Input dir : {self.input_dir}")
+        self.logger.info(f"Output dir: {self.output_dir}")
 
     # ============================================================
-    # 🔹 Split Stage
+    # Split Stage
     # ============================================================
     def _run_split(self):
         """Execute dataset splitting into train/valid/test subsets."""
-        self.logger.info("\n🧩 [1/2] Running Split stage...")
+        self.logger.info("\n[1/2] Running Split stage...")
         split_dataset(
             data_dir=self.input_dir,
             output_dir=self.output_dir,
             split_cfg=self.split_cfg,
         )
-        self.logger.info("✅ Split completed!")
+        self.logger.info("Split completed!")
 
     def _cleanup_original_classes(self):
         """Remove original class folders after splitting."""
-        self.logger.info("\n🧹 [Cleanup] Removing original class directories...")
+        self.logger.info("\n[Cleanup] Removing original class directories...")
         for cls in ["repair", "replace"]:
             target = self.output_dir / cls
             if target.exists():
                 try:
                     shutil.rmtree(target)
-                    self.logger.info(f"🗑️  Deleted {target}")
+                    self.logger.info(f"Deleted {target}")
                 except Exception as e:
-                    self.logger.warning(f"⚠️  Failed to delete {target}: {e}")
-        self.logger.info("✅ Cleanup completed!")
+                    self.logger.warning(f"Failed to delete {target}: {e}")
+        self.logger.info("Cleanup completed!")
 
     # ============================================================
     # 🔹 Augmentation Stage
@@ -94,13 +94,13 @@ class DataAugmentor:
         """Run augmentation if enabled in the configuration."""
         if not self.aug_cfg.get("enable", False):
             self.logger.info(
-                "\n🚫 [2/2] Augmentation disabled (skipped per config.yaml)"
+                "\n[2/2] Augmentation disabled (skipped per config.yaml)"
             )
             return
 
-        self.logger.info("\n🧠 [2/2] Running class imbalance augmentation...")
+        self.logger.info("\n[2/2] Running class imbalance augmentation...")
         balance_augmentation(self.output_dir, self.aug_cfg)
-        self.logger.info("✅ Augmentation completed!")
+        self.logger.info("Augmentation completed!")
 
     # ============================================================
     # 🔹 Full Execution
@@ -114,11 +114,11 @@ class DataAugmentor:
         """
         if not self.input_dir.exists():
             raise FileNotFoundError(
-                f"❌ Input data directory not found: {self.input_dir}"
+                f"Input data directory not found: {self.input_dir}"
             )
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info("\n🎯 [DataAugmentor] Starting pipeline")
+        self.logger.info("\n[DataAugmentor] Starting pipeline")
         self.logger.info(f" - Split ratios: {self.split_cfg}")
         self.logger.info(
             f" - Augmentation: {'Enabled' if self.aug_cfg.get('enable', False) else 'Disabled'}"
@@ -128,7 +128,7 @@ class DataAugmentor:
         self._cleanup_original_classes()
         self._run_augment()
 
-        self.logger.info("\n🎉 Full pipeline completed successfully!")
+        self.logger.info("\n🎉 Augmentor pipeline completed successfully!")
 
 
 # ============================================================

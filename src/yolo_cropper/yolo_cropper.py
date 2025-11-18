@@ -78,29 +78,29 @@ class YOLOCropperController:
             module_path = "src.yolo_cropper.models.yolov5.yolov5"
             class_name = "YOLOv5Pipeline"
         else:
-            raise ValueError(f"❌ Unsupported model_name: {self.model_name}")
+            raise ValueError(f"Unsupported model_name: {self.model_name}")
 
-        self.logger.info(f"📦 Loading pipeline → {module_path}.{class_name}")
+        self.logger.info(f"Loading pipeline → {module_path}.{class_name}")
 
         # Dynamic import
         try:
             module = importlib.import_module(module_path)
         except ModuleNotFoundError as e:
-            raise ImportError(f"❌ Failed to import module {module_path}: {e}")
+            raise ImportError(f"Failed to import module {module_path}: {e}")
 
         # Validate class existence
         if not hasattr(module, class_name):
             raise AttributeError(
-                f"❌ {module_path} does not define class '{class_name}'."
+                f"{module_path} does not define class '{class_name}'."
             )
 
         # Instantiate and run pipeline
         pipeline_class = getattr(module, class_name)
         pipeline = pipeline_class(config_path=str(self.config_path))
 
-        self.logger.info(f"🚀 Running {self.model_name.upper()} pipeline...")
+        self.logger.info(f"Running {self.model_name.upper()} pipeline...")
         metrics = pipeline.run()
-        self.logger.info(f"✅ Pipeline complete ({self.model_name.upper()})")
+        self.logger.info(f"Pipeline complete ({self.model_name.upper()})")
 
         return metrics
 

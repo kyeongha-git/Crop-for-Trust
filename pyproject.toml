@@ -2,5 +2,5 @@
 select = ["E", "F"]
 fix = true
 line-length = 88
-extend-ignore = ["E203", "E501", "E402"]  # ✅ W503 대신 W504 사용
+extend-ignore = ["E203", "E501", "E402"]
 unsafe-fixes = false

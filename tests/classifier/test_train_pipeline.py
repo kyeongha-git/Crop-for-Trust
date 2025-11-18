@@ -28,7 +28,7 @@ from src.classifier.train import train_model, train_one_epoch, validate
 
 
 # ======================================================
-# ✅ 1️⃣ Config Loading
+# Config Loading
 # ======================================================
 def test_load_config_contains_sections(tmp_path):
     """Verify that config.yaml contains required sections."""
@@ -54,11 +54,11 @@ classifier:
     clf = Classifier(str(cfg_file))
     cfg = clf.cfg
     assert "data" in cfg and "train" in cfg and "wandb" in cfg
-    print("✅ _load_config() passed")
+    print("_load_config() passed")
 
 
 # ======================================================
-# ✅ 2️⃣ WandB Initialization
+# WandB Initialization
 # ======================================================
 def test_init_wandb_disabled(tmp_path):
     """_init_wandb(): should return None when disabled."""
@@ -78,7 +78,7 @@ classifier:
     clf = Classifier(str(cfg_file))
     result = clf._init_wandb()
     assert result is None
-    print("✅ _init_wandb() passed — disabled mode")
+    print("_init_wandb() passed — disabled mode")
 
 
 @patch("wandb.init")
@@ -104,11 +104,11 @@ classifier:
     wandb_obj = clf._init_wandb()
     mock_init.assert_called_once()
     assert wandb_obj is not None
-    print("✅ _init_wandb() passed — enabled mode")
+    print("_init_wandb() passed — enabled mode")
 
 
 # ======================================================
-# ✅ 3️⃣ train_one_epoch() / validate() Tests
+# train_one_epoch() / validate() Tests
 # ======================================================
 def make_dummy_dataloader(batch_size=4, num_samples=8):
     """Create a small dummy TensorDataset for quick testing."""
@@ -131,7 +131,7 @@ def test_train_one_epoch():
     )
     assert train_loss >= 0
     assert 0 <= train_acc <= 1
-    print(f"✅ train_one_epoch() OK — loss={train_loss:.4f}, acc={train_acc:.4f}")
+    print(f"train_one_epoch() OK — loss={train_loss:.4f}, acc={train_acc:.4f}")
 
 
 def test_validate():
@@ -144,11 +144,11 @@ def test_validate():
     val_loss, val_acc = validate(model, dataloader, criterion, device)
     assert val_loss >= 0
     assert 0 <= val_acc <= 1
-    print(f"✅ validate() OK — loss={val_loss:.4f}, acc={val_acc:.4f}")
+    print(f"validate() OK — loss={val_loss:.4f}, acc={val_acc:.4f}")
 
 
 # ======================================================
-# ✅ 4️⃣ train_model() Tests
+# train_model() Tests
 # ======================================================
 def test_train_model_saves_best(tmp_path):
     """train_model(): should save best and last checkpoint files."""
@@ -177,11 +177,11 @@ def test_train_model_saves_best(tmp_path):
 
     assert save_path.exists()
     assert check_path.exists()
-    print(f"✅ train_model() OK — best_acc={best_acc:.4f}")
+    print(f"train_model() OK — best_acc={best_acc:.4f}")
 
 
 # ======================================================
-# ✅ 5️⃣ Classifier.run() Integration Test
+# Classifier.run() Integration Test
 # ======================================================
 @patch("src.classifier.train.train_model", return_value=0.95)
 @patch("src.classifier.models.factory.get_model")
@@ -228,15 +228,15 @@ classifier:
     assert isinstance(acc, float)
     assert isinstance(f1, float)
     print(
-        f"✅ Classifier.run() OK — best_acc={best_acc:.4f}, acc={acc:.4f}, f1={f1:.4f}"
+        f"Classifier.run() OK — best_acc={best_acc:.4f}, acc={acc:.4f}, f1={f1:.4f}"
     )
 
 
 # ======================================================
-# ✅ 6️⃣ Exception Handling
+# Exception Handling
 # ======================================================
 def test_load_config_file_not_found():
     """Ensure Classifier raises FileNotFoundError when config missing."""
     with pytest.raises(FileNotFoundError):
         Classifier("./non_existent.yaml")
-    print("✅ Exception handling OK — FileNotFoundError")
+    print("Exception handling OK — FileNotFoundError")

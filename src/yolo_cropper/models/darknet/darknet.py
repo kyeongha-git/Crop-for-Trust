@@ -139,7 +139,7 @@ class DarknetPipeline:
         evaluator = DarknetEvaluator(config=self.cfg)
         metrics = evaluator.run()
         self.logger.info(
-            f"[✓] Evaluation complete → mAP@0.5 = {metrics.get('mAP@0.5', 0):.2f}%"
+            f"Evaluation complete → mAP@0.5 = {metrics.get('mAP@0.5', 0):.2f}%"
         )
         return metrics
 
@@ -150,7 +150,7 @@ class DarknetPipeline:
         self.logger.info("[STEP 6] Running Darknet prediction...")
         predictor = DarknetPredictor(config=self.cfg)
         result_json, predict_txt = predictor.run()
-        self.logger.info(f"[✓] Prediction complete → {result_json}")
+        self.logger.info(f"Prediction complete → {result_json}")
         return result_json, predict_txt
 
     # --------------------------------------------------------
@@ -161,13 +161,13 @@ class DarknetPipeline:
         cropper = YOLOCropper(config=self.cfg)
         cropper.crop_from_json()
 
-        self.logger.info("[✓] Cropping complete")
+        self.logger.info("Cropping complete")
 
     # --------------------------------------------------------
     # Unified Runner
     # --------------------------------------------------------
     def run(self):
-        self.logger.info(f"🚀 Starting Darknet Pipeline ({self.model_name.upper()})")
+        self.logger.info(f"Starting Darknet Pipeline ({self.model_name.upper()})")
         self.step_cfg_manager()
         # self.step_make_manager()
         self.step_data_prepare()
@@ -175,7 +175,7 @@ class DarknetPipeline:
         # self.step_evaluate()
         result_json, predict_txt = self.step_predict()
         self.step_cropping()
-        self.logger.info("=== ✅ PIPELINE COMPLETE ===")
+        self.logger.info("\n🎉 Darknet pipeline completed successfully!")
         self.logger.info(f"Result JSON  : {result_json}")
         self.logger.info(f"Predict TXT  : {predict_txt}")
         self.logger.info(f"Model Weights: {self.saved_weight_path}")

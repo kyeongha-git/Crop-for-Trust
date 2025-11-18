@@ -107,7 +107,7 @@ class YOLOv8Trainer:
             self.logger.info(f"[SKIP] Found existing model → {self.final_model_path}")
             return self.final_model_path
 
-        self.logger.info(f"🚀 Starting YOLOv8 training for {self.epochs} epochs")
+        self.logger.info(f"Starting YOLOv8 training for {self.epochs} epochs")
         self.logger.info(f"   Model : {self.model_name}")
         self.logger.info(f"   Batch : {self.batch}, ImgSize : {self.imgsz}")
         self.logger.info(f"   Data  : {self.data_yaml}")
@@ -141,8 +141,8 @@ class YOLOv8Trainer:
         # Save best model
         if best_model_src.exists():
             shutil.copy2(best_model_src, self.final_model_path)
-            self.logger.info(f"[✓] Best model saved → {self.final_model_path}")
+            self.logger.info(f"Best model saved → {self.final_model_path}")
 
-        self.logger.info(f"[✓] Checkpoints saved → {self.checkpoint_dir}")
-        self.logger.info(f"[✓] Training logs saved → {results.save_dir}")
+        self.logger.info(f"Checkpoints saved → {self.checkpoint_dir}")
+        self.logger.info(f"Training logs saved → {results.save_dir}")
         return results

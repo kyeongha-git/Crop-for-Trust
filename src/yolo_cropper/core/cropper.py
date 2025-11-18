@@ -84,9 +84,9 @@ class YOLOCropper:
         - Copies original images when no detection exists
         """
         if not self.json_path.exists():
-            raise FileNotFoundError(f"❌ result.json not found → {self.json_path}")
+            raise FileNotFoundError(f"result.json not found → {self.json_path}")
         if not self.predict_list.exists():
-            raise FileNotFoundError(f"❌ predict.txt not found → {self.predict_list}")
+            raise FileNotFoundError(f"predict.txt not found → {self.predict_list}")
 
         pred_imgs = [
             ln.strip()
@@ -166,7 +166,7 @@ class YOLOCropper:
             saved_originals += 1
 
         self.logger.info(
-            f"[✓] Cropping complete ({self.model_name.upper()}) → {self.output_dir}"
+            f"Cropping complete ({self.model_name.upper()}) → {self.output_dir}"
         )
         self.logger.info(f"   - Saved Crops   : {saved_crops}")
         self.logger.info(f"   - Saved Originals (No Detection) : {saved_originals}")

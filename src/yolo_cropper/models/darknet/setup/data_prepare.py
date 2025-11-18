@@ -80,7 +80,7 @@ class DarknetDataPreparer:
         self._generate_split_lists()
         class_names = self._get_class_names()
         self._generate_obj_files(class_names)
-        self.logger.info("✅ Darknet dataset preparation complete.")
+        self.logger.info("Darknet dataset preparation complete.")
         return {
             "train_txt": str(self.darknet_data_dir / "train.txt"),
             "valid_txt": str(self.darknet_data_dir / "valid.txt"),
@@ -101,7 +101,7 @@ class DarknetDataPreparer:
         for split in ["train", "valid", "test"]:
             base_dir = self.base_dir / self.model_name / split
             if not base_dir.exists():
-                self.logger.warning(f"⚠️ Split folder missing: {base_dir}")
+                self.logger.warning(f"Split folder missing: {base_dir}")
                 continue
 
             img_dir = (
@@ -146,10 +146,10 @@ class DarknetDataPreparer:
                     if c.strip()
                 ]
                 self.logger.info(
-                    f"  └─ Loaded {len(class_names)} classes from {path.name}: {class_names}"
+                    f"Loaded {len(class_names)} classes from {path.name}: {class_names}"
                 )
                 return class_names
-        raise FileNotFoundError("❌ No _darknet.labels or _classes.txt found.")
+        raise FileNotFoundError("No _darknet.labels or _classes.txt found.")
 
     def _generate_obj_files(self, class_names):
         """
@@ -174,8 +174,8 @@ class DarknetDataPreparer:
         obj_data.write_text(obj_data_content, encoding="utf-8")
         obj_names.write_text("\n".join(class_names) + "\n", encoding="utf-8")
 
-        self.logger.info(f"  └─ obj.data / obj.names created ({num_classes} classes)")
-        self.logger.info(f"  └─ Backup path set to: {backup_dir.resolve()}")
+        self.logger.info(f"obj.data / obj.names created ({num_classes} classes)")
+        self.logger.info(f"Backup path set to: {backup_dir.resolve()}")
 
     def update_backup_path(self, backup_dir: str):
         """
@@ -192,4 +192,4 @@ class DarknetDataPreparer:
             for line in lines
         ]
         obj_data_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-        self.logger.info(f"  └─ [updated] backup path → {backup_dir}")
+        self.logger.info(f"updated backup path → {backup_dir}")

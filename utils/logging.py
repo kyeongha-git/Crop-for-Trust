@@ -51,7 +51,7 @@ def setup_logging(log_dir: str = "logs", log_level: int = logging.INFO):
         ],
     )
 
-    logging.getLogger().info(f"[✓] Logging initialized. Log file: {log_file}")
+    logging.getLogger().info(f"Logging initialized. Log file: {log_file}")
 
 
 def get_logger(name: str) -> logging.Logger:

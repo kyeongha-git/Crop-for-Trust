@@ -17,7 +17,7 @@ from utils.logging import get_logger
 
 
 # ============================================================
-# 🔹 Core Functions
+# Core Functions
 # ============================================================
 def get_images(class_path: Path) -> List[Path]:
     """Return a sorted list of image files from a given class folder."""
@@ -76,7 +76,7 @@ def copy_images(
         for src_path in files:
             dst_path = split_dir / src_path.name
             shutil.copy2(src_path, dst_path)
-        logger.info(f"📦 Copied {len(files):>4} → {split_name}/{class_name}")
+        logger.info(f"Copied {len(files):>4} → {split_name}/{class_name}")
 
 
 def split_dataset(
@@ -109,7 +109,7 @@ def split_dataset(
         abs(train_ratio + valid_ratio + test_ratio - 1.0) < 1e-6
     ), "Train/Valid/Test ratios must sum to 1."
 
-    logger.info(f"📁 Starting dataset split: {data_dir}")
+    logger.info(f"Starting dataset split: {data_dir}")
     logger.info(f" - Output Dir: {output_dir}")
     logger.info(
         f" - Ratios: train={train_ratio}, valid={valid_ratio}, test={test_ratio}"
@@ -117,24 +117,24 @@ def split_dataset(
 
     categories = [d.name for d in data_dir.iterdir() if d.is_dir()]
     if not categories:
-        logger.warning(f"⚠️ No class folders found in {data_dir}")
+        logger.warning(f"No class folders found in {data_dir}")
         return
 
     for class_name in categories:
         class_path = data_dir / class_name
         images = get_images(class_path)
         if not images:
-            logger.warning(f"[⚠️] No images found in {class_name}. Skipping.")
+            logger.warning(f"No images found in {class_name}. Skipping.")
             continue
 
         splits = make_splits(images, train_ratio, valid_ratio, seed)
         copy_images(class_name, class_path, output_dir, splits, logger)
 
         logger.info(
-            f"[{class_name}] ✅ "
+            f"[{class_name}] "
             f"train={len(splits['train'])}, "
             f"valid={len(splits['valid'])}, "
             f"test={len(splits['test'])}"
         )
 
-    logger.info("✅ Dataset splitting complete!")
+    logger.info("Dataset splitting complete!")

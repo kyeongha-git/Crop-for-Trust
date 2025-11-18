@@ -94,13 +94,13 @@ class YOLOv8Predictor:
 
         """
         if not self.weights_path.exists():
-            raise FileNotFoundError(f"❌ Model weight not found: {self.weights_path}")
+            raise FileNotFoundError(f"Model weight not found: {self.weights_path}")
         if not self.predict_txt.exists():
-            raise FileNotFoundError(f"❌ predict.txt not found: {self.predict_txt}")
+            raise FileNotFoundError(f"predict.txt not found: {self.predict_txt}")
 
         # Load model
         model = YOLO(self.weights_path)
-        self.logger.info(f"🚀 Starting YOLOv8 detection ({self.model_name.upper()})")
+        self.logger.info(f"Starting YOLOv8 detection ({self.model_name.upper()})")
 
         # Execute prediction
         results = model.predict(
@@ -117,6 +117,6 @@ class YOLOv8Predictor:
         )
 
         result_dir = Path(results[0].save_dir).resolve()
-        self.logger.info(f"[✓] Detection complete → {result_dir}")
+        self.logger.info(f"Detection complete → {result_dir}")
 
         return str(result_dir), str(self.predict_txt)

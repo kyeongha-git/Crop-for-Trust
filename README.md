@@ -1,4 +1,4 @@
-# 🧠 Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification
+# Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification
 
 > **Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification**  
 > This repository provides the **official open-source implementation** of the paper *"Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification"*.  
@@ -6,11 +6,11 @@
 
 ---
 
-## 🚀 Reproduction Guide
+## Reproduction Guide
 
 This section describes how to reproduce and execute the provided dual-pipeline framework.
 
-### 1️⃣ Environment Setup
+### Environment Setup
 
 Run the following command to automatically create the environment and install all dependencies:
 
@@ -36,7 +36,7 @@ This script will:
 conda activate tf_env
 ```
 
-#### 🔑 Gemini API Key Configuration
+#### Gemini API Key Configuration
 
 > The Annotation Cleaning module uses the Google Gemini API for removing human-drawn annotations via generative inpainting.
 Before running the pipeline, set your Gemini API key as an environment variable:
@@ -50,7 +50,7 @@ The utils/config.yaml automatically loads this key through the following line:
 api_key: ${GEMINI_API_KEY}
 ```
 
-### 2️⃣ Run the Main Pipeline
+### Run the Main Pipeline
 
 Once the setup is complete, execute the unified dual-pipeline using:
 
@@ -68,7 +68,7 @@ This command launches the Crop-and-Conquer pipeline, consisting of:
 
 4. Classification & Evaluation — Trains CNN-based classifiers and measures performance.
 
-#### ⚙️ CLI Options
+#### CLI Options
 The main script supports several command-line options for flexible execution:
 
 | Option        | Description   |
@@ -78,7 +78,7 @@ The main script supports several command-line options for flexible execution:
 | --yolo_crop [on/off]  | Enables ROI cropping using a fine-tuned YOLO model. |
 | --yolo_model [model_name]  | Specifies which YOLO model to use for cropping. Available: yolov2, yolov4, yolov5, yolov8s, yolov8m, yolov8l, yolov8x.  |
 
-### 💡 Example Usage
+### Example Usage
 
 ```bash
 # Run annotation cleaning only
@@ -91,7 +91,7 @@ python src/main.py --annot_clean off --yolo_crop on --yolo_model yolov8m
 python src/main.py --annot_clean on --test on
 ```
 
-### ⚙️ Configuration Control
+### Configuration Control
 
 All module settings and directory paths are managed via:
 ```bash
@@ -107,7 +107,7 @@ This configuration file centrally controls every module:
 Since the full dataset cannot be shared publicly, training and evaluation cannot be executed end-to-end.
 However, you can customize input paths in utils/config.yaml to apply the implemented pipeline on your own dataset.
 
-> 📁 AnnotationCleaner Input Directory
+> AnnotationCleaner Input Directory
 > - The folder data/sample/annotation_cleaner/only_annotation_image/ is used to store images for the annotation cleaning process.
 > - This design helps prevent unnecessary API costs by allowing selective cleaning instead of processing the entire dataset.
 > - In the provided sample, all test images are included in this folder by default.
@@ -116,7 +116,7 @@ However, you can customize input paths in utils/config.yaml to apply the impleme
 python src/main.py --annot_clean on
 ```
 
-### 🧭 Project Overview
+### Project Overview
 
 - Main entry point: src/main.py
 
@@ -129,7 +129,7 @@ python src/main.py --annot_clean on
 - Model checkpoints: saved under checkpoints/ and saved_model/
 
 
-## ⚠️ Note on Data Privacy
+## Note on Data Privacy
 The dataset used in this study is private and cannot be distributed publicly.
 Therefore, only a small sample dataset is provided under:
 
@@ -142,7 +142,7 @@ data/sample/
 
 ---
 
-## 🖼️ Example Results (Sample Dataset)
+## Example Results (Sample Dataset)
 
 - This example illustrates how image data transforms through each stage of the pipeline.
 - YOLO Only: ROI-cropped images from the original dataset.
@@ -162,13 +162,13 @@ data/sample/
 
 ---
 
-## 📊 Experimental Results
+## Experimental Results
 
 > The following section presents the comparison and analysis of classification performance trained on the four datasets — (a) Original, (b) YOLO Only, (c) Gen Only, and (d) Gen + YOLO — described above.
 
 ---
 
-### 🧠 1️⃣ Grad-CAM Visualization
+### Grad-CAM Visualization
 
 The Grad-CAM analysis illustrates the regions of interest (ROIs) that the classifier focuses on under each experimental setup.
 
@@ -177,7 +177,7 @@ The Grad-CAM analysis illustrates the regions of interest (ROIs) that the classi
 | ![gradcam_orig_01](assets/Grad-CAM/original/img_01.png) | ![gradcam_orig_crop_01](assets/Grad-CAM/original/img_01_crop.png) | ![gradcam_gen_01](assets/Grad-CAM/generation/img_01.png) | ![gradcam_gen_crop_01](assets/Grad-CAM/generation/img_01_crop.png) |
 | ![gradcam_orig_02](assets/Grad-CAM/original/img_02.png) | ![gradcam_orig_crop_02](assets/Grad-CAM/original/img_02_crop.png) | ![gradcam_gen_02](assets/Grad-CAM/generation/img_02.png) | ![gradcam_gen_crop_02](assets/Grad-CAM/generation/img_02_crop.png) |
 
-> 💡 *Observation:*  
+> *Observation:*  
 > When the model trained on the YOLO Cropped dataset was used to infer the original images,
 it exhibited much stronger attention around the actual damage regions. 
 > This phenomenon was consistently observed in both the Original and Generatively Cleaned datasets.
@@ -186,7 +186,7 @@ allowing the model to focus more precisely on the true damage areas during learn
 
 ---
 
-### 📈 2️⃣ Classification Accuracy & Data Reliability Analysis
+### Classification Accuracy & Data Reliability Analysis
 
 > This section presents the quantitative comparison of classification performance and dataset reliability across the four experimental settings.
 - Each configuration is evaluated using the best-performing model checkpoint obtained from ten independent runs.
@@ -199,7 +199,7 @@ allowing the model to focus more precisely on the true damage areas during learn
 | (c) Gen Only | 100% | ✓ | ✗ | **88.94** |
 | (d) Gen + YOLO | 100% | ✓ | ✓ | **93.40** |
 
-> 💡 *Observation:*  
+> *Observation:*  
 > - Applying YOLO Cropping resulted in accuracy improvement across both the Original and Generatively Cleaned datasets. 
 > - By cropping only the true damage regions inside human annotations, YOLO-based preprocessing achieved up to +23.80% higher data reliability compared to the Original dataset 
 > - Combining **annotation cleaning** and **YOLO cropping** yields more interpretable models with higher spatial precision,  
@@ -208,5 +208,5 @@ this process is non-reproducible and occasionally alters the damage patterns, in
 
 ---
 
-📄 For citation, experimental details, and additional documentation, please refer to the paper:
+For citation, experimental details, and additional documentation, please refer to the paper:
 “Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification” (Hwang, K., Suwon University).

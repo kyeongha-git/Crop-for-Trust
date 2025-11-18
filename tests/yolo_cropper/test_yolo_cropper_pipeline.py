@@ -8,9 +8,9 @@ Unit tests for `YOLOCropperController`, the unified dispatcher
 for YOLO-based detection pipelines.
 
 Purpose:
-    ✅ Verify that the controller correctly dispatches to the appropriate YOLO pipeline
+    - Verify that the controller correctly dispatches to the appropriate YOLO pipeline
        (DarknetPipeline, YOLOv5Pipeline, YOLOv8Pipeline) based on `model_name`.
-    ✅ Confirm that unsupported model names raise a ValueError.
+    - Confirm that unsupported model names raise a ValueError.
 """
 
 from unittest.mock import MagicMock, patch
@@ -33,14 +33,14 @@ def base_config(tmp_path):
     return {
         "yolo_cropper": {
             "main": {
-                "model_name": "yolov5",  # default value; overridden in tests
+                "model_name": "yolov5",
             }
         }
     }
 
 
 # ==============================================================
-# ✅ Case 1 — YOLOv2 / YOLOv4 → DarknetPipeline
+# Case 1 — YOLOv2 / YOLOv4 → DarknetPipeline
 # ==============================================================
 
 
@@ -70,11 +70,11 @@ def test_controller_dispatches_darknet_pipeline(model_name, base_config):
         mock_import.assert_called_once_with("src.yolo_cropper.models.darknet.darknet")
         mock_pipeline_cls.assert_called_once()
         assert "mAP@0.5" in metrics
-        print(f"[✓] Darknet dispatch success ({model_name}) → {metrics}")
+        print(f"Darknet dispatch success ({model_name}) → {metrics}")
 
 
 # ==============================================================
-# ✅ Case 2 — YOLOv5 → YOLOv5Pipeline
+# Case 2 — YOLOv5 → YOLOv5Pipeline
 # ==============================================================
 
 
@@ -103,11 +103,11 @@ def test_controller_dispatches_yolov5_pipeline(base_config):
         mock_import.assert_called_once_with("src.yolo_cropper.models.yolov5.yolov5")
         mock_pipeline_cls.assert_called_once()
         assert "precision" in metrics
-        print(f"[✓] YOLOv5 dispatch success → {metrics}")
+        print(f"YOLOv5 dispatch success → {metrics}")
 
 
 # ==============================================================
-# ✅ Case 3 — YOLOv8 (s/m/l/x) → YOLOv8Pipeline
+# Case 3 — YOLOv8 (s/m/l/x) → YOLOv8Pipeline
 # ==============================================================
 
 
@@ -137,11 +137,11 @@ def test_controller_dispatches_yolov8_pipeline(model_name, base_config):
         mock_import.assert_called_once_with("src.yolo_cropper.models.yolov8.yolov8")
         mock_pipeline_cls.assert_called_once()
         assert "mAP@0.5" in metrics
-        print(f"[✓] YOLOv8 dispatch success ({model_name}) → {metrics}")
+        print(f"YOLOv8 dispatch success ({model_name}) → {metrics}")
 
 
 # ==============================================================
-# ❌ Case 4 — Unsupported model_name
+# Case 4 — Unsupported model_name
 # ==============================================================
 
 

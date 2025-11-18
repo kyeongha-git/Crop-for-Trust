@@ -49,7 +49,7 @@ def list_image_paths(
         List[Tuple[str, str]]: List of (image_path, class_name) pairs.
     """
     if not os.path.exists(root_dir):
-        raise FileNotFoundError(f"❌ Data path not found: {root_dir}")
+        raise FileNotFoundError(f"Data path not found: {root_dir}")
 
     image_label_pairs = []
     for class_name in sorted(os.listdir(root_dir)):
@@ -62,7 +62,7 @@ def list_image_paths(
                     (os.path.join(class_path, filename), class_name)
                 )
     if not image_label_pairs:
-        raise ValueError(f"⚠️ No images found under {root_dir}")
+        raise ValueError(f"No images found under {root_dir}")
     return image_label_pairs
 
 
@@ -115,11 +115,11 @@ class ClassificationDataset(Dataset):
         self.transform = transform
 
         if not os.path.exists(self.root_dir):
-            raise FileNotFoundError(f"❌ Split path not found: {self.root_dir}")
+            raise FileNotFoundError(f"Split path not found: {self.root_dir}")
 
         image_label_pairs = list_image_paths(self.root_dir)
         if not image_label_pairs:
-            raise RuntimeError(f"❌ No images found in {self.root_dir}")
+            raise RuntimeError(f"No images found in {self.root_dir}")
 
         self.image_paths, self.labels = zip(*image_label_pairs)
         self.label_to_idx, self.idx_to_label = build_label_mappings(self.labels)
@@ -152,7 +152,7 @@ class ClassificationDataset(Dataset):
 
     def _log_summary(self, input_dir: str, split: str) -> None:
         """Print dataset information to console."""
-        print(f"✅ Loaded dataset from {input_dir}/{split}")
+        print(f"Loaded dataset from {input_dir}/{split}")
         print(f" - Samples: {len(self.image_paths)}")
         print(f" - Classes: {self.label_to_idx}")
 

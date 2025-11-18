@@ -1,15 +1,15 @@
-# 📊 Metrics Directory
+# Metrics Directory
 
 This directory contains evaluation results and performance metrics generated after model training and testing.
 
-> ⚠️ **Note:**  
+> **Note:**  
 > All experiments were conducted using **private datasets**.  
 > The metric files are provided for documentation and reproducibility of the results described in the paper.  
 > Actual values may not be reproducible without access to the private dataset.
 
 ---
 
-## 📁 Folder Structure
+## Folder Structure
 
 metrics/
 ├── annotation_cleaner/
@@ -37,9 +37,9 @@ metrics/
 
 ---
 
-## 🧩 Description
+## Description
 
-### 1️⃣ Annotation Cleaner Metrics
+### Annotation Cleaner Metrics
 
 This subdirectory contains **image similarity evaluation results**  
 after removing human-drawn annotations using a generative AI model.
@@ -61,7 +61,7 @@ split, file, SSIM, Edge_IoU, L1
 
 ---
 
-### 2️⃣ Classifier Metrics
+### Classifier Metrics
 
 This subdirectory contains **evaluation results for CNN-based classification models**  
 trained on original, generated, and cropped datasets.
@@ -83,21 +83,21 @@ classifier/
   "accuracy": 0.945,
   "f1_score": 0.932
 }
+```
 
-
-### 3️⃣ YOLO Cropper Metrics
+### YOLO Cropper Metrics
 
 This subdirectory contains the **detection performance results** of YOLO models used for damage-region cropping.
 
 ---
 
-#### 📌 Purpose
+#### Purpose
 To evaluate and compare the detection accuracy of different YOLO versions  
 (`YOLOv2`, `YOLOv4`, `YOLOv5`, `YOLOv8`, etc.) used in the cropping process.
 
 ---
 
-#### 📂 Files Included
+#### Files Included
 yolo_cropper/
 ├── yolov2_metrics.csv
 ├── yolov4_metrics.csv
@@ -106,13 +106,13 @@ yolo_cropper/
 
 ---
 
-#### 📊 Metrics Columns
+#### Metrics Columns
 Each CSV file includes quantitative detection metrics as follows:
 model, precision, recall, mAP@0.5
 
 ---
 
-#### 🧾 Metric Definitions
+#### Metric Definitions
 - **model** → YOLO version or configuration name  
 - **precision** → Ratio of correctly detected positive bounding boxes  
 - **recall** → Ratio of correctly detected ground-truth regions  
@@ -120,7 +120,7 @@ model, precision, recall, mAP@0.5
 
 ---
 
-#### 📈 Example Table
+#### Example Table
 
 | Model  | Precision | Recall | mAP@0.5 |
 |---------|------------|---------|----------|
@@ -131,7 +131,7 @@ model, precision, recall, mAP@0.5
 
 ---
 
-> 🧠 **Note:**  
+> **Note:**  
 > These metrics were obtained after evaluating each YOLO model on private datasets.  
 > The results demonstrate the relative detection performance of YOLO versions  
 > used in the damage-region cropping stage.

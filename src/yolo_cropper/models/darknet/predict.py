@@ -109,7 +109,7 @@ class DarknetPredictor:
         images = self._list_images(input_dir)
         predict_path.write_text("\n".join(images) + "\n", encoding="utf-8")
         self.logger.info(
-            f"[✓] Generated predict.txt ({len(images)} images) → {predict_path}"
+            f"Generated predict.txt ({len(images)} images) → {predict_path}"
         )
 
         # Configure paths
@@ -128,7 +128,7 @@ class DarknetPredictor:
             f"-thresh 0.25 -dont_show -ext_output -out {internal_result} < data/{predict_path.name}"
         )
 
-        self.logger.info(f"🚀 Starting YOLO detection ({self.model_name.upper()})")
+        self.logger.info(f"Starting YOLO detection ({self.model_name.upper()})")
         self.logger.debug(f"[CMD] {command}")
 
         process = subprocess.run(
@@ -138,7 +138,7 @@ class DarknetPredictor:
         # Handle Darknet return code
         if process.returncode not in (0, 1):
             raise RuntimeError(
-                f"❌ Darknet detection failed (code: {process.returncode})"
+                f"Darknet detection failed (code: {process.returncode})"
             )
         elif process.returncode == 1:
             self.logger.warning(
@@ -148,16 +148,16 @@ class DarknetPredictor:
         # Copy JSON results to external output directory
         if internal_result.exists():
             shutil.copy2(internal_result, external_result)
-            self.logger.info(f"[✓] Copied result → {external_result.resolve()}")
+            self.logger.info(f"Copied result → {external_result.resolve()}")
         else:
-            self.logger.warning("[!] result.json not found in darknet/data folder!")
+            self.logger.warning("result.json not found in darknet/data folder!")
 
         # Copy predict.txt to output directory for reference
         predict_copy_path = self.output_dir / "predict.txt"
         try:
             shutil.copy2(predict_path, predict_copy_path)
-            self.logger.info(f"[✓] Copied predict.txt → {predict_copy_path.resolve()}")
+            self.logger.info(f"Copied predict.txt → {predict_copy_path.resolve()}")
         except Exception as e:
-            self.logger.warning(f"[!] Failed to copy predict.txt → {e}")
+            self.logger.warning(f"Failed to copy predict.txt → {e}")
 
         return str(external_result.resolve()), str(predict_path)

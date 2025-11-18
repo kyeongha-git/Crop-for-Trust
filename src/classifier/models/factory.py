@@ -71,12 +71,12 @@ def get_model(
 
     if model_key not in MODEL_MAP:
         raise ValueError(
-            f"❌ Unknown model name '{model_name}'. "
+            f"Unknown model name '{model_name}'. "
             f"Supported options: {list(MODEL_MAP.keys())}"
         )
 
     model_label, model_class, extra_kwargs = MODEL_MAP[model_key]
-    print(f"🔹 Using {model_label} backbone")
+    print(f"Using {model_label} backbone")
 
     if "resnet" in model_key and "dropout_p" in extra_kwargs:
         extra_kwargs.pop("dropout_p", None)

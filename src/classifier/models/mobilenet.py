@@ -52,7 +52,7 @@ class MobileNetClassifier(nn.Module):
             in_features = self.backbone.classifier[0].in_features
 
         else:
-            raise ValueError(f"❌ Unsupported model type: {model_type}")
+            raise ValueError(f"Unsupported model type: {model_type}")
 
         # Optionally freeze pretrained backbone
         if freeze_backbone:

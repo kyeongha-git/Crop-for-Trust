@@ -93,7 +93,7 @@ def main():
         yolo_model=args.yolo_model,
         test_mode=args.test,
     )
-    cfg_mgr.save()  # 🔹 Persist updated version for reproducibility
+    cfg_mgr.save()  # Persist updated version for reproducibility
 
     main_cfg = updated_cfg.get("main", {})
     annot_clean = main_cfg.get("annot_clean", "on")
@@ -107,7 +107,7 @@ def main():
     setup_logging("logs/main")
     logger = get_logger("main")
 
-    logger.info("🚀 Unified AI Pipeline Starting")
+    logger.info("Unified AI Pipeline Starting")
     logger.info(f"annot_clean    : {annot_clean}")
     logger.info(f"yolo_crop      : {yolo_crop}")
     logger.info(f"yolo_model     : {yolo_model}")
@@ -118,34 +118,34 @@ def main():
     # --------------------------------------------------------
     if annot_clean == "on":
         try:
-            print("\n🧼 [1] Running AnnotationCleaner...")
+            print("\n[1] Running AnnotationCleaner...")
             cleaner = AnnotationCleaner(config_path=args.config)
             cleaner.run(test_mode=(args.test == "on"))
         except Exception as e:
             logger.error(f"[AnnotationCleaner] Failed: {e}")
             traceback.print_exc()
     else:
-        print("⚪ [1] AnnotationCleaner skipped")
+        print("[1] AnnotationCleaner skipped")
 
     # --------------------------------------------------------
     # 5️⃣ YOLOCropper
     # --------------------------------------------------------
     if yolo_crop == "on":
         try:
-            print(f"\n🔍 [2] Running YOLOCropper ({yolo_model})...")
+            print(f"\n[2] Running YOLOCropper ({yolo_model})...")
             yolo_cropper = YOLOCropperController(config_path=args.config)
             yolo_cropper.run()
         except Exception as e:
             logger.error(f"[YOLOCropper] Failed: {e}")
             traceback.print_exc()
     else:
-        print("⚪ [2] YOLOCropper skipped")
+        print("[2] YOLOCropper skipped")
 
     # --------------------------------------------------------
     # 6️⃣ DataAugmentor (Optional)
     # --------------------------------------------------------
     # try:
-    #     print("\n🧩 [3] Running DataAugmentor...")
+    #     print("\n[3] Running DataAugmentor...")
     #     augmentor = DataAugmentor(config_path=args.config)
     #     augmentor.run()
     # except Exception as e:
@@ -156,7 +156,7 @@ def main():
     # 7️⃣ Classifier (Optional)
     # --------------------------------------------------------
     # try:
-    #     print(f"\n🎯 [4] Running Classifier ({classify_model})...")
+    #     print(f"\n[4] Running Classifier ({classify_model})...")
     #     classifier = Classifier(config_path=args.config)
     #     classifier.run()
     # except Exception as e:

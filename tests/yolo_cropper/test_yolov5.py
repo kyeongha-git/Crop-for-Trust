@@ -7,10 +7,10 @@ test_yolov5.py
 Lightweight smoke test for the `YOLOv5Pipeline` module.
 
 Purpose:
-    ✅ Verify that `YOLOv5Pipeline.run()` executes without raising any exceptions,
+    - Verify that `YOLOv5Pipeline.run()` executes without raising any exceptions,
        regardless of internal step comments or skipped processes.
-    ⚙️ All heavy components (trainer, evaluator, predictor, converter, etc.) are mocked out.
-    ❌ This test does NOT verify accuracy, model training, or evaluation logic.
+    - All heavy components (trainer, evaluator, predictor, converter, etc.) are mocked out.
+    - This test does NOT verify accuracy, model training, or evaluation logic.
 
 Success criteria:
     - No runtime errors are raised during pipeline execution.
@@ -24,7 +24,7 @@ import pytest
 from src.yolo_cropper.models.yolov5.yolov5 import YOLOv5Pipeline
 
 # ==============================================================
-# 🔹 Fixture: Mock Configuration
+# Fixture: Mock Configuration
 # ==============================================================
 
 
@@ -59,7 +59,7 @@ def mock_yolov5_config(tmp_path):
 
 
 # ==============================================================
-# 🔹 Smoke Test: YOLOv5 Pipeline
+# Smoke Test: YOLOv5 Pipeline
 # ==============================================================
 
 
@@ -105,4 +105,4 @@ def test_yolov5_pipeline_runs_without_errors(tmp_path, mock_yolov5_config):
             result, dict
         ), "YOLOv5Pipeline should complete successfully (return None or dict)"
 
-        print(f"[✓] YOLOv5Pipeline smoke test passed → result: {result}")
+        print(f"YOLOv5Pipeline smoke test passed → result: {result}")

@@ -108,7 +108,7 @@ class YOLOv5Evaluator:
         with open(resolved_yaml, "w", encoding="utf-8") as f:
             yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True)
 
-        self.logger.info(f"[✓] Temporary data.yaml created → {resolved_yaml}")
+        self.logger.info(f"Temporary data.yaml created → {resolved_yaml}")
         return resolved_yaml
 
     def run(self):
@@ -141,7 +141,7 @@ class YOLOv5Evaluator:
         ]
 
         self.logger.info(
-            f"🚀 Starting YOLOv5 evaluation ({self.model_name.upper()})..."
+            f"Starting YOLOv5 evaluation ({self.model_name.upper()})..."
         )
         self.logger.debug(f"[CMD] {' '.join(cmd)}")
 
@@ -152,17 +152,17 @@ class YOLOv5Evaluator:
 
         if process.returncode != 0:
             raise RuntimeError(
-                f"❌ YOLOv5 evaluation failed (code={process.returncode}). See log: {log_path}"
+                f"YOLOv5 evaluation failed (code={process.returncode}). See log: {log_path}"
             )
 
-        self.logger.info(f"[✓] YOLOv5 evaluation complete → {log_path}")
+        self.logger.info(f"YOLOv5 evaluation complete → {log_path}")
 
         results_dir = self.yolov5_dir / "runs" / "val"
         exp_dirs = sorted(results_dir.glob("exp*"))
         if not exp_dirs:
             raise FileNotFoundError(f"No val results found in {results_dir}")
 
-        results_file = log_path  # Use log for unified parsing
+        results_file = log_path
 
         parser = get_metrics_parser(self.model_name)
         metrics = parser(str(results_file))
@@ -198,4 +198,4 @@ class YOLOv5Evaluator:
                 writer.writeheader()
             writer.writerow(row)
 
-        self.logger.info(f"[✓] Metrics saved → {csv_path}")
+        self.logger.info(f"Metrics saved → {csv_path}")

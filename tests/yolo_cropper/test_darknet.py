@@ -7,9 +7,9 @@ test_darknet.py
 Lightweight smoke test for the DarknetPipeline module.
 
 Purpose:
-    ✅ Verify that `DarknetPipeline.run()` executes without raising any exceptions.
-    ✅ Confirm that it returns a valid path string pointing to a `result.json` file.
-    ⚙️ All heavy dependencies (trainer, evaluator, etc.) are mocked out for isolation.
+    - Verify that `DarknetPipeline.run()` executes without raising any exceptions.
+    - Confirm that it returns a valid path string pointing to a `result.json` file.
+    - All heavy dependencies (trainer, evaluator, etc.) are mocked out for isolation.
 
 This test does NOT validate internal behaviors or file I/O,
 only the high-level control flow and return type.
@@ -22,10 +22,8 @@ import pytest
 from src.yolo_cropper.models.darknet.darknet import DarknetPipeline
 
 # ==============================================================
-# 🔹 Fixture: Mock Configuration
+# Fixture: Mock Configuration
 # ==============================================================
-
-
 @pytest.fixture
 def mock_config(tmp_path):
     """
@@ -53,10 +51,8 @@ def mock_config(tmp_path):
 
 
 # ==============================================================
-# 🔹 Smoke Test
+# Smoke Test
 # ==============================================================
-
-
 def test_darknet_pipeline_runs_without_errors(tmp_path, mock_config):
     """
     Verify that `DarknetPipeline.run()` executes without errors.
@@ -102,4 +98,4 @@ def test_darknet_pipeline_runs_without_errors(tmp_path, mock_config):
         ), "Pipeline should return a result.json path string"
         assert result.endswith("result.json"), "Returned path must point to result.json"
 
-        print(f"[✓] DarknetPipeline smoke test passed → {result}")
+        print(f"DarknetPipeline smoke test passed → {result}")

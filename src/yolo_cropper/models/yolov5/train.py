@@ -111,14 +111,14 @@ class YOLOv5Trainer:
                 if not abs_path.exists() and (abs_path / "images").exists():
                     abs_path = abs_path / "images"
                 data[key] = str(abs_path)
-                self.logger.info(f"  └─ Resolved {key}: {abs_path}")
+                self.logger.info(f"Resolved {key}: {abs_path}")
 
         tmp_dir = Path(tempfile.mkdtemp(prefix="yolov5_datayaml_"))
         resolved_yaml = tmp_dir / "data_resolved.yaml"
         with open(resolved_yaml, "w", encoding="utf-8") as f:
             yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True)
 
-        self.logger.info(f"[✓] Temporary data.yaml created → {resolved_yaml}")
+        self.logger.info(f"Temporary data.yaml created → {resolved_yaml}")
         return resolved_yaml
 
     def run(self):
@@ -156,7 +156,7 @@ class YOLOv5Trainer:
             exp_name,
         ]
 
-        self.logger.info("🚀 Starting YOLOv5 training")
+        self.logger.info("Starting YOLOv5 training")
         for key, val in {
             "Epochs": self.epochs,
             "Batch": self.batch_size,
@@ -172,11 +172,11 @@ class YOLOv5Trainer:
 
         if process.returncode != 0:
             self.logger.error(
-                f"[!] Training failed (code: {process.returncode}). See log: {log_path}"
+                f"Training failed (code: {process.returncode}). See log: {log_path}"
             )
             raise RuntimeError(f"YOLOv5 training failed — check log: {log_path}")
 
-        self.logger.info(f"[✓] Training complete → {log_path}")
+        self.logger.info(f"Training complete → {log_path}")
         self._save_best_weight()
         return log_path
 
@@ -194,6 +194,6 @@ class YOLOv5Trainer:
 
         if best_weight_src and best_weight_src.exists():
             shutil.copy2(best_weight_src, target_path)
-            self.logger.info(f"[✓] Copied best weight → {target_path}")
+            self.logger.info(f"Copied best weight → {target_path}")
         else:
-            self.logger.warning("[!] No best.pt found in checkpoints directory.")
+            self.logger.warning("No best.pt found in checkpoints directory.")

@@ -1,14 +1,14 @@
-# 🧩 Saved Model Directory
+# Saved Model Directory
 
 This directory stores the **best-performing model weights** generated after training.
 
-> ⚠️ **Note:**  
+> **Note:**  
 > All models were trained using **private datasets**, and thus the weight files (`.pt`, `.weights`) are **not publicly released**.  
 > During training, the best checkpoints are automatically copied here from the `checkpoints/` directory.
 
 ---
 
-## 📁 Folder Structure
+## Folder Structure
 
 saved_model/
 ├── classifier/
@@ -41,7 +41,7 @@ saved_model/
 
 ---
 
-## 📦 Description
+## Description
 
 - **classifier/** → Contains the **best CNN classification weights** for each dataset variant (`original`, `generation`, `original_crop`, `generation_crop`).  
   Each file (e.g., `mobilenet_v2_best.pt`) is copied from the corresponding `checkpoints/` directory after training.  
@@ -50,7 +50,7 @@ saved_model/
 
 ---
 
-## 🧠 Notes
+## Notes
 
 - These weights are **not included** in the public release due to data confidentiality.  
 - When the training pipeline runs, this directory is automatically populated with best-performing weights.  

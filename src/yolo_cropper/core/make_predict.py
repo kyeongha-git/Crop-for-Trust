@@ -56,14 +56,14 @@ class YOLOPredictListGenerator:
         # Validate directories
         self.output_dir.mkdir(parents=True, exist_ok=True)
         if not self.input_root.exists():
-            raise FileNotFoundError(f"❌ Source root not found: {self.input_root}")
+            raise FileNotFoundError(f"Source root not found: {self.input_root}")
 
         self.logger.info("YOLOPredictListGenerator initialized")
         self.logger.debug(f"Source root : {self.input_root}")
         self.logger.debug(f"Output path : {self.output_path}")
 
     # ==========================================================
-    # 🔹 Collect image paths
+    # Collect image paths
     # ==========================================================
     def _collect_images(self) -> List[str]:
         """
@@ -92,17 +92,17 @@ class YOLOPredictListGenerator:
         return all_images
 
     # ==========================================================
-    # 🔹 Write predict.txt
+    # Write predict.txt
     # ==========================================================
     def _write_output(self, image_paths: List[str]):
         """Write collected image paths to `predict.txt`."""
         self.output_path.write_text("\n".join(image_paths), encoding="utf-8")
-        self.logger.info(f"[✓] Generated predict.txt → {self.output_path}")
+        self.logger.info(f"Generated predict.txt → {self.output_path}")
         self.logger.info(f"   - Dataset root : {self.input_root}")
         self.logger.info(f"   - Total images : {len(image_paths)}")
 
     # ==========================================================
-    # 🔹 Run full process
+    # Run full process
     # ==========================================================
     def run(self):
         """Generate the full image list and save to file."""

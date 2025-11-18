@@ -52,12 +52,12 @@ class RestoreCropper:
         self.categories = categories or ["repair", "replace"]
         self.meta_name = metadata_name
 
-        self.logger.info(f"📂 Input folder: {self.input_root}")
-        self.logger.info(f"📜 Metadata folder: {self.meta_root}")
-        self.logger.info(f"💾 Output folder: {self.output_root}")
+        self.logger.info(f"Input folder: {self.input_root}")
+        self.logger.info(f"Metadata folder: {self.meta_root}")
+        self.logger.info(f"Output folder: {self.output_root}")
 
     # ============================================================
-    # 🔧 Internal Utilities
+    # Internal Utilities
     # ============================================================
     def _load_metadata(self, meta_path: Path) -> Optional[dict]:
         """
@@ -68,14 +68,14 @@ class RestoreCropper:
             None: If the metadata file is missing or cannot be loaded.
         """
         if not meta_path.exists():
-            self.logger.warning(f"⚠️ Metadata not found: {meta_path}")
+            self.logger.warning(f"Metadata not found: {meta_path}")
             return None
         try:
             with open(meta_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return {os.path.splitext(k)[0]: v for k, v in data.items()}
         except Exception as e:
-            self.logger.error(f"❌ Failed to load metadata ({meta_path}): {e}")
+            self.logger.error(f"Failed to load metadata ({meta_path}): {e}")
             return None
 
     def _restore_single_image(
@@ -89,7 +89,7 @@ class RestoreCropper:
         """
         img = cv2.imread(str(img_path))
         if img is None:
-            self.logger.warning(f"⚠️ Failed to read image: {img_path.name}")
+            self.logger.warning(f"Failed to read image: {img_path.name}")
             return False
 
         h_orig, w_orig = meta["orig_size"]
@@ -98,14 +98,14 @@ class RestoreCropper:
 
         success = cv2.imwrite(str(save_path), roi)
         if success:
-            self.logger.info(f"✅ Restored: {save_path.name}")
+            self.logger.info(f"Restored: {save_path.name}")
             return True
         else:
-            self.logger.error(f"❌ Failed to save: {save_path.name}")
+            self.logger.error(f"Failed to save: {save_path.name}")
             return False
 
     # ============================================================
-    # 🚀 Public API
+    # Public API
     # ============================================================
     def run(self):
         """
@@ -117,7 +117,7 @@ class RestoreCropper:
         - Copies images without padding metadata directly.
         """
         if not self.input_root.exists():
-            raise FileNotFoundError(f"❌ Input folder not found: {self.input_root}")
+            raise FileNotFoundError(f"Input folder not found: {self.input_root}")
 
         self.output_root.mkdir(parents=True, exist_ok=True)
         total_restored = 0
@@ -129,7 +129,7 @@ class RestoreCropper:
             out_dir.mkdir(parents=True, exist_ok=True)
 
             if not in_dir.exists():
-                self.logger.warning(f"⚠️ Input folder missing: {in_dir}")
+                self.logger.warning(f"Input folder missing: {in_dir}")
                 continue
 
             metadata = self._load_metadata(meta_path)
@@ -147,7 +147,7 @@ class RestoreCropper:
 
                 if name not in metadata:
                     shutil.copy(input_path, save_path)
-                    self.logger.info(f"🔁 {file}: Copied (no padding metadata)")
+                    self.logger.info(f"{file}: Copied (no padding metadata)")
                     continue
 
                 success = self._restore_single_image(
@@ -156,8 +156,8 @@ class RestoreCropper:
                 restored_count += int(success)
 
             self.logger.info(
-                f"✅ {category}: {restored_count} images restored → {out_dir}"
+                f"{category}: {restored_count} images restored → {out_dir}"
             )
             total_restored += restored_count
 
-        self.logger.info(f"🎉 Restoration complete ({total_restored} total files)")
+        self.logger.info(f"Restoration complete ({total_restored} total files)")

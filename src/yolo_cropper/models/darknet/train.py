@@ -100,7 +100,7 @@ class DarknetTrainer:
                 self.logger.error(f"   - {m}")
             return False
 
-        self.logger.info("[✓] All required files are present for training.")
+        self.logger.info("All required files are present for training.")
         return True
 
     def train(self, weights_init: str = None):
@@ -135,17 +135,17 @@ class DarknetTrainer:
             ),
         ]
 
-        self.logger.info(f"🚀 Starting Darknet training ({self.model_name.upper()})")
+        self.logger.info(f"Starting Darknet training ({self.model_name.upper()})")
         self.logger.debug(f"[CMD] {' '.join(cmd[2:])}")
 
         process = subprocess.run(cmd, cwd=self.darknet_dir, shell=False)
 
         if process.returncode != 0:
             raise RuntimeError(
-                f"❌ Training failed (code: {process.returncode}). See log: {log_path}"
+                f"Training failed (code: {process.returncode}). See log: {log_path}"
             )
 
-        self.logger.info(f"[✓] Training complete! Log saved → {log_path}")
+        self.logger.info(f"Training complete! Log saved → {log_path}")
 
         # Copy best checkpoint
         ckpt_dir = (
@@ -165,10 +165,10 @@ class DarknetTrainer:
 
         if best_weight:
             shutil.copy2(best_weight, target_weight)
-            self.logger.info(f"[✓] Copied best weight → {target_weight}")
+            self.logger.info(f"Copied best weight → {target_weight}")
         else:
             self.logger.warning(
-                "[!] No '_best.weights' file found in checkpoints directory."
+                "No '_best.weights' file found in checkpoints directory."
             )
 
         return str(target_weight)

@@ -29,7 +29,7 @@ from src.annotation_cleaner.core.restore_crop import RestoreCropper
 
 
 # ============================================================
-# 🧩 Helper Functions
+# Helper Functions
 # ============================================================
 def create_test_image(path: Path, size=(512, 512), color=(128, 128, 128)):
     """Create a simple RGB test image and save it to disk."""
@@ -58,7 +58,7 @@ def setup_test_environment(tmp_path: Path):
 def load_metadata(meta_path: Path):
     """Load metadata JSON file and return its contents."""
     if not meta_path.exists():
-        raise AssertionError(f"❌ Metadata file missing: {meta_path}")
+        raise AssertionError(f"Metadata file missing: {meta_path}")
     with open(meta_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -78,7 +78,7 @@ def create_fake_padding_metadata(meta_path: Path, image_files):
 
 
 # ============================================================
-# ✅ Tests for ImagePadder
+# Tests for ImagePadder
 # ============================================================
 def test_image_padder_run_creates_expected_outputs(tmp_path):
     """ImagePadder should pad small images and copy large ones."""
@@ -118,7 +118,7 @@ def verify_category_output(output_dir: Path, category: str):
 
 
 # ============================================================
-# ✅ Tests for CleanAnnotation
+# Tests for CleanAnnotation
 # ============================================================
 def mock_gemini_client(tmp_image: Path):
     """Create a mock Gemini client that returns fake image bytes."""
@@ -187,7 +187,7 @@ def test_clean_annotation_run_creates_outputs(tmp_path):
 
 
 # ============================================================
-# ✅ Tests for RestoreCropper
+# Tests for RestoreCropper
 # ============================================================
 def test_restore_single_image_restores_correct_roi(tmp_path):
     """_restore_single_image should correctly crop ROI from padded image."""

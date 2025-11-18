@@ -55,12 +55,12 @@ class ImagePadder:
         self.metadata_name = metadata_name
         self.padding_color = self.DEFAULT_PADDING_COLOR
 
-        self.logger.info(f"📂 Input directory: {self.input_root}")
-        self.logger.info(f"💾 Output directory: {self.output_root}")
-        self.logger.info(f"🎨 Target size: {self.target_size}")
+        self.logger.info(f"Input directory: {self.input_root}")
+        self.logger.info(f"Output directory: {self.output_root}")
+        self.logger.info(f"Target size: {self.target_size}")
 
     # ============================================================
-    # 🔧 Internal Utility: Padding Single Image
+    # Internal Utility: Padding Single Image
     # ============================================================
     def _pad_image(self, image_path: Path, save_path: Path) -> Optional[dict]:
         """
@@ -72,19 +72,19 @@ class ImagePadder:
         """
         img = cv2.imread(str(image_path))
         if img is None:
-            self.logger.error(f"⚠️ {image_path.name}: Failed to load image.")
+            self.logger.error(f"{image_path.name}: Failed to load image.")
             return None
 
         h, w = img.shape[:2]
 
         # Skip padding if already larger than target
         if h >= self.target_size and w >= self.target_size:
-            self.logger.info(f"⏩ {image_path.name}: Already large enough → copy only.")
+            self.logger.info(f"{image_path.name}: Already large enough → copy only.")
             save_path.parent.mkdir(parents=True, exist_ok=True)
             try:
                 shutil.copy(str(image_path), str(save_path))
             except Exception as e:
-                self.logger.error(f"❌ {image_path.name}: Copy failed ({e})")
+                self.logger.error(f"{image_path.name}: Copy failed ({e})")
             return None
 
         # Calculate padding (preventing negative values)
@@ -107,7 +107,7 @@ class ImagePadder:
             success = cv2.imwrite(str(save_path), padded)
 
             if not success:
-                self.logger.error(f"❌ {image_path.name}: Failed to save padded image.")
+                self.logger.error(f"{image_path.name}: Failed to save padded image.")
                 return None
 
             return {
@@ -121,11 +121,11 @@ class ImagePadder:
             }
 
         except Exception as e:
-            self.logger.error(f"⚠️ {image_path.name}: Error during padding ({e})")
+            self.logger.error(f"{image_path.name}: Error during padding ({e})")
             return None
 
     # ============================================================
-    # 🚀 Public API
+    # Public API
     # ============================================================
     def run(self):
         """
@@ -137,7 +137,7 @@ class ImagePadder:
         - Logs skipped, copied, and processed files for transparency.
         """
         if not self.input_root.exists():
-            raise FileNotFoundError(f"❌ Input folder not found: {self.input_root}")
+            raise FileNotFoundError(f"Input folder not found: {self.input_root}")
 
         self.output_root.mkdir(parents=True, exist_ok=True)
 
@@ -147,10 +147,10 @@ class ImagePadder:
             meta_path = out_dir / self.metadata_name
 
             if not in_dir.exists():
-                self.logger.warning(f"⚠️ Missing folder: {in_dir}")
+                self.logger.warning(f"Missing folder: {in_dir}")
                 continue
 
-            self.logger.info(f"🧩 Processing category: {category}")
+            self.logger.info(f"Processing category: {category}")
             metadata = {}
 
             for file in sorted(os.listdir(in_dir)):
@@ -168,9 +168,9 @@ class ImagePadder:
                 try:
                     with open(meta_path, "w", encoding="utf-8") as f:
                         json.dump(metadata, f, indent=4, ensure_ascii=False)
-                    self.logger.info(f"✅ Padding complete → {out_dir}")
-                    self.logger.info(f"🧾 Metadata saved → {meta_path}")
+                    self.logger.info(f"Padding complete → {out_dir}")
+                    self.logger.info(f"Metadata saved → {meta_path}")
                 except Exception as e:
-                    self.logger.error(f"❌ Failed to save metadata ({meta_path}): {e}")
+                    self.logger.error(f"Failed to save metadata ({meta_path}): {e}")
             else:
-                self.logger.info(f"⚪ {category}: No new padded images created.")
+                self.logger.info(f"{category}: No new padded images created.")
