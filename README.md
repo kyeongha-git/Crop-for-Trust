@@ -118,12 +118,11 @@ The table below visualizes the transformation of data through the pipeline.
 | Category | (a) Original | (b) YOLO-Crop | (c) GAC | (d) Hybrid |
 |:---------:|:---------:|:--------------:|:------------:|:----------------:|
 | **Repair** | <img src="assets/data_sample/original/repair/img_01.png" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_01.png" width="250"> | <img src="assets/data_sample/gac/repair/img_01.png" width="250"> | <img src="assets/data_sample/hybrid/repair/img_01.png" width="250"> |
-|            | <img src="assets/data_sample/original/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/gac/repair/img_02.jpg" width="250"> | <img src=" assets/data_sample/hybrid/repair/img_02.jpg" width="250"> |
-|           | <img src="assets/data_sample/original/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/gac/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/hybrid/repair/img_03.jpg" width="250"> |
+|            | <img src="assets/data_sample/original/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/gac/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/hybrid/repair/img_02.jpg" width="250"> |
+|           | <img src="assets/data_sample/original/repair/img_03.png" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/gac/repair/img_03.png" width="250"> | <img src="assets/data_sample/hybrid/repair/img_03.jpg" width="250"> |
 | **Replace** | <img src="assets/data_sample/original/replace/img_01.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/replace/img_01.jpg" width="250"> | <img src="assets/data_sample/gac/replace/img_01.jpg" width="250"> | <img src="assets/data_sample/hybrid/replace/img_01.jpg" width="250"> |
 |           |  <img src="assets/data_sample/original/replace/img_02.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/replace/img_02.jpg" width="250"> | <img src="assets/data_sample/gac/replace/img_02.jpg" width="250"> | <img src="assets/data_sample/hybrid/replace/img_02.jpg" width="250"> |
 |           | <img src="assets/data_sample/original/replace/img_03.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/replace/img_03.jpg" width="250"> | <img src="assets/data_sample/gac/replace/img_03.jpg" width="250"> | <img src="assets/data_sample/hybrid/replace/img_03.jpg" width="250"> |
-
 
 ---
 
