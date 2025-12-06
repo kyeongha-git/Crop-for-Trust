@@ -188,8 +188,9 @@ The full dataset is private. A sample dataset is provided in  data/sample/ for t
 
 ## Citation
 
-```bash
 If you use this code for your research, please cite our paper:
+
+```bash
 @article{hwang2025cropfortrust,
   title={Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning},
   author={Hwang, Kyeongha},
