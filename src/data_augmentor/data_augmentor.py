@@ -128,11 +128,11 @@ class DataAugmentor:
         self._cleanup_original_classes()
         self._run_augment()
 
-        self.logger.info("\n🎉 Augmentor pipeline completed successfully!")
+        self.logger.info("\n Augmentor pipeline completed successfully!")
 
 
 # ============================================================
-# ✅ CLI Entry Point
+# CLI Entry Point
 # ============================================================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run DataAugmentor pipeline")

@@ -1,14 +1,14 @@
-# Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification
+# Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning
 
-> **Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification**  
-> This repository provides the **official open-source implementation** of the paper *"Crop and Conquer: A Dual-Pipeline Framework for Trustworthy Visual Classification"*.  
+> **Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning**  
+> This repository provides the **official open-source implementation** of the paper *"Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning"*.  
 > The study was conducted and authored by **Kyeongha Hwang (Suwon University, Korea)**, who carried out all experiments and analysis.
 
 ---
 
 ## Reproduction Guide
 
-This section describes how to reproduce and execute the provided dual-pipeline framework.
+This section describes how to reproduce and execute the provided Tow-Branch (Generaitve Annotation Cleaning(GAC), YOLO-based ROI Cropping (YOLO-Crop)) debiasing framework.
 
 ### Environment Setup
 

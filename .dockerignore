@@ -1,0 +1,48 @@
+# Python cache & environment artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data
+backup/*
+data/*
+!data/sample/**   # include only sample set
+
+# Logs / temporary outputs
+logs/
+*.log
+runs/
+wandb/
+
+# Jupyter notebooks
+*.ipynb
+
+# Tests
+tests/
+
+# OS system files
+.DS_Store
+
+# Git & version control
+.git/
+.gitignore
+
+# IDE / Editor workspace
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+
+# Packages metadata
+*.egg-info/
+src.egg-info/
+
+# assets
+assets/*
+
+# trained weights
+saved_model/*
+!saved_model/README*
