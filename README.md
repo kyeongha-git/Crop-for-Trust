@@ -163,7 +163,7 @@ allowing the model to focus more precisely on the true damage areas during learn
 
 ### Quantitative Analysis
 
-Data Reliability is defined as $1 - \text{Bias Ratio}$ (e.g., proportion of images with human markings).
+Data Reliability is defined as $1 - \text{Bias Ratio}$ (e.g., proportion of images with visual artifacts).
 
 | Condition | Data Reliability | Annotation Clean | YOLO Crop | Best Acc (%) |
 |------------|------------------|------------------|------------|---------------|
@@ -182,13 +182,13 @@ Data Reliability is defined as $1 - \text{Bias Ratio}$ (e.g., proportion of imag
 
 ## Note on Data Privacy
 
-The full dataset is private. A sample dataset is provided in  ../assets/data_sample/ for testing pipeline functionality.
+The full dataset is private. A sample dataset is provided in  data/sample/ for testing pipeline functionality.
 
 ---
 
 ## Citation
 
-'''bash
+```bash
 If you use this code for your research, please cite our paper:
 @article{hwang2025cropfortrust,
   title={Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning},
@@ -196,4 +196,4 @@ If you use this code for your research, please cite our paper:
   journal={Journal Name (TBD)},
   year={2025}
 }
-'''
+```
