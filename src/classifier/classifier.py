@@ -158,7 +158,7 @@ class Classifier:
             notes=self.wandb_cfg.get("notes", None),
         )
 
-        self.logger.info(f"📡 wandb initialized: {run_name}")
+        self.logger.info(f"wandb initialized: {run_name}")
         return wandb_run
 
     # ==========================================================
