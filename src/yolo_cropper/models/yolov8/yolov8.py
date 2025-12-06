@@ -149,7 +149,7 @@ class YOLOv8Pipeline:
     # --------------------------------------------------------
     def run(self):
         self.logger.info("Running YOLOv8 Pipeline")
-        # self.step_train()
+        self.step_train()
         # metrics = self.step_evaluate()
         self.step_make_predict()
         self.step_predict()

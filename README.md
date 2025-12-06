@@ -101,7 +101,7 @@ python src/main.py --annot_clean on --test on
 All module settings are managed via utils/config.yaml.
 
 > **Note on Custom Data:** To test on your own images, place them in:
-> data/sample/annotation_cleaner/only_annotation_image/
+>  ../assets/data_sample/annotation_cleaner/only_annotation_image/
 > Then run with --annot_clean on.
 
 ---
@@ -117,12 +117,12 @@ The table below visualizes the transformation of data through the pipeline.
 
 | Category | (a) Original | (b) YOLO-Crop | (c) GAC | (d) Hybrid |
 |:---------:|:---------:|:--------------:|:------------:|:----------------:|
-| **Repair** | <img src="data/sample/original/repair/img_01.png" width="250"> | <img src="data/sample/original_crop/yolov8s/repair/img_01.png" width="250"> | <img src="data/sample/generation/repair/img_01.png" width="250"> | <img src="data/sample/generation_crop/yolov8s/repair/img_01.png" width="250"> |
-|            | <img src="data/sample/original/repair/img_02.jpg" width="250"> | <img src="data/sample/original_crop/yolov8s/repair/img_02.jpg" width="250"> | <img src="data/sample/generation/repair/img_02.jpg" width="250"> | <img src="data/sample/generation_crop/yolov8s/repair/img_02.jpg" width="250"> |
-|           | <img src="data/sample/original/repair/img_03.png" width="250"> | <img src="data/sample/original_crop/yolov8s/repair/img_03.jpg" width="250"> | <img src="data/sample/generation/repair/img_03.png" width="250"> | <img src="data/sample/generation_crop/yolov8s/repair/img_03.jpg" width="250"> |
-| **Replace** | <img src="data/sample/original/replace/img_01.jpg" width="250"> | <img src="data/sample/original_crop/yolov8s/replace/img_01.jpg" width="250"> | <img src="data/sample/generation/replace/img_01.jpg" width="250"> | <img src="data/sample/generation_crop/yolov8s/replace/img_01.jpg" width="250"> |
-|           |  <img src="data/sample/original/replace/img_02.jpg" width="250"> | <img src="data/sample/original_crop/yolov8s/replace/img_02.jpg" width="250"> | <img src="data/sample/generation/replace/img_02.jpg" width="250"> | <img src="data/sample/generation_crop/yolov8s/replace/img_02.jpg" width="250"> |
-|           | <img src="data/sample/original/replace/img_03.jpg" width="250"> | <img src="data/sample/original_crop/yolov8s/replace/img_03.jpg" width="250"> | <img src="data/sample/generation/replace/img_03.jpg" width="250"> | <img src="data/sample/generation_crop/yolov8s/replace/img_03.jpg" width="250"> |
+| **Repair** | <img src="assets/data_sample/original/repair/img_01.png" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_01.png" width="250"> | <img src="assets/data_sample/gac/repair/img_01.png" width="250"> | <img src="assets/data_sample/hybrid/repair/img_01.png" width="250"> |
+|            | <img src="assets/data_sample/original/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_02.jpg" width="250"> | <img src="assets/data_sample/gac/repair/img_02.jpg" width="250"> | <img src=" assets/data_sample/hybrid/repair/img_02.jpg" width="250"> |
+|           | <img src="assets/data_sample/original/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/gac/repair/img_03.jpg" width="250"> | <img src="assets/data_sample/hybrid/repair/img_03.jpg" width="250"> |
+| **Replace** | <img src="assets/data_sample/original/replace/img_01.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/replace/img_01.jpg" width="250"> | <img src="assets/data_sample/gac/replace/img_01.jpg" width="250"> | <img src="assets/data_sample/hybrid/replace/img_01.jpg" width="250"> |
+|           |  <img src="assets/data_sample/original/replace/img_02.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/replace/img_02.jpg" width="250"> | <img src="assets/data_sample/gac/replace/img_02.jpg" width="250"> | <img src="assets/data_sample/hybrid/replace/img_02.jpg" width="250"> |
+|           | <img src="assets/data_sample/original/replace/img_03.jpg" width="250"> | <img src="assets/data_sample/yolo-crop/replace/img_03.jpg" width="250"> | <img src="assets/data_sample/gac/replace/img_03.jpg" width="250"> | <img src="assets/data_sample/hybrid/replace/img_03.jpg" width="250"> |
 
 
 ---
@@ -137,10 +137,21 @@ We evaluated the classification performance on four dataset configurations.
 
 Grad-CAM results show that YOLO-based cropping (b, d) significantly improves model attention, shifting focus from irrelevant background/markings to the actual damage
 
-| (a) Original | (b) YOLO-Crop | (c) GAC | (d) Hybrid |
-|---------------|---------------|---------------|----------------|
-| ![gradcam_orig_01](assets/Grad-CAM/original/img_01.png) | ![gradcam_orig_crop_01](assets/Grad-CAM/original/img_01_crop.png) | ![gradcam_gen_01](assets/Grad-CAM/generation/img_01.png) | ![gradcam_gen_crop_01](assets/Grad-CAM/generation/img_01_crop.png) |
-| ![gradcam_orig_02](assets/Grad-CAM/original/img_02.png) | ![gradcam_orig_crop_02](assets/Grad-CAM/original/img_02_crop.png) | ![gradcam_gen_02](assets/Grad-CAM/generation/img_02.png) | ![gradcam_gen_crop_02](assets/Grad-CAM/generation/img_02_crop.png) |
+1. Original Dataset
+
+| (a) Raw Input | (b) Baseline | (c) Ours(YOLO-Crop) |
+|---------------|---------------|---------------|
+| ![gradcam_orig_01](assets/grad_cam/original/img_1_orig.jpg) | ![gradcam_orig_grad_01](assets/grad_cam/original/img_1_grad.jpg) | ![gradcam_crop_01](assets/grad_cam/original/img_1_crop.jpg) | 
+| ![gradcam_orig_02](assets/grad_cam/original/img_2_orig.jpg) | ![gradcam_orig_crop_02](assets/grad_cam/original/img_2_grad.jpg) | ![gradcam_gen_02](assets/grad_cam/original/img_2_crop.jpg) | 
+
+
+2. GAC Dataset
+
+| (a) Raw Input | (b) Baseline | (c) Ours(YOLO-Crop) |
+|---------------|---------------|---------------|
+| ![gradcam_orig_01](assets/grad_cam/gac/img_1_orig.jpg) | ![gradcam_orig_grad_01](assets/grad_cam/gac/img_1_grad.jpg) | ![gradcam_crop_01](assets/grad_cam/gac/img_1_crop.jpg) | 
+| ![gradcam_orig_02](assets/grad_cam/gac/img_2_orig.jpg) | ![gradcam_orig_crop_02](assets/grad_cam/gac/img_2_grad.jpg) | ![gradcam_gen_02](assets/grad_cam/gac/img_2_crop.jpg) | 
+
 
 > *Observation:*  
 > When the model trained on the YOLO Cropped dataset was used to infer the original images,
@@ -172,7 +183,7 @@ Data Reliability is defined as $1 - \text{Bias Ratio}$ (e.g., proportion of imag
 
 ## Note on Data Privacy
 
-The full dataset is private. A sample dataset is provided in data/sample/ for testing pipeline functionality.
+The full dataset is private. A sample dataset is provided in  ../assets/data_sample/ for testing pipeline functionality.
 
 ---
 
