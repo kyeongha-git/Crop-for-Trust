@@ -41,6 +41,8 @@ sys.path.append(str(ROOT_DIR))
 
 from src.annotation_cleaner.annotation_cleaner import AnnotationCleaner
 from src.yolo_cropper.yolo_cropper import YOLOCropperController
+from src.data_augmentor.data_augmentor import DataAugmentor
+from src.classifier.classifier import Classifier            
 from utils.config_manager import ConfigManager
 from utils.logging import get_logger, setup_logging
 
@@ -68,7 +70,7 @@ def main():
     parser = argparse.ArgumentParser(description="Full AI Pipeline Controller")
 
     parser.add_argument(
-        "--config", type=str, default="utils/config.yaml", help="Path to config.yaml"
+        "--config", type=str, default="utils/config_docker.yaml", help="Path to config.yaml"
     )
     parser.add_argument("--annot_clean", type=str, choices=["on", "off"], default=None)
     parser.add_argument("--yolo_crop", type=str, choices=["on", "off"], default=None)

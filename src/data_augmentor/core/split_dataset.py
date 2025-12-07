@@ -22,7 +22,7 @@ from utils.logging import get_logger
 def get_images(class_path: Path) -> List[Path]:
     """Return a sorted list of image files from a given class folder."""
     valid_ext = (".jpg", ".jpeg", ".png")
-    return sorted([p for p in class_path.iterdir() if p.suffix.lower() in valid_ext])
+    return sorted([p for p in class_path.iterdir() if p.is_file() and p.suffix.lower() in valid_ext])
 
 
 def make_splits(
@@ -30,28 +30,28 @@ def make_splits(
 ) -> Dict[str, List[Path]]:
     """
     Split a list of image paths into train/valid/test subsets.
-
-    Args:
-        images (List[Path]): All image paths.
-        train_ratio (float): Ratio for training set.
-        valid_ratio (float): Ratio for validation set.
-        seed (int): Random seed for reproducibility.
-
-    Returns:
-        Dict[str, List[Path]]: Mapping of split names to image lists.
+    Includes safety guard for small datasets (Demo mode).
     """
     random.seed(seed)
-    random.shuffle(images)
+    shuffled_images = list(images)
+    random.shuffle(shuffled_images)
 
-    total = len(images)
+    total = len(shuffled_images)
     train_end = int(total * train_ratio)
     valid_end = train_end + int(total * valid_ratio)
 
-    return {
-        "train": images[:train_end],
-        "valid": images[train_end:valid_end],
-        "test": images[valid_end:],
-    }
+    train_set = shuffled_images[:train_end]
+    valid_set = shuffled_images[train_end:valid_end]
+    test_set = shuffled_images[valid_end:]
+
+    if total > 0 and total < 5:
+        if not valid_set and len(train_set) > 0:
+            valid_set = [train_set.pop()]
+        
+        if not train_set and len(images) > 0:
+             train_set = [images[0]]
+
+    return {"train": train_set, "valid": valid_set, "test": test_set}
 
 
 def copy_images(
@@ -63,12 +63,6 @@ def copy_images(
 ) -> None:
     """
     Copy split images into their respective folders.
-
-    Example target structure:
-        output_dir/
-            ├── train/class_name/
-            ├── valid/class_name/
-            └── test/class_name/
     """
     for split_name, files in splits.items():
         split_dir = output_dir / split_name / class_name
@@ -88,16 +82,7 @@ def split_dataset(
 ) -> None:
     """
     Perform dataset splitting for each class folder.
-
-    Automatically divides images into train/valid/test
-    based on provided ratios in `config.yaml`.
-
-    Args:
-        data_dir (Path): Root dataset directory containing class subfolders.
-        output_dir (Path): Destination directory for split datasets.
-        split_cfg (Dict[str, float]): Split ratios for train/valid/test.
-        seed (int): Random seed for reproducibility.
-        logger: Optional logger instance.
+    Excludes the output directory itself to prevent recursion issues.
     """
     if logger is None:
         logger = get_logger("split_dataset")
@@ -105,17 +90,36 @@ def split_dataset(
     train_ratio = split_cfg.get("train_ratio", 0.8)
     valid_ratio = split_cfg.get("valid_ratio", 0.1)
     test_ratio = split_cfg.get("test_ratio", 0.1)
-    assert (
-        abs(train_ratio + valid_ratio + test_ratio - 1.0) < 1e-6
-    ), "Train/Valid/Test ratios must sum to 1."
+    
+    # Float precision issue handling
+    if abs(train_ratio + valid_ratio + test_ratio - 1.0) > 1e-6:
+        logger.warning("Ratios do not sum to 1. Normalizing...")
+        total = train_ratio + valid_ratio + test_ratio
+        train_ratio /= total
+        valid_ratio /= total
+        test_ratio /= total
 
     logger.info(f"Starting dataset split: {data_dir}")
     logger.info(f" - Output Dir: {output_dir}")
     logger.info(
-        f" - Ratios: train={train_ratio}, valid={valid_ratio}, test={test_ratio}"
+        f" - Ratios: train={train_ratio:.2f}, valid={valid_ratio:.2f}, test={test_ratio:.2f}"
     )
 
-    categories = [d.name for d in data_dir.iterdir() if d.is_dir()]
+    categories = []
+    for d in data_dir.iterdir():
+        if not d.is_dir():
+            continue
+        
+        if d.name.startswith("."):
+            continue
+            
+        if d.resolve() == output_dir.resolve():
+            continue
+            
+        categories.append(d.name)
+
+    categories.sort()
+
     if not categories:
         logger.warning(f"No class folders found in {data_dir}")
         return
@@ -123,6 +127,7 @@ def split_dataset(
     for class_name in categories:
         class_path = data_dir / class_name
         images = get_images(class_path)
+        
         if not images:
             logger.warning(f"No images found in {class_name}. Skipping.")
             continue

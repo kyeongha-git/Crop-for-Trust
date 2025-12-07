@@ -1,9 +1,9 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'on'
+  annot_clean: 'off'
   yolo_crop: 'on'
   yolo_model: yolov8s
-  classify_model: vgg16
+  classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
 annotation_cleaner:
@@ -21,7 +21,7 @@ annotation_cleaner:
     target_size: 1024
   annotation_clean:
     input_dir: data/sample/annotation_cleaner/only_annotation_image_padded
-    output_dir: sample/annotation_cleaner/generated_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image_padded
     test_mode: 'off'
     test_limit: 6
     model: gemini-2.5-flash-image-preview
@@ -33,8 +33,7 @@ annotation_cleaner:
       other human body parts). Ensure the surface of the window, including reflections
       and lighting, remains natural and realistic after inpainting. The output image
       must have exactly the same width and height as the input image, with no resizing,
-      scaling, or cropping.
-      '
+      scaling, or cropping. '
     temperature: 0.0
     max_retries: 3
     timeout: 60
@@ -55,76 +54,24 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov8s
-    input_dir: data/sample/generation
-    output_dir: data/sample/generation_crop/yolov8s
+    input_dir: data/sample/original
+    output_dir: data/sample/original_crop/yolov8s
+    mode: detect
   dataset:
     results_dir: outputs/json_results
-    train_data_dir: data/yolo_cropper
     saved_model_dir: saved_model/yolo_cropper
-    checkpoint_dir: checkpoints/yolo_cropper
-    metrics_dir: metrics/yolo_cropper
     detect_output_dir: runs/detect
-    train_output_dir: runs/train
-  train:
-    batch_size: 16
-    epochs: 400
+  inference:
+    conf_thresh: 0.25
+    iou_thresh: 0.45
     imgsz: 416
-    device: 0
-    save_crop: false
-    save_txt: true
-    save_conf: true
-  darknet:
-    model_name: yolov4
-    build_mode: cpu
-    darknet_dir: third_party/darknet
-    darknet_data_dir: third_party/darknet/data
-    modes:
-      cpu:
-        GPU: 0
-        CUDNN: 0
-        CUDNN_HALF: 0
-        OPENCV: 1
-        MAKE_JOBS: 4
-      gpu:
-        GPU: 1
-        CUDNN: 1
-        CUDNN_HALF: 1
-        OPENCV: 1
-        MAKE_JOBS: 8
-    cfg_overrides:
-      batch: 64
-      subdivisions: 16
-      width: 416
-      height: 416
-      channels: 3
-      momentum: 0.949
-      decay: 0.0005
-      learning_rate: 0.001
-      burn_in: 1000
-      max_batches: 6000
-      policy: steps
-      steps: 4800,5400
-      scales: .1,.1
-      mosaic: 0
-      saturation: 1.5
-      exposure: 1.5
-      hue: 0.1
-      classes: 2
-      iou_loss: ciou
-      nms_kind: greedynms
-      beta_nms: 0.6
-      iou_thresh: 0.213
-      cls_normalizer: 1.0
-      iou_normalizer: 0.07
-  yolov5:
-    yolov5_dir: third_party/yolov5
-    data_yaml: data/yolo_cropper/yolov5/data.yaml
-  yolov8:
-    data_yaml: data/yolo_cropper/yolov8/data.yaml
+    device: cpu
+    save_crop: true
+    save_txt: false
 data_augmentor:
   data:
-    input_dir: data/sample/generation_crop/yolov8s
-    output_dir: data/sample/generation_crop/yolov8s
+    input_dir: data/sample/original_crop/yolov8s
+    output_dir: data/sample/original_crop/yolov8s/dataset
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -153,18 +100,18 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: data/sample/generation_crop/yolov8s
+    input_dir: data/sample/original_crop/yolov8s/dataset
   train:
     model_name: mobilenet_v2
-    batch_size: 32
-    epochs: 80
+    batch_size: 2
+    epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
     save_dir: ./saved_model/classifier
     metric_dir: ./metrics/classifier
     check_dir: ./checkpoints/classifier
   wandb:
-    enabled: true
+    enabled: false
     project: Crop-for-Trust
     entity: kyeonghah-university-of-suwon
     run_name_pattern: '{model}_{input_dir}'

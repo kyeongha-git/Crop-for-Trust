@@ -74,19 +74,6 @@ class DataAugmentor:
         )
         self.logger.info("Split completed!")
 
-    def _cleanup_original_classes(self):
-        """Remove original class folders after splitting."""
-        self.logger.info("\n[Cleanup] Removing original class directories...")
-        for cls in ["repair", "replace"]:
-            target = self.output_dir / cls
-            if target.exists():
-                try:
-                    shutil.rmtree(target)
-                    self.logger.info(f"Deleted {target}")
-                except Exception as e:
-                    self.logger.warning(f"Failed to delete {target}: {e}")
-        self.logger.info("Cleanup completed!")
-
     # ============================================================
     # 🔹 Augmentation Stage
     # ============================================================
@@ -109,8 +96,7 @@ class DataAugmentor:
         """
         Execute the full pipeline:
         1. Split dataset
-        2. Clean up original folders
-        3. Perform augmentation (optional)
+        2. Perform augmentation (optional)
         """
         if not self.input_dir.exists():
             raise FileNotFoundError(
@@ -125,7 +111,6 @@ class DataAugmentor:
         )
 
         self._run_split()
-        self._cleanup_original_classes()
         self._run_augment()
 
         self.logger.info("\n Augmentor pipeline completed successfully!")

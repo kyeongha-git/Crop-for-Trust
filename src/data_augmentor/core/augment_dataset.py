@@ -212,7 +212,7 @@ def balance_augmentation(root_dir: Path, aug_cfg: Dict, seed: int = 42, logger=N
     logger.info(f"[Counts] train/repair={repair_count}, train/replace={replace_count}")
 
     if repair_count == replace_count:
-        logger.info("✅ Classes are already balanced.")
+        logger.info("Classes are already balanced.")
         return
 
     smaller_dir = train_repair if repair_count < replace_count else train_replace

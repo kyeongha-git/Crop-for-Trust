@@ -4,10 +4,14 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Data
+# Data (주의: 인라인 주석 금지)
 backup/*
 data/*
-!data/sample/**   # include only sample set
+!data/sample
+
+# YOLO-Crop
+src/yolo_cropper/models/darknet
+src/yolo_cropper/models/yolov5
 
 # Logs / temporary outputs
 logs/

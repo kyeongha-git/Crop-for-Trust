@@ -116,6 +116,8 @@ class ConfigManager:
         else:
             crop_output_dir = annot_output_dir
 
+        dataset_output_dir = crop_output_dir / "dataset"
+
         # ==================================================================
         # AnnotationCleaner
         # ==================================================================
@@ -161,15 +163,17 @@ class ConfigManager:
         # ==================================================================
         data_augmentor_cfg = self.cfg.get("data_augmentor", {})
         data_augmentor_cfg.setdefault("data", {})
+        
         data_augmentor_cfg["data"]["input_dir"] = str(crop_output_dir)
-        data_augmentor_cfg["data"]["output_dir"] = str(crop_output_dir)
+        data_augmentor_cfg["data"]["output_dir"] = str(dataset_output_dir)
 
         # ==================================================================
         # Classifier
         # ==================================================================
         classifier_cfg = self.cfg.get("classifier", {})
         classifier_cfg.setdefault("data", {})
-        classifier_cfg["data"]["input_dir"] = str(crop_output_dir)
+        
+        classifier_cfg["data"]["input_dir"] = str(dataset_output_dir)
 
         # ==================================================================
         # Main Config Update

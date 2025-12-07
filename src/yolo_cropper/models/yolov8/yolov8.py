@@ -121,7 +121,7 @@ class YOLOv8Pipeline:
     # Step 4️⃣ Predict (auto multi-folder)
     # --------------------------------------------------------
     def step_predict(self):
-        self.logger.info("[STEP 3] Preparing dataset for Darknet...")
+        self.logger.info("[STEP 3] Preparing dataset for YOLOv8...")
         predictor = YOLOv8Predictor(config=self.cfg)
         predictor.run()
         self.logger.info("Prediction step done")
@@ -155,7 +155,7 @@ class YOLOv8Pipeline:
         self.step_predict()
         self.step_converter()
         self.step_cropper()
-        self.logger.info("\n🎉 YOLOv8 pipeline completed successfully!")
+        self.logger.info("\nYOLOv8 pipeline completed successfully!")
         # return metrics
 
 
