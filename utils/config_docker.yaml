@@ -6,6 +6,7 @@ main:
   classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
+  demo: true
 annotation_cleaner:
   main:
     input_dir: /app/data/sample/original

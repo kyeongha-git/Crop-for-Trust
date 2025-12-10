@@ -8,7 +8,7 @@ echo "========================================================"
 
 # 1. API Key Check
 if [ -z "$GEMINI_API_KEY" ]; then
-    echo "❌ Error: GEMINI_API_KEY is missing!"
+    echo "Error: GEMINI_API_KEY is missing!"
     exit 1
 fi
 

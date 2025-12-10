@@ -170,7 +170,7 @@ class DarknetPipeline:
         self.logger.info(f"Starting Darknet Pipeline ({self.model_name.upper()})")
         self.step_cfg_manager()
         # self.step_make_manager()
-        self.step_data_prepare()
+        # self.step_data_prepare()
         # self.step_train()
         # self.step_evaluate()
         result_json, predict_txt = self.step_predict()

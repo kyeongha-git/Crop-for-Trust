@@ -157,7 +157,7 @@ class YOLOv5Pipeline:
     # --------------------------------------------------------
     def run(self):
         self.logger.info("Running YOLOv5 Pipeline")
-        self.step_train()
+        # self.step_train()
         # metrics = self.step_evaluate()
         self.step_predict()
         self.step_make_predict()
