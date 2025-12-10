@@ -1,9 +1,9 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'on'
+  annot_clean: 'off'
   yolo_crop: 'on'
   yolo_model: yolov8s
-  classify_model: vgg16
+  classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
 annotation_cleaner:
@@ -56,8 +56,8 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov8s
-    input_dir: data/sample/generation
-    output_dir: data/sample/generation_crop/yolov8s
+    input_dir: /home/stu_hwang_kh/Research/data/sample/original
+    output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
   dataset:
     results_dir: outputs/json_results
     train_data_dir: data/yolo_cropper
@@ -124,8 +124,8 @@ yolo_cropper:
     data_yaml: data/yolo_cropper/yolov8/data.yaml
 data_augmentor:
   data:
-    input_dir: data/sample/generation_crop/yolov8s
-    output_dir: data/sample/generation_crop/yolov8s
+    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
+    output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -156,7 +156,7 @@ data_augmentor:
     input_dir: data/generation_crop/yolov8s
 classifier:
   data:
-    input_dir: data/sample/generation_crop/yolov8s
+    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
   train:
     model_name: mobilenet_v2
     batch_size: 32

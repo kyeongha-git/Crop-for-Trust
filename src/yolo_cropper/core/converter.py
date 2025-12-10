@@ -65,9 +65,8 @@ class YOLOConverter:
 
         # Directory paths
         self.model_name = self.main_cfg.get("model_name", "yolov5").lower()
-        self.detect_root = Path(
-            self.dataset_cfg.get("detect_dir", "runs/detect")
-        ).resolve()
+        detect_output_dir = self.dataset_cfg.get("detect_output_dir", "runs/detect")
+        self.detect_root = (Path(detect_output_dir) / self.model_name).resolve()
         self.output_json = Path(
             f"{self.dataset_cfg.get('results_dir', 'outputs/json_results')}/{self.model_name}/result.json"
         ).resolve()
