@@ -7,12 +7,9 @@ converter.py
 This module collects object detection results produced by YOLO models
 and converts them into a single, unified JSON file.
 
-It reads detection outputs (from folders such as `repair` and `replace`),
-matches each detection with its original image, and stores all bounding box
-information in a structured format for later evaluation and analysis.
-
-Simply put, this script merges all YOLO detection results into one
-readable and reusable dataset summary.
+Supports YOLOv5 exp/exp2/... outputs,
+YOLOv8 model-name folders (yolov8s, yolov8m, ...),
+and class-based structure (repair/replace).
 """
 
 import json
@@ -49,13 +46,9 @@ def infer_class_from_folder(path: Path) -> Dict[str, Any]:
 class YOLOConverter:
     """
     Collects and organizes YOLO detection results into a unified JSON dataset.
-
-    Each detection file (.txt) is parsed to extract bounding boxes,
-    matched with its original image path, and stored in a structured format.
     """
 
     def __init__(self, config: Dict[str, Any]):
-        """Initialize converter with paths and configurations."""
         self.logger = get_logger("yolo_cropper.YOLOConverter")
 
         self.cfg = config
@@ -65,8 +58,9 @@ class YOLOConverter:
 
         # Directory paths
         self.model_name = self.main_cfg.get("model_name", "yolov5").lower()
-        detect_output_dir = self.dataset_cfg.get("detect_output_dir", "runs/detect")
-        self.detect_root = (Path(detect_output_dir) / self.model_name).resolve()
+        self.detect_root = Path(
+            self.dataset_cfg.get("detect_dir", "runs/detect")
+        ).resolve()
         self.output_json = Path(
             f"{self.dataset_cfg.get('results_dir', 'outputs/json_results')}/{self.model_name}/result.json"
         ).resolve()
@@ -81,12 +75,7 @@ class YOLOConverter:
     def _parse_detect_folder(
         self, detect_dir: Path, frame_start: int = 1
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """
-        Parse all detection text files in a given folder.
-
-        Each YOLO .txt file contains bounding boxes for one image.
-        This function reads them, associates with the image, and converts to JSON-friendly format.
-        """
+        """Parse YOLO label files inside a detection folder."""
         label_dir = detect_dir / "labels"
         if not label_dir.exists():
             self.logger.warning(f"[!] Skipping {detect_dir} (no labels/ folder found)")
@@ -103,6 +92,8 @@ class YOLOConverter:
                 lines = [ln.strip() for ln in f if ln.strip()]
 
             base = label_file.stem
+
+            # Find predicted image inside detect folder
             img_path = None
             for ext in [".jpg", ".jpeg", ".png"]:
                 cand = detect_dir / f"{base}{ext}"
@@ -110,7 +101,7 @@ class YOLOConverter:
                     img_path = cand.resolve()
                     break
 
-            # Restore original image path from dataset
+            # Restore original path from dataset
             orig_path = self.data_root / class_name / f"{base}.png"
             if not orig_path.exists():
                 for ext in [".jpg", ".jpeg"]:
@@ -156,22 +147,45 @@ class YOLOConverter:
     # --------------------------------------------------------
     def run(self):
         """
-        Collect detection results from all YOLO output folders
-        and save them as a single structured JSON file.
+        Collect YOLO detection outputs from:
+        - YOLOv5 exp / exp2 / ...
+        - YOLOv8 yolov8s / yolov8m / yolov8l ...
+        - Class-based repair / replace
         """
-        detect_dirs = sorted(
-            [
-                p
-                for p in self.detect_root.iterdir()
-                if p.is_dir() and any(k in p.name for k in ("repair", "replace"))
-            ]
-        )
+
+        detect_dirs = []
+
+        for folder in self.detect_root.iterdir():
+            if not folder.is_dir():
+                continue
+
+            # YOLOv5-style exp folders
+            if folder.name.startswith("exp") and (folder / "labels").exists():
+                detect_dirs.append(folder)
+                continue
+
+            # YOLOv8-style model folders (yolov8s, yolov8m...)
+            if folder.name.lower().startswith(self.model_name) and (folder / "labels").exists():
+                detect_dirs.append(folder)
+                continue
+
+            # Class-based structure (repair / replace)
+            if any(cls in folder.name.lower() for cls in ("repair", "replace")):
+                if (folder / "labels").exists():
+                    detect_dirs.append(folder)
+                    continue
 
         if not detect_dirs:
             raise FileNotFoundError(
                 f"No detection folders found in {self.detect_root}"
             )
 
+        detect_dirs = sorted(detect_dirs)
+        self.logger.info(f"[YOLOConverter] Detected {len(detect_dirs)} detection folders:")
+        for d in detect_dirs:
+            self.logger.info(f" - {d}")
+
+        # Parse all detected folders
         all_results = []
         frame_id = 1
 
@@ -181,6 +195,7 @@ class YOLOConverter:
             )
             all_results.extend(results)
 
+        # Save JSON
         self.output_json.parent.mkdir(parents=True, exist_ok=True)
         with open(self.output_json, "w", encoding="utf-8") as f:
             json.dump(all_results, f, ensure_ascii=False, indent=4)
