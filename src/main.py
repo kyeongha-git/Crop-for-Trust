@@ -32,6 +32,7 @@ Example Usage:
 """
 
 import argparse
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -67,10 +68,15 @@ def main():
     # --------------------------------------------------------
     # 1️⃣ CLI Arguments
     # --------------------------------------------------------
+    env_config = os.environ.get("CONFIG", None)
+
     parser = argparse.ArgumentParser(description="Full AI Pipeline Controller")
 
     parser.add_argument(
-        "--config", type=str, default="utils/config_docker.yaml", help="Path to config.yaml"
+        "--config",
+        type=str,
+        default=env_config if env_config else "utils/config.yaml",
+        help="Path to configuration YAML file",
     )
     parser.add_argument("--annot_clean", type=str, choices=["on", "off"], default=None)
     parser.add_argument("--yolo_crop", type=str, choices=["on", "off"], default=None)

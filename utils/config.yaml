@@ -6,7 +6,7 @@ main:
   classify_model: mobilenetv2
   saved_model: saved_model/
   metrics_dir: metrics/
-  demo: false
+  demo: 'off'
 annotation_cleaner:
   main:
     input_dir: data/sample/original
@@ -124,7 +124,7 @@ yolo_cropper:
 data_augmentor:
   data:
     input_dir: /app/data/sample/original_crop/yolov8s
-    output_dir: /app/data/sample/original_crop/yolov8s/dataset
+    output_dir: /app/data/sample/original_crop/yolov8s
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -153,7 +153,7 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /app/data/sample/original_crop/yolov8s/dataset
+    input_dir: /app/data/sample/original_crop/yolov8s
   train:
     model_name: mobilenet_v2
     batch_size: 32

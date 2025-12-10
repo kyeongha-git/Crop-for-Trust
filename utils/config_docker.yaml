@@ -6,7 +6,7 @@ main:
   classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
-  demo: true
+  demo: 'on'
 annotation_cleaner:
   main:
     input_dir: /app/data/sample/original
@@ -72,7 +72,7 @@ yolo_cropper:
 data_augmentor:
   data:
     input_dir: /app/data/sample/original_crop/yolov8s
-    output_dir: /app/data/sample/original_crop/yolov8s/dataset
+    output_dir: null
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
