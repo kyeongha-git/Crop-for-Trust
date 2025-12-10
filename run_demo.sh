@@ -27,11 +27,7 @@ fi
 
 # 3. Run Pipeline
 echo -e "\n[Pipeline] Starting src/main.py..."
-python src/main.py \
-    --config utils/config_docker.yaml \
-    --test on \
-    --yolo_crop on \
-    --annot_clean on
+python src/main.py
 
 echo "========================================================"
 echo "   🎉 Demo Pipeline Completed Successfully!             "

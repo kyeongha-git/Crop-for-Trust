@@ -8,20 +8,20 @@ main:
   metrics_dir: metrics/
 annotation_cleaner:
   main:
-    input_dir: data/sample/original
-    output_dir: data/sample/generation
+    input_dir: /app/data/sample/original
+    output_dir: /app/data/sample/generation
     categories:
     - repair
     - replace
     metadata_name: padding_info.json
     keep_metadata: false
   image_padding:
-    input_dir: data/sample/annotation_cleaner/only_annotation_image
-    output_dir: data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: /app/data/sample/annotation_cleaner/only_annotation_image
+    output_dir: /app/data/sample/annotation_cleaner/only_annotation_image_padded
     target_size: 1024
   annotation_clean:
-    input_dir: data/sample/annotation_cleaner/only_annotation_image_padded
-    output_dir: data/sample/annotation_cleaner/generated_image_padded
+    input_dir: /app/data/sample/annotation_cleaner/only_annotation_image_padded
+    output_dir: /app/data/sample/annotation_cleaner/generated_image_padded
     test_mode: 'off'
     test_limit: 6
     model: gemini-2.5-flash-image-preview
@@ -38,12 +38,12 @@ annotation_cleaner:
     max_retries: 3
     timeout: 60
   restore_crop:
-    input_dir: data/sample/annotation_cleaner/generated_image_padded
-    output_dir: data/sample/annotation_cleaner/generated_image
-    metadata_root: data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: /app/data/sample/annotation_cleaner/generated_image_padded
+    output_dir: /app/data/sample/annotation_cleaner/generated_image
+    metadata_root: /app/data/sample/annotation_cleaner/only_annotation_image_padded
   evaluate:
-    orig_dir: data/sample/annotation_cleaner/only_annotation_image
-    gen_dir: data/sample/annotation_cleaner/generated_image
+    orig_dir: /app/data/sample/annotation_cleaner/only_annotation_image
+    gen_dir: /app/data/sample/annotation_cleaner/generated_image
     metric_dir: ./metrics/annotation_cleaner
     metrics:
     - ssim
@@ -54,8 +54,8 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov8s
-    input_dir: data/sample/original
-    output_dir: data/sample/original_crop/yolov8s
+    input_dir: /app/data/sample/original
+    output_dir: /app/data/sample/original_crop/yolov8s
     mode: detect
   dataset:
     results_dir: outputs/json_results
@@ -70,8 +70,8 @@ yolo_cropper:
     save_txt: false
 data_augmentor:
   data:
-    input_dir: data/sample/original_crop/yolov8s
-    output_dir: data/sample/original_crop/yolov8s/dataset
+    input_dir: /app/data/sample/original_crop/yolov8s
+    output_dir: /app/data/sample/original_crop/yolov8s/dataset
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -100,7 +100,7 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: data/sample/original_crop/yolov8s/dataset
+    input_dir: /app/data/sample/original_crop/yolov8s/dataset
   train:
     model_name: mobilenet_v2
     batch_size: 2
