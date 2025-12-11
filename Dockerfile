@@ -14,11 +14,10 @@ RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+
 COPY src /app/src
 COPY utils /app/utils
-
-RUN mkdir -p /app/saved_model/yolo_cropper
-
+COPY saved_model/yolo_cropper/yolov8s.pt /app/saved_model/yolo_cropper/yolov8s.pt
 COPY data/sample /app/data/sample
 
 COPY run_demo.sh /app/run_demo.sh

@@ -55,8 +55,8 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov8s
-    input_dir: /app/data/sample/original
-    output_dir: /app/data/sample/original_crop/yolov8s
+    input_dir: /home/stu_hwang_kh/Research/data/sample/original
+    output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
     mode: detect
   dataset:
     results_dir: outputs/json_results
@@ -71,7 +71,7 @@ yolo_cropper:
     save_txt: false
 data_augmentor:
   data:
-    input_dir: /app/data/sample/original_crop/yolov8s
+    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
     output_dir: null
   split:
     train_ratio: 0.8
@@ -101,7 +101,7 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /app/data/sample/original_crop/yolov8s/dataset
+    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s/dataset
   train:
     model_name: mobilenet_v2
     batch_size: 2
