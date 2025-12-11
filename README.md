@@ -17,9 +17,72 @@ This project introduces a **Two-Branch Debiasing Framework** aimed at enhancing 
 
 ---
 
-## Reproduction Guide
+## Reproduction Guide (Docker)
 
-This section describes how to reproduce and execute the proposed framework.
+To ensure full reproducibility and ease of access, we provide a pre-built Docker image hosted on Docker Hub. This image includes:
+- Source Code: Full implementation of the pipeline.
+- Sample Data: A subset of industrial images for verification (data/sample).
+- Pre-trained Weights: Fine-tuned YOLOv8s and MobileNetV2 weights (pre-loaded to prevent download corruption).
+
+You can run the entire pipeline (GAC → YOLO-Crop → Augmentation → Classification) with a single command.
+
+### 1. Prerequisites
+- Docker Installed: Ensure Docker is running on your machine.
+- Gemini API Key: Required for the Generative Annotation Cleaning (GAC) module.
+
+### 2. Quick Start (Console Output Only)
+
+Run the following command to verify the pipeline functionality. The results (losses, accuracy, process logs) will be displayed in your terminal.
+
+```bash
+# Replace "YOUR_GEMINI_API_KEY" with your actual key
+docker run -it --rm \
+  -e GEMINI_API_KEY="YOUR_GEMINI_API_KEY" \
+  kyeonghah/crop-for-trust:latest
+```
+
+### 3. Run & Save Results (Recommended)
+
+To inspect the generated images (cleaned annotations, cropped regions) and result metrics locally, mount a volume to the container.
+
+```bash
+# 1. Create a local directory for results
+mkdir -p ./reproduction_results
+
+# 2. Run with Volume Mapping (-v)
+# This maps your local './reproduction_results' to the container's data folder
+docker run -it --rm \
+  -e GEMINI_API_KEY="YOUR_GEMINI_API_KEY" \
+  -v "$(pwd)/reproduction_results:/app/data/sample" \
+  kyeonghah/crop-for-trust:latest
+```
+
+After execution, check ./reproduction_results:
+- generation/: Images restored by GAC (Markings removed).
+- generation_crop/: ROI images cropped by YOLOv8s.
+- generation_crop/dataset/: Final dataset split (Train/Valid/Test) used for classification.
+
+### Pipeline Workflow (Demo Mode)
+
+When executed, the container automatically runs the src/main.py orchestrator in Demo Mode:
+
+1. Annotation Cleaner (GAC):
+- Input: data/sample/original (3 images per class)
+- Action: Removes visual noise using Gemini API.
+- Output: data/sample/generation
+
+2. YOLO Cropper:
+- Action: Detects defects using the included YOLOv8s (Fine-tuned) weights.
+- Output: data/sample/generation_crop (Raw crops)
+
+3. Data Augmentor:
+- Action: Splits data into Train/Valid/Test and balances classes (Safe Copy mode).
+- Output: data/sample/generation_crop/dataset
+
+4. Classifier:
+- Action: Performs a verification training loop (1 Epoch) using MobileNetV2.
+- Result: Final Accuracy & F1-Score logged to console.
+
 
 ### Environment Setup
 

@@ -1,6 +1,6 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'off'
+  annot_clean: 'on'
   yolo_crop: 'on'
   yolo_model: yolov8s
   classify_model: mobilenet_v2
