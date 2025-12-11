@@ -4,10 +4,14 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Data
+# Data (주의: 인라인 주석 금지)
 backup/*
 data/*
-!data/sample/**   # include only sample set
+!data/sample
+
+# YOLO-Crop
+src/yolo_cropper/models/darknet
+src/yolo_cropper/models/yolov5
 
 # Logs / temporary outputs
 logs/
@@ -43,6 +47,12 @@ src.egg-info/
 # assets
 assets/*
 
-# trained weights
+# Ignore ALL saved_model contents
 saved_model/*
+
+# But DO NOT ignore yolov8s.pt (include it)
+!saved_model/yolo_cropper/yolov8s.pt
+
+# Also allow README files
 !saved_model/README*
+!saved_model/yolo_cropper/README*

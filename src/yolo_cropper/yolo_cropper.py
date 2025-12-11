@@ -103,22 +103,3 @@ class YOLOCropperController:
         self.logger.info(f"Pipeline complete ({self.model_name.upper()})")
 
         return metrics
-
-
-# --------------------------------------------------------
-# CLI Entry Point
-# --------------------------------------------------------
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Unified YOLO Cropper Controller")
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="utils/config.yaml",
-        help="Path to the configuration YAML file",
-    )
-    args = parser.parse_args()
-
-    controller = YOLOCropperController(config_path=args.config)
-    controller.run()

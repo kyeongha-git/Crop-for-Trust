@@ -2,10 +2,16 @@ main:
   input_dir: data/sample/original
   annot_clean: 'off'
   yolo_crop: 'on'
+<<<<<<< HEAD
   yolo_model: yolov4
   classify_model: mobilenet_v2
+=======
+  yolo_model: yolov8s
+  classify_model: mobilenetv2
+>>>>>>> deployment
   saved_model: saved_model/
   metrics_dir: metrics/
+  demo: 'off'
 annotation_cleaner:
   main:
     input_dir: data/sample/original
@@ -33,16 +39,14 @@ annotation_cleaner:
       other human body parts). Ensure the surface of the window, including reflections
       and lighting, remains natural and realistic after inpainting. The output image
       must have exactly the same width and height as the input image, with no resizing,
-      scaling, or cropping.
-
-      '
+      scaling, or cropping. '
     temperature: 0.0
     max_retries: 3
     timeout: 60
   restore_crop:
     input_dir: data/sample/annotation_cleaner/generated_image_padded
     output_dir: data/sample/annotation_cleaner/generated_image
-    metadata_root: sample/annotation_cleaner/only_annotation_image_padded
+    metadata_root: data/sample/annotation_cleaner/only_annotation_image_padded
   evaluate:
     orig_dir: data/sample/annotation_cleaner/only_annotation_image
     gen_dir: data/sample/annotation_cleaner/generated_image
@@ -55,7 +59,7 @@ annotation_cleaner:
     imgsz: 416
 yolo_cropper:
   main:
-    model_name: yolov4
+    model_name: yolov8s
     input_dir: /home/stu_hwang_kh/Research/data/sample/original
     output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
   dataset:
@@ -124,8 +128,13 @@ yolo_cropper:
     data_yaml: data/yolo_cropper/yolov8/data.yaml
 data_augmentor:
   data:
+<<<<<<< HEAD
     input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
     output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
+=======
+    input_dir: /app/data/sample/original_crop/yolov8s
+    output_dir: /app/data/sample/original_crop/yolov8s
+>>>>>>> deployment
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -152,11 +161,13 @@ data_augmentor:
     - 0.9
     - 1.15
     hue_delta: 0.03
-  dataset:
-    input_dir: data/generation_crop/yolov8s
 classifier:
   data:
+<<<<<<< HEAD
     input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
+=======
+    input_dir: /app/data/sample/original_crop/yolov8s
+>>>>>>> deployment
   train:
     model_name: mobilenet_v2
     batch_size: 32

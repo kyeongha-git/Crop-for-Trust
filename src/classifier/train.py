@@ -45,6 +45,10 @@ def validate(model: nn.Module, dataloader, criterion, device: torch.device):
     """Evaluate the model on validation data."""
     model.eval()
     total_loss, total_correct = 0.0, 0
+    
+    # [Safety] 데이터셋이 비어있으면 0.0 반환하고 종료
+    if len(dataloader.dataset) == 0:
+        return 0.0, 0.0
 
     with torch.no_grad():
         for images, labels in tqdm(dataloader, desc="Valid", leave=False):

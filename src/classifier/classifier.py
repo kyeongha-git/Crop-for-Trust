@@ -181,10 +181,10 @@ class Classifier:
         )
 
         train_loader = DataLoader(
-            train_dataset, batch_size=bs, shuffle=True, num_workers=2
+            train_dataset, batch_size=bs, shuffle=True, num_workers=0
         )
         valid_loader = DataLoader(
-            valid_dataset, batch_size=bs, shuffle=False, num_workers=2
+            valid_dataset, batch_size=bs, shuffle=False, num_workers=0
         )
 
         self.logger.info(
@@ -288,22 +288,5 @@ class Classifier:
             )
             wandb_run.finish()
 
-        self.logger.info("🎉 Classifier Pipeline Finished Successfully")
+        self.logger.info("Classifier Pipeline Finished Successfully")
         return best_acc, acc, f1
-
-
-# ==========================================================
-# CLI Entry Point
-# ==========================================================
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Classifier Training Entry Point")
-    parser.add_argument(
-        "--config_path",
-        type=str,
-        default="utils/config.yaml",
-        help="Path to configuration YAML file (default: utils/config.yaml)",
-    )
-    args = parser.parse_args()
-
-    clf = Classifier(config_path=args.config_path)
-    clf.run()

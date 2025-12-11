@@ -166,7 +166,7 @@ def create_dataloader(
     transform=None,
     batch_size: int = 32,
     shuffle: bool = True,
-    num_workers: int = 4,
+    num_workers: int = 0,
     verbose: bool = False,
 ) -> DataLoader:
     """

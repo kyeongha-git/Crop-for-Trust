@@ -9,6 +9,11 @@ End-to-end data augmentation pipeline script.
 Features:
 - Automates dataset splitting and augmentation based on `config.yaml`
 - Links `split_dataset` and `augment_dataset` modules for full workflow
+
+Demo mode behavior (main.demo == 'on'):
+- input_dir: e.g., data/sample/original
+- output_dir: input_dir / "dataset" (e.g., data/sample/original/dataset)
+- Original images in input_dir are preserved, and splits are created under `dataset/`.
 """
 
 import argparse
@@ -47,17 +52,27 @@ class DataAugmentor:
         self.config_path = Path(config_path)
         self.cfg = load_yaml_config(self.config_path)
 
-        # Load configuration sections
+        # ----- Load configuration sections -----
+        self.main_cfg = self.cfg.get("main", {})
         augmentor_cfg = self.cfg.get("data_augmentor", {})
         self.data_cfg = augmentor_cfg.get("data", {})
         self.split_cfg = augmentor_cfg.get("split", {})
         self.aug_cfg = augmentor_cfg.get("augmentation", {})
+        demo_raw = str(self.main_cfg.get("demo", "off")).lower()
+        self.demo_mode = demo_raw == "on"
 
-        # Resolve input/output directories
         self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
-        self.output_dir = Path(self.data_cfg.get("output_dir", "data/original"))
+
+        if self.demo_mode:
+            demo_subdir = self.data_cfg.get("demo_subdir", "dataset")
+            self.output_dir = self.input_dir / demo_subdir
+        else:
+            self.output_dir = Path(
+                self.data_cfg.get("output_dir", str(self.input_dir))
+            )
 
         self.logger.info(f"Config loaded from: {self.config_path}")
+        self.logger.info(f"Demo mode : {'ON' if self.demo_mode else 'OFF'}")
         self.logger.info(f"Input dir : {self.input_dir}")
         self.logger.info(f"Output dir: {self.output_dir}")
 
@@ -73,19 +88,6 @@ class DataAugmentor:
             split_cfg=self.split_cfg,
         )
         self.logger.info("Split completed!")
-
-    def _cleanup_original_classes(self):
-        """Remove original class folders after splitting."""
-        self.logger.info("\n[Cleanup] Removing original class directories...")
-        for cls in ["repair", "replace"]:
-            target = self.output_dir / cls
-            if target.exists():
-                try:
-                    shutil.rmtree(target)
-                    self.logger.info(f"Deleted {target}")
-                except Exception as e:
-                    self.logger.warning(f"Failed to delete {target}: {e}")
-        self.logger.info("Cleanup completed!")
 
     # ============================================================
     # 🔹 Augmentation Stage
@@ -103,19 +105,40 @@ class DataAugmentor:
         self.logger.info("Augmentation completed!")
 
     # ============================================================
+    # 🔹 Cleanup Stage
+    # ============================================================
+    def _cleanup_original_folders(self):
+        """Remove original class folders in full mode (demo=off)."""
+        if self.demo_mode:
+            self.logger.info("Demo mode: original folders preserved.")
+            return
+        
+        # full mode only cleaning
+        self.logger.info("Full mode: removing original class folders...")
+        protected = {"train", "valid", "test"}
+
+        for item in self.input_dir.iterdir():
+            if not item.is_dir():
+                continue
+            if item.name in protected:
+                continue
+            shutil.rmtree(item)
+            self.logger.info(f"Removed original folder: {item}")    
+
+    # ============================================================
     # 🔹 Full Execution
     # ============================================================
     def run(self):
         """
         Execute the full pipeline:
         1. Split dataset
-        2. Clean up original folders
-        3. Perform augmentation (optional)
+        2. Perform augmentation (optional)
         """
         if not self.input_dir.exists():
             raise FileNotFoundError(
                 f"Input data directory not found: {self.input_dir}"
             )
+
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.logger.info("\n[DataAugmentor] Starting pipeline")
@@ -125,19 +148,7 @@ class DataAugmentor:
         )
 
         self._run_split()
-        self._cleanup_original_classes()
         self._run_augment()
+        self._cleanup_original_folders()
 
         self.logger.info("\n Augmentor pipeline completed successfully!")
-
-
-# ============================================================
-# CLI Entry Point
-# ============================================================
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run DataAugmentor pipeline")
-    parser.add_argument("--config", default="./utils/config.yaml")
-    args = parser.parse_args()
-
-    augmentor = DataAugmentor(config_path=args.config)
-    augmentor.run()

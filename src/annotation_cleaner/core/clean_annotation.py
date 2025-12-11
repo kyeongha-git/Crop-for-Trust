@@ -43,24 +43,21 @@ from utils.logging import get_logger, setup_logging
 def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
     """
     Initialize and return a Gemini API client.
-
-    The client is used to send image and text prompts to the Gemini model
-    for image cleaning tasks.
-
-    Args:
-        api_key (Optional[str]): Gemini API key. If not provided,
-                                 retrieves from environment variable `GEMINI_API_KEY`.
-
-    Returns:
-        genai.Client: Authenticated Gemini client.
-
-    Raises:
-        EnvironmentError: If the API key is missing.
-        RuntimeError: If client creation fails.
+    Handles raw strings, environment variable lookups, and placeholders from YAML.
     """
-    key = api_key or os.getenv("GEMINI_API_KEY")
+    if api_key and isinstance(api_key, str) and api_key.startswith("${"):
+        env_var_name = api_key.strip("${}")
+        key = os.getenv(env_var_name)
+    elif api_key:
+        key = api_key
+    else:
+        key = os.getenv("GEMINI_API_KEY")
+
     if not key:
-        raise EnvironmentError("GEMINI_API_KEY environment variable is not set.")
+        raise EnvironmentError(
+            "GEMINI_API_KEY not found. Ensure it is set in .env or config.yaml"
+        )
+
     try:
         return genai.Client(api_key=key)
     except Exception as e:
@@ -201,5 +198,5 @@ class CleanAnnotation:
                     return
 
         self.logger.info(
-            f"🎉 Cleaning complete. Total processed: {processed_count} images."
+            f"Cleaning complete. Total processed: {processed_count} images."
         )
