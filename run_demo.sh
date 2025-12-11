@@ -15,7 +15,7 @@ fi
 # 2. Lazy Download: Fine-tuned YOLOv8s Only
 MODEL_DIR="/app/saved_model/yolo_cropper"
 MODEL_PATH="$MODEL_DIR/yolov8s.pt"
-FILE_ID="1eNZNze7uYNEXsdsn14lrUZ4dehwYbCWA" 
+FILE_ID="1x8MEl4mAN_Y7YZApG7tGnKZB8TpL4o46" 
 
 echo -e "\n[Setup] Checking Model Weights..."
 if [ ! -f "$MODEL_PATH" ]; then
@@ -27,7 +27,7 @@ fi
 
 # 3. Run Pipeline
 echo -e "\n[Pipeline] Starting src/main.py..."
-python src/main.py
+python src/main.py --config utils/config_docker.yaml
 
 echo "========================================================"
 echo "   🎉 Demo Pipeline Completed Successfully!             "

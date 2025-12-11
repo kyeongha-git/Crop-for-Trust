@@ -152,15 +152,3 @@ class DataAugmentor:
         self._cleanup_original_folders()
 
         self.logger.info("\n Augmentor pipeline completed successfully!")
-
-
-# ============================================================
-# CLI Entry Point
-# ============================================================
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run DataAugmentor pipeline")
-    parser.add_argument("--config", default="./utils/config.yaml")
-    args = parser.parse_args()
-
-    augmentor = DataAugmentor(config_path=args.config)
-    augmentor.run()

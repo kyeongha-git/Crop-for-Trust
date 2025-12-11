@@ -290,20 +290,3 @@ class Classifier:
 
         self.logger.info("Classifier Pipeline Finished Successfully")
         return best_acc, acc, f1
-
-
-# ==========================================================
-# CLI Entry Point
-# ==========================================================
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Classifier Training Entry Point")
-    parser.add_argument(
-        "--config_path",
-        type=str,
-        default="utils/config.yaml",
-        help="Path to configuration YAML file (default: utils/config.yaml)",
-    )
-    args = parser.parse_args()
-
-    clf = Classifier(config_path=args.config_path)
-    clf.run()
