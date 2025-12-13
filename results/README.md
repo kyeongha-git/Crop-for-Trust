@@ -1,4 +1,4 @@
-# Metrics Directory
+# Results Directory
 
 This directory contains evaluation results and performance metrics generated after model training and testing.
 

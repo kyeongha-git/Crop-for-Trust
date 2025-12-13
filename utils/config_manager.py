@@ -6,9 +6,11 @@ config_manager.py
 -----------------
 Dynamic Config Manager (with CLI Overrides)
 
-Updated to support:
-- demo mode ON: DataAugmentor output_dir is handled internally → not overridden here
-- demo mode OFF: DataAugmentor output_dir = input_dir (full mode behavior)
+Responsibilities:
+- Single source of truth for YOLO model selection (main.yolo_model)
+- Automatic synchronization across yolo_cropper / darknet / yolov5 / yolov8
+- Path propagation for annotation cleaner, YOLO cropper, data augmentor, classifier
+- Demo / full mode aware behavior
 """
 
 from pathlib import Path
@@ -19,12 +21,6 @@ import yaml
 class ConfigManager:
     """
     Dynamic Config Manager that safely updates YAML configurations.
-
-    Handles:
-    - AnnotationCleaner paths
-    - YOLOCropper paths
-    - DataAugmentor paths (demo-aware)
-    - Classifier paths
     """
 
     def __init__(self, config_path: str):
@@ -40,7 +36,9 @@ class ConfigManager:
         self.demo_mode = str(main_cfg.get("demo", "off")).lower() == "on"
         self.annot_clean = main_cfg.get("annot_clean", "on")
         self.yolo_crop = main_cfg.get("yolo_crop", "on")
-        self.yolo_model = main_cfg.get("yolo_model", "yolov8s")
+
+        # Single source of truth
+        self.yolo_model = main_cfg.get("yolo_model", "yolov8s").lower()
 
         self.test_mode = (
             self.cfg.get("annotation_cleaner", {})
@@ -53,32 +51,27 @@ class ConfigManager:
         """Load YAML configuration file."""
         with open(self.config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
-        
+
     # --------------------------------------------------------
     def _build_classifier_save_dir(self, classifier_input: Path) -> Path:
         """
         Classifier input_dir → hierarchical save_dir path.
-        
-        예)
-        input_dir = data/sample/original_crop/yolov2/dataset
-        → sample/original_crop/yolov2
-        
-        Final save_dir:
-        saved_model/classifier/sample/original_crop/yolov2
-        """
 
+        Example:
+        input_dir = data/sample/original_crop/yolov2/dataset
+        → saved_model/classifier/sample/original_crop/yolov2
+        """
         if classifier_input.name == "dataset":
             classifier_input = classifier_input.parent
 
         parts = classifier_input.parts
         try:
             data_index = parts.index("data")
-            subpath = Path(*parts[data_index + 1 :])  # sample/original_crop/yolov2
+            subpath = Path(*parts[data_index + 1 :])
         except ValueError:
             subpath = Path(*parts[-3:])
 
-        save_root = Path("saved_model/classifier")
-        return save_root / subpath
+        return Path("saved_model/classifier") / subpath
 
     # --------------------------------------------------------
     def update_paths(
@@ -89,50 +82,39 @@ class ConfigManager:
         test_mode: Optional[str] = None,
     ) -> Dict[str, Any]:
 
+        # ---------------------------
         # Apply CLI overrides
+        # ---------------------------
         if annot_clean is not None:
             self.annot_clean = annot_clean
         if yolo_crop is not None:
             self.yolo_crop = yolo_crop
         if yolo_model is not None:
-            self.yolo_model = yolo_model
+            self.yolo_model = yolo_model.lower()
         if test_mode is not None:
             self.test_mode = test_mode
 
-        # Refresh input Dir
+        # Refresh base input dir
         self.base_dir = Path(
             self.cfg.get("main", {}).get("input_dir", "data/original")
         ).resolve()
 
-        # Root for annotation cleaner temporary subfolders
         base_root = self.base_dir.parent
-        annot_root = base_root / "annotation_cleaner"
 
-        # === AnnotationCleaner subpaths ===
+        # ======================================================
+        # Annotation Cleaner
+        # ======================================================
+        annot_root = base_root / "annotation_cleaner"
         annot_only = annot_root / "only_annotation_image"
         annot_only_padded = annot_root / "only_annotation_image_padded"
         generated_padded = annot_root / "generated_image_padded"
         generated_final = annot_root / "generated_image"
 
-        # === AnnotationCleaner output directory ===
         if self.annot_clean == "on":
             annot_output_dir = base_root / "generation"
         else:
-            annot_output_dir = self.base_dir   # bypass cleaner
+            annot_output_dir = self.base_dir
 
-        # === YOLO Cropper output directory ===
-        if self.yolo_crop == "on":
-            crop_output_dir = (
-                annot_output_dir.parent
-                / f"{annot_output_dir.name}_crop"
-                / self.yolo_model
-            )
-        else:
-            crop_output_dir = annot_output_dir
-
-        # ==================================================================
-        # AnnotationCleaner Paths
-        # ==================================================================
         if self.annot_clean == "on":
             annotation_cfg = self.cfg.get("annotation_cleaner", {})
             annotation_cfg.setdefault("main", {})
@@ -158,66 +140,82 @@ class ConfigManager:
             annotation_cfg["evaluate"]["gen_dir"] = str(generated_final)
 
             self.cfg["annotation_cleaner"] = annotation_cfg
-        else:
-            print("AnnotationCleaner OFF → skipping cleaner path updates")
 
-        # ==================================================================
-        # YOLO CROP
-        # ==================================================================
+        # ======================================================
+        # YOLO Cropper (Single Source of Truth)
+        # ======================================================
+        if self.yolo_crop == "on":
+            crop_output_dir = (
+                annot_output_dir.parent
+                / f"{annot_output_dir.name}_crop"
+                / self.yolo_model
+            )
+        else:
+            crop_output_dir = annot_output_dir
+
         yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         yolo_cropper_cfg.setdefault("main", {})
-
         yolo_cropper_cfg["main"]["input_dir"] = str(annot_output_dir)
         yolo_cropper_cfg["main"]["output_dir"] = str(crop_output_dir)
         yolo_cropper_cfg["main"]["model_name"] = self.yolo_model
 
+        # --- 🔑 Darknet sync ---
+        darknet_cfg = yolo_cropper_cfg.get("darknet", {})
+        darknet_cfg["model_name"] = self.yolo_model
+        yolo_cropper_cfg["darknet"] = darknet_cfg
+
+        # --- Optional explicit sync ---
+        if self.yolo_model.startswith("yolov5"):
+            yolo_cropper_cfg.setdefault("yolov5", {})
+            yolo_cropper_cfg["yolov5"]["model_name"] = self.yolo_model
+
+        if self.yolo_model.startswith("yolov8"):
+            yolo_cropper_cfg.setdefault("yolov8", {})
+            yolo_cropper_cfg["yolov8"]["model_name"] = self.yolo_model
+
         self.cfg["yolo_cropper"] = yolo_cropper_cfg
 
-        # ==================================================================
-        # DataAugmentor (DEMO AWARE)
-        # ==================================================================
+        # ======================================================
+        # Data Augmentor
+        # ======================================================
         data_aug_cfg = self.cfg.get("data_augmentor", {})
         data_aug_cfg.setdefault("data", {})
-
-        # Always set input_dir = crop_output_dir
         data_aug_cfg["data"]["input_dir"] = str(crop_output_dir)
 
         if self.demo_mode:
-            # Do NOT set output_dir here
-            # DataAugmentor will generate <input_dir>/dataset automatically
             data_aug_cfg["data"]["output_dir"] = None
         else:
-            # Full mode → output_dir = input_dir
             data_aug_cfg["data"]["output_dir"] = str(crop_output_dir)
 
         self.cfg["data_augmentor"] = data_aug_cfg
 
-        # ==================================================================
+        # ======================================================
         # Classifier
-        # ==================================================================
+        # ======================================================
         classifier_cfg = self.cfg.get("classifier", {})
         classifier_cfg.setdefault("data", {})
 
-        if self.demo_mode:
-            classifier_input = Path(crop_output_dir) / "dataset"
-        else:
-            classifier_input = Path(crop_output_dir)
-
+        classifier_input = (
+            Path(crop_output_dir) / "dataset"
+            if self.demo_mode
+            else Path(crop_output_dir)
+        )
         classifier_cfg["data"]["input_dir"] = str(classifier_input)
 
-        # --- NEW: Dynamic Save Directory ---
         dynamic_save_dir = self._build_classifier_save_dir(classifier_input)
         classifier_cfg.setdefault("train", {})
         classifier_cfg["train"]["save_dir"] = str(dynamic_save_dir)
 
         metric_root = Path("metrics/classifier")
-        classifier_cfg["train"]["metric_dir"] = str(metric_root / dynamic_save_dir.relative_to("saved_model/classifier"))
+        classifier_cfg["train"]["metric_dir"] = str(
+            metric_root / dynamic_save_dir.relative_to("saved_model/classifier")
+        )
 
         self.cfg["classifier"] = classifier_cfg
 
-        # ==================================================================
-        # Save main switches
-        # ==================================================================
+        # ======================================================
+        # Persist main flags
+        # ======================================================
         self.cfg["main"]["annot_clean"] = self.annot_clean
         self.cfg["main"]["yolo_crop"] = self.yolo_crop
         self.cfg["main"]["yolo_model"] = self.yolo_model

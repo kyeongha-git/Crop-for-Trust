@@ -268,13 +268,15 @@ class Classifier:
         best_acc = self._train_model(
             model, criterion, optimizer, train_loader, valid_loader, wandb_run
         )
+        
 
         # Evaluation phase
         evaluator = Evaluator(
-            input_dir=self.input_dir,
-            model=self.model_name,
-            cfg=self.cfg,
-            wandb_run=wandb_run,
+        input_dir=self.input_dir,
+        model=self.model_name,
+        save_dir=self.train_cfg["save_dir"],
+        metric_dir=self.train_cfg["metric_dir"],
+        wandb_run=wandb_run,
         )
         acc, f1 = evaluator.run()
 
@@ -291,3 +293,51 @@ class Classifier:
 
         self.logger.info("Classifier Pipeline Finished Successfully")
         return best_acc, acc, f1
+
+
+# ======================================================
+# Standalone Entrypoint
+# ======================================================
+def main():
+    """
+    Standalone entrypoint for Classifier pipeline.
+
+    Example:
+        python src/classifier/classifier.py --config utils/config.yaml
+    """
+    parser = argparse.ArgumentParser(
+        description="Standalone Classifier Runner"
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="utils/config.yaml",
+        help="Path to config.yaml",
+    )
+
+    args = parser.parse_args()
+
+    setup_logging("logs/classifier")
+    logger = get_logger("classifier.main")
+
+    logger.info("Starting standalone Classifier execution")
+    logger.info(f"Using config: {args.config}")
+
+    try:
+        classifier = Classifier(config_path=args.config)
+        best_acc, test_acc, test_f1 = classifier.run()
+
+        logger.info(
+            f"Classifier finished successfully | "
+            f"Best Val Acc: {best_acc:.4f}, "
+            f"Test Acc: {test_acc:.4f}, "
+            f"Test F1: {test_f1:.4f}"
+        )
+
+    except Exception:
+        logger.exception("Classifier execution failed")
+        raise
+
+
+if __name__ == "__main__":
+    main()

@@ -87,7 +87,7 @@ class DarknetPipeline:
             return
         trainer = DarknetTrainer(config=self.cfg)
         if trainer.verify_files():
-            trainer.run()
+            trainer.train()
 
     def step_evaluate(self):
         self.logger.info("[STEP 5] Evaluating Darknet model...")

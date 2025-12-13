@@ -40,12 +40,30 @@ def get_model(
             ResNet152Classifier,
             {"freeze_backbone": freeze_backbone},
         ),
+        "mobilenetv2": (
+            "MobileNetV2",
+            MobileNetClassifier,
+            {
+                "dropout_p": dropout_p,
+                "model_type": "mobilenet_v2",
+                "freeze_backbone": freeze_backbone,
+            }
+        ),
         "mobilenet_v2": (
             "MobileNetV2",
             MobileNetClassifier,
             {
                 "dropout_p": dropout_p,
                 "model_type": "mobilenet_v2",
+                "freeze_backbone": freeze_backbone,
+            },
+        ),
+        "mobilenetv3": (
+            "MobileNetV3",
+            MobileNetClassifier,
+            {
+                "dropout_p": dropout_p,
+                "model_type": "mobilenet_v3",
                 "freeze_backbone": freeze_backbone,
             },
         ),

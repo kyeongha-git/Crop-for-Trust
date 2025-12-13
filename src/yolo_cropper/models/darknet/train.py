@@ -172,21 +172,3 @@ class DarknetTrainer:
             )
 
         return str(target_weight)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    from utils.load_config import load_yaml_config
-    from utils.logging import setup_logging
-
-    parser = argparse.ArgumentParser(description="Debug Darknet training")
-    parser.add_argument("--config", type=str, default="utils/config.yaml")
-    args = parser.parse_args()
-
-    setup_logging("logs/yolo_cropper")
-    cfg = load_yaml_config(args.config)
-
-    trainer = DarknetTrainer(config=cfg)
-    if trainer.verify_files():
-        trainer.train()

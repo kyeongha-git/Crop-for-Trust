@@ -2,11 +2,11 @@ main:
   input_dir: data/sample/original
   annot_clean: 'off'
   yolo_crop: 'on'
-  yolo_model: yolov5
-  classify_model: resnet
+  yolo_model: yolov8s
+  classify_model: mobilenetv3
   saved_model: saved_model/
-  metrics_dir: metrics/
-  demo: 'off'
+  metrics_dir: results/
+  demo: 'on'
 weights:
   yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
   yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights
@@ -61,7 +61,7 @@ annotation_cleaner:
   evaluate:
     orig_dir: data/sample/annotation_cleaner/only_annotation_image
     gen_dir: data/sample/annotation_cleaner/generated_image
-    metric_dir: ./metrics/annotation_cleaner
+    metric_dir: ./results/annotation_cleaner
     metrics:
     - ssim
     - edge_iou
@@ -70,15 +70,15 @@ annotation_cleaner:
     imgsz: 416
 yolo_cropper:
   main:
-    model_name: yolov2
+    model_name: yolov8s
     input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov8s
   dataset:
     results_dir: outputs/json_results
     train_data_dir: data/yolo_cropper
     saved_model_dir: saved_model/yolo_cropper
     checkpoint_dir: checkpoints/yolo_cropper
-    metrics_dir: metrics/yolo_cropper
+    metrics_dir: results/yolo_cropper
     detect_output_dir: runs/detect
     train_output_dir: runs/train
   train:
@@ -90,7 +90,7 @@ yolo_cropper:
     save_txt: true
     save_conf: true
   darknet:
-    model_name: yolov4
+    model_name: yolov8s
     build_mode: cpu
     darknet_dir: third_party/darknet
     darknet_data_dir: third_party/darknet/data
@@ -135,11 +135,13 @@ yolo_cropper:
   yolov5:
     yolov5_dir: third_party/yolov5
     data_yaml: data/yolo_cropper/yolov5/data.yaml
+    model_name: yolov5
   yolov8:
     data_yaml: data/yolo_cropper/yolov8/data.yaml
+    model_name: yolov8s
 data_augmentor:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov8s
     output_dir: null
   split:
     train_ratio: 0.8
@@ -169,15 +171,15 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2/dataset
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov8s/dataset
   train:
     batch_size: 2
     epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/original_crop/yolov2
-    metric_dir: metrics/classifier/sample/original_crop/yolov2
-    check_dir: ./checkpoints/classifier
+    save_dir: saved_model/classifier/sample/original_crop/yolov8s
+    metric_dir: results/classifier/sample/original_crop/yolov8s
+    check_dir: ./checkpoints/
   wandb:
     enabled: false
     project: Crop-for-Trust
