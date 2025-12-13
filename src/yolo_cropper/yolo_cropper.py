@@ -18,6 +18,7 @@ Supported Pipelines:
 """
 
 import importlib
+import argparse
 import sys
 from pathlib import Path
 
@@ -103,3 +104,44 @@ class YOLOCropperController:
         self.logger.info(f"Pipeline complete ({self.model_name.upper()})")
 
         return metrics
+    
+
+def main():
+    """
+    Standalone entrypoint for YOLO Cropper Controller.
+
+    This allows running the YOLO cropper independently for
+    debugging or validation purposes, e.g.:
+
+        python src/yolo_cropper/yolo_cropper.py --config utils/config.yaml
+    """
+
+    parser = argparse.ArgumentParser(
+        description="Standalone YOLO Cropper Runner"
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="utils/config.yaml",
+        help="Path to config.yaml",
+    )
+
+    args = parser.parse_args()
+
+    logger = get_logger("yolo_cropper.main")
+
+    logger.info("Starting standalone YOLO Cropper execution")
+    logger.info(f"Using config: {args.config}")
+
+    try:
+        controller = YOLOCropperController(config_path=args.config)
+        controller.run()
+        logger.info("Standalone YOLO Cropper finished successfully")
+
+    except Exception as e:
+        logger.exception("YOLO Cropper execution failed")
+        raise e
+
+
+if __name__ == "__main__":
+    main()

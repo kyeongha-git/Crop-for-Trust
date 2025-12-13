@@ -21,6 +21,7 @@ ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger
+from utils.weights import download_file, verify_sha256
 
 
 class DarknetPredictor:
@@ -66,6 +67,48 @@ class DarknetPredictor:
         self.logger.debug(f"Darknet dir : {self.darknet_dir}")
         self.logger.debug(f"Data dir    : {self.data_dir}")
 
+    def _prepare_weights(self):
+        """
+        Ensure YOLOv2 / YOLOv4 Darknet weight exists.
+        Download pretrained weight if missing.
+        """
+        weight_path = (self.saved_model_dir / f"{self.model_name}.weights").resolve()
+
+        if weight_path.exists():
+            self.logger.info(f"[WEIGHT] Using existing weight: {weight_path}")
+            return
+
+        self.logger.info(
+            f"[WEIGHT] Local {self.model_name.upper()} weight missing → downloading..."
+        )
+
+        weights_cfg = self.cfg.get("weights", {})
+        sha_cfg = self.cfg.get("sha256", {})
+
+        if self.model_name not in weights_cfg:
+            raise FileNotFoundError(
+                f"No pretrained weight URL found for model '{self.model_name}', "
+                f"and no local weight exists at {weight_path}"
+            )
+
+        url = weights_cfg[self.model_name]
+        sha = sha_cfg.get(self.model_name)
+
+        weight_path.parent.mkdir(parents=True, exist_ok=True)
+        download_file(url, weight_path)
+
+        if sha:
+            if verify_sha256(weight_path, sha):
+                self.logger.info("[WEIGHT] SHA256 verified.")
+            else:
+                raise RuntimeError(
+                    f"SHA256 mismatch for downloaded {self.model_name} weight: {weight_path}"
+                )
+        else:
+            self.logger.warning(
+                "[WEIGHT] No SHA256 provided — skipping integrity check."
+            )
+
     def _list_images(self, input_dir: Path):
         """
         Recursively list all image files in the input directory.
@@ -102,6 +145,8 @@ class DarknetPredictor:
             tuple[str, str]: Paths to the JSON result file and the predict.txt file.
 
         """
+        self._prepare_weights()
+
         input_dir = self.input_dir
         predict_path = self.data_dir / "predict.txt"
 

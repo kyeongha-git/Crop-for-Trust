@@ -2,16 +2,27 @@ main:
   input_dir: data/sample/original
   annot_clean: 'off'
   yolo_crop: 'on'
-<<<<<<< HEAD
-  yolo_model: yolov4
-  classify_model: mobilenet_v2
-=======
-  yolo_model: yolov8s
-  classify_model: mobilenetv2
->>>>>>> deployment
+  yolo_model: yolov5
+  classify_model: resnet
   saved_model: saved_model/
   metrics_dir: metrics/
   demo: 'off'
+weights:
+  yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
+  yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights
+  yolov5: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov5.pt
+  yolov8s: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8s.pt
+  yolov8m: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8m.pt
+  yolov8l: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8l.pt
+  yolov8x: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8x.pt
+sha256:
+  yolov2: 25c06d72ab7be602128dec074b8b8dbf36c2aead41637352cde5821de2157ebf
+  yolov4: 202e6cea417e12bc6d65f8db91a7ef8c334ae69cbf1044d4594bb2c265d759b3
+  yolov5: 07e8ad9d67c42a4462ec4adf73ca40f4dc8730ab51b1c7f33b168474dba51f4c
+  yolov8s: e9c6f26b7654639fca041faad31beca1a1c388ffc05e805581f9b03b798491ce
+  yolov8m: 14de68f9120fc4c0cd9ab26e0f2f78cbf8b456a19e141f437f3b34e9203e9062
+  yolov8l: ca2848fcd25580ec765a95cc2aa72e0445331d5fccef7c4b5939164a5176c333
+  yolov8x: 79d058f5165fd663192d6885b10e88956fe4c36dcc2cd340a9033bed14bd065d
 annotation_cleaner:
   main:
     input_dir: data/sample/original
@@ -59,9 +70,9 @@ annotation_cleaner:
     imgsz: 416
 yolo_cropper:
   main:
-    model_name: yolov8s
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original
-    output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
+    model_name: yolov2
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2
   dataset:
     results_dir: outputs/json_results
     train_data_dir: data/yolo_cropper
@@ -128,13 +139,8 @@ yolo_cropper:
     data_yaml: data/yolo_cropper/yolov8/data.yaml
 data_augmentor:
   data:
-<<<<<<< HEAD
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
-    output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
-=======
-    input_dir: /app/data/sample/original_crop/yolov8s
-    output_dir: /app/data/sample/original_crop/yolov8s
->>>>>>> deployment
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2
+    output_dir: null
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -163,22 +169,17 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-<<<<<<< HEAD
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov4
-=======
-    input_dir: /app/data/sample/original_crop/yolov8s
->>>>>>> deployment
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2/dataset
   train:
-    model_name: mobilenet_v2
-    batch_size: 32
-    epochs: 80
+    batch_size: 2
+    epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: ./saved_model/classifier
-    metric_dir: ./metrics/classifier
+    save_dir: saved_model/classifier/sample/original_crop/yolov2
+    metric_dir: metrics/classifier/sample/original_crop/yolov2
     check_dir: ./checkpoints/classifier
   wandb:
-    enabled: true
+    enabled: false
     project: Crop-for-Trust
     entity: kyeonghah-university-of-suwon
     run_name_pattern: '{model}_{input_dir}'

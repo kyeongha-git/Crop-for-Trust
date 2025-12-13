@@ -53,6 +53,32 @@ class ConfigManager:
         """Load YAML configuration file."""
         with open(self.config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
+        
+    # --------------------------------------------------------
+    def _build_classifier_save_dir(self, classifier_input: Path) -> Path:
+        """
+        Classifier input_dir → hierarchical save_dir path.
+        
+        예)
+        input_dir = data/sample/original_crop/yolov2/dataset
+        → sample/original_crop/yolov2
+        
+        Final save_dir:
+        saved_model/classifier/sample/original_crop/yolov2
+        """
+
+        if classifier_input.name == "dataset":
+            classifier_input = classifier_input.parent
+
+        parts = classifier_input.parts
+        try:
+            data_index = parts.index("data")
+            subpath = Path(*parts[data_index + 1 :])  # sample/original_crop/yolov2
+        except ValueError:
+            subpath = Path(*parts[-3:])
+
+        save_root = Path("saved_model/classifier")
+        return save_root / subpath
 
     # --------------------------------------------------------
     def update_paths(
@@ -173,11 +199,19 @@ class ConfigManager:
         classifier_cfg.setdefault("data", {})
 
         if self.demo_mode:
-            # classifier uses <crop_output_dir>/dataset
-            classifier_cfg["data"]["input_dir"] = str(crop_output_dir / "dataset")
+            classifier_input = Path(crop_output_dir) / "dataset"
         else:
-            # uses input_dir (train/valid/test already there)
-            classifier_cfg["data"]["input_dir"] = str(crop_output_dir)
+            classifier_input = Path(crop_output_dir)
+
+        classifier_cfg["data"]["input_dir"] = str(classifier_input)
+
+        # --- NEW: Dynamic Save Directory ---
+        dynamic_save_dir = self._build_classifier_save_dir(classifier_input)
+        classifier_cfg.setdefault("train", {})
+        classifier_cfg["train"]["save_dir"] = str(dynamic_save_dir)
+
+        metric_root = Path("metrics/classifier")
+        classifier_cfg["train"]["metric_dir"] = str(metric_root / dynamic_save_dir.relative_to("saved_model/classifier"))
 
         self.cfg["classifier"] = classifier_cfg
 

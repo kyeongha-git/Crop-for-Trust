@@ -22,6 +22,7 @@ ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger
+from utils.weights import download_file, verify_sha256
 
 
 class YOLOv5Predictor:
@@ -80,6 +81,44 @@ class YOLOv5Predictor:
         self.logger.debug(f"Weights    : {self.saved_model_path}")
         self.logger.debug(f"Source Dir : {self.input_root}")
         self.logger.debug(f"Output Dir : {self.detect_root}")
+
+    def _prepare_weights(self):
+        """
+        Ensure YOLOv5 weight exists in saved_model directory.
+        If missing, download from config-defined pretrained weights.
+        """
+        weight_file = self.saved_model_path
+
+        if weight_file.exists():
+            self.logger.info(f"[WEIGHT] Using existing weight: {weight_file}")
+            return
+
+        self.logger.info("[WEIGHT] Local YOLOv5 weight missing → downloading...")
+
+        weights_cfg = self.cfg.get("weights", {})
+        sha_cfg = self.cfg.get("sha256", {})
+
+        if self.model_name not in weights_cfg:
+            raise FileNotFoundError(
+                f"No pretrained weight URL found for model '{self.model_name}', "
+                f"and local weight does not exist: {weight_file}"
+            )
+
+        url = weights_cfg[self.model_name]
+        sha = sha_cfg.get(self.model_name)
+
+        weight_file.parent.mkdir(parents=True, exist_ok=True)
+        download_file(url, weight_file)
+
+        if sha:
+            if verify_sha256(weight_file, sha):
+                self.logger.info("[WEIGHT] SHA256 verified.")
+            else:
+                raise RuntimeError(
+                    f"SHA256 mismatch for downloaded YOLOv5 weight: {weight_file}"
+                )
+        else:
+            self.logger.warning("[WEIGHT] No SHA256 provided — skipping integrity check.")
 
     def _run_inference(self, folder_path: Path):
         """
@@ -151,6 +190,8 @@ class YOLOv5Predictor:
         for each. Each folder’s results are stored in separate output directories.
 
         """
+        self._prepare_weights()
+
         subfolders = [p for p in self.input_root.iterdir() if p.is_dir()]
         if not subfolders:
             raise FileNotFoundError(f"No subfolders found under {self.input_root}")

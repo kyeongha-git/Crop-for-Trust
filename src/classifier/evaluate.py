@@ -151,7 +151,7 @@ class Evaluator:
     # ======================================================
     def _save_results(self, y_true, y_pred, acc, f1):
         """Save metrics and confusion matrix images."""
-        save_dir = self.metric_root / "classifier" / self.model_name
+        save_dir = self.metric_root / self.model_name
         save_dir.mkdir(parents=True, exist_ok=True)
 
         metrics_path = save_dir / "metrics.json"

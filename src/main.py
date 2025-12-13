@@ -108,24 +108,24 @@ def main():
     # --------------------------------------------------------
     # DataAugmentor
     # --------------------------------------------------------
-    # try:
-    #     print("\n[3] Running DataAugmentor...")
-    #     augmentor = DataAugmentor(config_path=args.config)
-    #     augmentor.run()
-    # except Exception as e:
-    #     logger.error(f"[DataAugmentor] Failed: {e}")
-    #     traceback.print_exc()
+    try:
+        print("\n[3] Running DataAugmentor...")
+        augmentor = DataAugmentor(config_path=args.config)
+        augmentor.run()
+    except Exception as e:
+        logger.error(f"[DataAugmentor] Failed: {e}")
+        traceback.print_exc()
 
     # --------------------------------------------------------
     # Classifier
     # --------------------------------------------------------
-    # try:
-    #     print(f"\n[4] Running Classifier ({classify_model})...")
-    #     classifier = Classifier(config_path=args.config)
-    #     classifier.run()
-    # except Exception as e:
-    #     logger.error(f"[Classifier] Failed: {e}")
-    #     traceback.print_exc()
+    try:
+        print(f"\n[4] Running Classifier ({classify_model})...")
+        classifier = Classifier(config_path=args.config)
+        classifier.run()
+    except Exception as e:
+        logger.error(f"[Classifier] Failed: {e}")
+        traceback.print_exc()
 
     print("\n All pipeline stages completed!")
     logger.info("All pipeline stages completed successfully.")

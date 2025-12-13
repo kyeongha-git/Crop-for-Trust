@@ -63,6 +63,7 @@ class Classifier:
 
         if "classifier" not in self.cfg_all:
             raise KeyError("Missing 'Classifier' section in config.yaml.")
+        self.global_main_cfg = self.cfg_all.get("main", {})
         self.cfg = self.cfg_all["classifier"]
 
         # Split sub-sections
@@ -72,7 +73,7 @@ class Classifier:
 
         # Extract values
         self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
-        self.model_name = self.train_cfg.get("model_name", "mobilenet_v2").lower()
+        self.model_name = self.global_main_cfg.get("classify_model", "mobilenet_v2").lower()
         self.use_wandb = self.wandb_cfg.get("enabled", True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

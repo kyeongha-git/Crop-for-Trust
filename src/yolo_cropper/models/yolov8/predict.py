@@ -22,6 +22,7 @@ ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger
+from utils.weights import download_file, verify_sha256
 
 
 class YOLOv8Predictor:
@@ -93,13 +94,46 @@ class YOLOv8Predictor:
                 - Path to the input `predict.txt` file used for inference.
 
         """
-        if not self.weights_path.exists():
-            raise FileNotFoundError(f"Model weight not found: {self.weights_path}")
-        if not self.predict_txt.exists():
-            raise FileNotFoundError(f"predict.txt not found: {self.predict_txt}")
+        # --------------------------------------------------------
+        # Step 0. Resolve model weights (trained OR pretrained)
+        # --------------------------------------------------------
 
-        # Load model
-        model = YOLO(self.weights_path)
+        weight_file = self.weights_path  # saved_model/yolo_cropper/yolov8s.pt
+
+        if weight_file.exists():
+            self.logger.info(f"[WEIGHT] Using existing weight: {weight_file}")
+
+        else:
+            self.logger.info(f"[WEIGHT] Local weight missing → downloading...")
+
+            if self.model_name in self.cfg["weights"]:
+                url = self.cfg["weights"][self.model_name]
+                sha = self.cfg["sha256"].get(self.model_name)
+
+                weight_file.parent.mkdir(parents=True, exist_ok=True)
+
+                # Download to saved_model/<model_name>.pt
+                download_file(url, weight_file)
+
+                # SHA verification
+                if sha:
+                    if verify_sha256(weight_file, sha):
+                        self.logger.info("[OK] SHA256 verified.")
+                    else:
+                        raise RuntimeError(
+                            f"SHA256 mismatch for downloaded file: {weight_file}"
+                        )
+                else:
+                    self.logger.warning("[WARN] No SHA256 provided — skipping integrity check.")
+
+            else:
+                raise FileNotFoundError(
+                    f"No pretrained URL found for model '{self.model_name}', "
+                    f"and no local weight exists at {weight_file}"
+                )
+
+        self.logger.info(f"Loading YOLOv8 model from: {weight_file}")
+        model = YOLO(str(weight_file))
         self.logger.info(f"Starting YOLOv8 detection ({self.model_name.upper()})")
 
         # Execute prediction

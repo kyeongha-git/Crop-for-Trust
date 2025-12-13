@@ -7,12 +7,12 @@ yolov8.py
 This module defines the unified YOLOv8 pipeline.
 
 Steps:
-1️⃣ Train model
-2️⃣ Evaluate performance
-3️⃣ Generate `predict.txt`
-4️⃣ Run prediction
-5️⃣ Convert detections to JSON
-6️⃣ Perform ROI cropping
+1. Train model
+2. Evaluate performance
+3. Generate `predict.txt`
+4. Run prediction
+5. Convert detections to JSON
+6. Perform ROI cropping
 """
 
 
@@ -90,16 +90,21 @@ class YOLOv8Pipeline:
     # Step 1. Train
     # --------------------------------------------------------
     def step_train(self):
+        if self.demo_mode:
+            self.logger.info("[STEP 1] Demo mode → Skipping training entirely.")
+            return
+
         self.logger.info("[STEP 1] Starting YOLO v8 training...")
+
         if self.weight_path.exists():
             self.logger.info(
                 f"[SKIP] Found existing trained model → {self.weight_path}"
             )
             return
+
         trainer = YOLOv8Trainer(config=self.cfg)
         trainer.run()
         self.logger.info("Training step done")
-
     # --------------------------------------------------------
     # Step 2. Evaluate
     # --------------------------------------------------------
