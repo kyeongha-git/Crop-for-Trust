@@ -146,6 +146,7 @@ env.bak/
 wandb/
 venv.bak/
 third_party/
+runs/
 
 # Spyder project settings
 .spyderproject
@@ -250,7 +251,6 @@ uselib
 uselib_track
 kmeansiou
 vcpkg/
-runs/*
 
 # Trained Model
 *.weights
