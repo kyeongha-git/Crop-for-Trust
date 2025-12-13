@@ -258,6 +258,9 @@ vcpkg/
 !.gitkeep
 
 # Data
+!results/*
+!results/data/sample/
+!results/data/sample/**
 data/*
 !data/sample/
 !data/sample/**
