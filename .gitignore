@@ -250,6 +250,7 @@ uselib
 uselib_track
 kmeansiou
 vcpkg/
+runs/
 
 # Trained Model
 *.weights

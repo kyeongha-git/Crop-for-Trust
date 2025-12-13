@@ -173,8 +173,8 @@ classifier:
   data:
     input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov8s/dataset
   train:
-    batch_size: 2
-    epochs: 1
+    batch_size: 32 # Full Code: 2 → 32
+    epochs: 80 # # Full Code: 1 → 80
     lr: 0.001
     weight_decay: 1.0e-05
     save_dir: saved_model/classifier/sample/original_crop/yolov8s
