@@ -73,76 +73,98 @@ class YOLOConverter:
 
     # --------------------------------------------------------
     def _parse_detect_folder(
-        self, detect_dir: Path, frame_start: int = 1
-    ) -> Tuple[List[Dict[str, Any]], int]:
-        """Parse YOLO label files inside a detection folder."""
-        label_dir = detect_dir / "labels"
-        if not label_dir.exists():
-            self.logger.warning(f"[!] Skipping {detect_dir} (no labels/ folder found)")
-            return [], frame_start
+            self, detect_dir: Path, frame_start: int = 1
+        ) -> Tuple[List[Dict[str, Any]], int]:
+            """Parse YOLO label files inside a detection folder."""
+            label_dir = detect_dir / "labels"
+            if not label_dir.exists():
+                self.logger.warning(f"[!] Skipping {detect_dir} (no labels/ folder found)")
+                return [], frame_start
+            
+            folder_class = infer_class_from_folder(detect_dir)
+            class_id, class_name = folder_class["id"], folder_class["name"]
 
-        folder_class = infer_class_from_folder(detect_dir)
-        class_id, class_name = folder_class["id"], folder_class["name"]
+            results = []
+            frame_id = frame_start
 
-        results = []
-        frame_id = frame_start
+            self.logger.info(f"Indexing images in {self.data_root}...")
+            image_map = {}
+            for p in self.data_root.rglob("*"):
+                if p.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
+                    image_map[p.stem] = p
 
-        for label_file in sorted(label_dir.glob("*.txt")):
-            with open(label_file, "r", encoding="utf-8") as f:
-                lines = [ln.strip() for ln in f if ln.strip()]
+            for label_file in sorted(label_dir.glob("*.txt")):
+                with open(label_file, "r", encoding="utf-8") as f:
+                    lines = [ln.strip() for ln in f if ln.strip()]
 
-            base = label_file.stem
+                base = label_file.stem  
+                
+                orig_path = image_map.get(base)
 
-            # Find predicted image inside detect folder
-            img_path = None
-            for ext in [".jpg", ".jpeg", ".png"]:
-                cand = detect_dir / f"{base}{ext}"
-                if cand.exists():
-                    img_path = cand.resolve()
-                    break
-
-            # Restore original path from dataset
-            orig_path = self.data_root / class_name / f"{base}.png"
-            if not orig_path.exists():
-                for ext in [".jpg", ".jpeg"]:
-                    cand = self.data_root / class_name / f"{base}{ext}"
-                    if cand.exists():
-                        orig_path = cand
-                        break
-
-            objects = []
-            for ln in lines:
-                parts = ln.split()
-                if len(parts) not in (5, 6):
+                if orig_path is None:
+                    candidates = [".jpg", ".jpeg", ".png"]
+                    found = False
+                    for ext in candidates:
+                        dummy_paths = [
+                            self.data_root / class_name / f"{base}{ext}",
+                            self.data_root / f"{base}{ext}"
+                        ]
+                        for cand in dummy_paths:
+                            if cand.exists():
+                                orig_path = cand
+                                found = True
+                                break
+                        if found: break
+                
+                if orig_path is None or not orig_path.exists():
+                    self.logger.warning(f"[WARN] Original image not found for label: {base}")
                     continue
-                x, y, w, h = map(float, parts[1:5])
-                conf = float(parts[5]) if len(parts) == 6 else None
 
-                objects.append(
+                objects = []
+                for ln in lines:
+                    parts = ln.split()
+                    if len(parts) not in (5, 6):
+                        continue
+                    x, y, w, h = map(float, parts[1:5])
+                    conf = float(parts[5]) if len(parts) == 6 else None
+
+                    final_class_id = class_id
+                    final_class_name = class_name
+                    
+                    if final_class_name == "unknown":
+                        parent_name = orig_path.parent.name.lower()
+                        if "repair" in parent_name:
+                            final_class_name = "repair"
+                            final_class_id = 0
+                        elif "replace" in parent_name:
+                            final_class_name = "replace"
+                            final_class_id = 1
+
+                    objects.append(
+                        {
+                            "class_id": final_class_id,
+                            "name": final_class_name,
+                            "relative_coordinates": {
+                                "center_x": x,
+                                "center_y": y,
+                                "width": w,
+                                "height": h,
+                            },
+                            "confidence": conf,
+                        }
+                    )
+
+                results.append(
                     {
-                        "class_id": class_id,
-                        "name": class_name,
-                        "relative_coordinates": {
-                            "center_x": x,
-                            "center_y": y,
-                            "width": w,
-                            "height": h,
-                        },
-                        "confidence": conf,
+                        "frame_id": frame_id,
+                        "filename": str(orig_path.resolve()), 
+                        "objects": objects,
                     }
                 )
+                frame_id += 1
 
-            results.append(
-                {
-                    "frame_id": frame_id,
-                    "filename": str(orig_path.resolve()),
-                    "objects": objects,
-                }
-            )
-            frame_id += 1
-
-        self.logger.info(f"[+] Parsed {detect_dir.name} → {len(results)} frames")
-        return results, frame_id
+            self.logger.info(f"[+] Parsed {detect_dir.name} → {len(results)} frames")
+            return results, frame_id
 
     # --------------------------------------------------------
     def run(self):

@@ -1,5 +1,5 @@
 import hashlib
-import urllib.request
+import subprocess
 from pathlib import Path
 import os
 
@@ -14,16 +14,18 @@ def sha256_of(file_path: Path) -> str:
 
 
 def download_file(url: str, save_path: Path):
-    """Download a file via urllib with progress."""
+    """Download file using system curl (more robust for Docker/GitHub)."""
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"[DOWNLOAD] {url}")
     print(f" → Saving to {save_path}")
 
+    command = ["curl", "-L", "-f", "-o", str(save_path), url]
+    
     try:
-        urllib.request.urlretrieve(url, save_path)
-    except Exception as e:
-        raise RuntimeError(f"❌ Download failed from URL: {url}\n{e}")
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"❌ Download failed (curl error): {url}\n{e}")
 
 
 def verify_sha256(file_path: Path, expected: str) -> bool:

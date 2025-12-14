@@ -10,12 +10,12 @@ It automates the entire workflow — from model training and evaluation
 to prediction, output conversion, and cropping — under a unified structure.
 
 Steps:
-1️⃣ Train YOLOv5
-2️⃣ Evaluate trained model
-3️⃣ Run predictions (multi-folder support)
-4️⃣ Generate `predict.txt` for cropping
-5️⃣ Convert YOLOv5 `.txt` detections to unified `result.json`
-6️⃣ Perform cropping from JSON results
+1. Train YOLOv5
+2. Evaluate trained model
+3. Run predictions (multi-folder support)
+4. Generate `predict.txt` for cropping
+5. Convert YOLOv5 `.txt` detections to unified `result.json`
+6. Perform cropping from JSON results
 """
 
 import sys

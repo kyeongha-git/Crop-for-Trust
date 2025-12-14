@@ -17,7 +17,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
+import os
 
+# Resolve Project Root Directory
 ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
 
@@ -48,8 +50,11 @@ class YOLOv5Predictor:
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
         self.yolov5_cfg = self.yolo_cropper_cfg.get("yolov5", {})
-        self.train_Cfg = self.yolo_cropper_cfg.get("train", {})
+        self.train_cfg = self.yolo_cropper_cfg.get("train", {})
         self.dataset_cfg = self.yolo_cropper_cfg.get("dataset", {})
+        
+        self.project_root = ROOT_DIR
+        
         self.model_name = self.main_cfg.get("model_name", "yolov5")
 
         self.yolov5_dir = Path(
@@ -70,10 +75,10 @@ class YOLOv5Predictor:
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.detect_root.mkdir(parents=True, exist_ok=True)
 
-        self.device = str(self.train_Cfg.get("device", "0"))
-        self.save_crop = bool(self.train_Cfg.get("save_crop", False))
-        self.save_txt = bool(self.train_Cfg.get("save_txt", True))
-        self.save_conf = bool(self.train_Cfg.get("save_conf", True))
+        self.device = str(self.train_cfg.get("device", "cpu"))
+        self.save_crop = bool(self.train_cfg.get("save_crop", False))
+        self.save_txt = bool(self.train_cfg.get("save_txt", True))
+        self.save_conf = bool(self.train_cfg.get("save_conf", True))
         self.name_prefix = self.model_name
 
         self.logger.info(f"YOLOv5Predictor initialized ({self.model_name.upper()})")
@@ -127,7 +132,6 @@ class YOLOv5Predictor:
         This method builds and runs a YOLOv5 command targeting a specific
         subdirectory, logging output and deleting any existing results
         before re-running to ensure clean outputs.
-
         """
         if not folder_path.exists():
             self.logger.warning(f"[!] Source folder not found: {folder_path}")
@@ -156,7 +160,7 @@ class YOLOv5Predictor:
             "--name",
             exp_name,
             "--device",
-            self.device,
+            "cpu",
         ]
 
         if self.save_crop:
@@ -166,12 +170,22 @@ class YOLOv5Predictor:
         if self.save_conf:
             cmd.append("--save-conf")
 
+        env = os.environ.copy()
+        yolo_path = str(self.yolov5_dir)
+        app_path = str(self.project_root)
+
+        env["PYTHONPATH"] = f"{yolo_path}:{env.get('PYTHONPATH', '')}"
+
         self.logger.info(f"Running YOLOv5 detection → {folder_path.name}")
         self.logger.debug(f"Command: {' '.join(cmd)}")
 
         with open(log_path, "w", encoding="utf-8") as log_f:
             process = subprocess.run(
-                cmd, cwd=self.yolov5_dir, stdout=log_f, stderr=subprocess.STDOUT
+                cmd, 
+                cwd=self.yolov5_dir,
+                stdout=log_f, 
+                stderr=subprocess.STDOUT, 
+                env=env 
             )
 
         if process.returncode != 0:
@@ -188,7 +202,6 @@ class YOLOv5Predictor:
         This method scans all subdirectories inside the configured input path
         (e.g., `data/original`), then runs `_run_inference()` sequentially
         for each. Each folder’s results are stored in separate output directories.
-
         """
         self._prepare_weights()
 

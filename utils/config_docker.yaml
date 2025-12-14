@@ -1,12 +1,16 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'on'
+  annot_clean: 'off'
   yolo_crop: 'on'
-  yolo_model: yolov8s
+  yolo_model: yolov5
   classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
   demo: 'on'
+weights:
+  yolov5: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov5.pt
+sha256:
+  yolov5: 07e8ad9d67c42a4462ec4adf73ca40f4dc8730ab51b1c7f33b168474dba51f4c
 annotation_cleaner:
   main:
     input_dir: /app/data/sample/original
@@ -54,24 +58,30 @@ annotation_cleaner:
     imgsz: 416
 yolo_cropper:
   main:
-    model_name: yolov8s
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original
-    output_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
+    model_name: yolov5
+    input_dir: /app/data/sample/original
+    output_dir: /app/data/sample/original_crop/yolov5
     mode: detect
   dataset:
     results_dir: outputs/json_results
     saved_model_dir: saved_model/yolo_cropper
     detect_output_dir: runs/detect
-  inference:
+  train:
     conf_thresh: 0.25
     iou_thresh: 0.45
     imgsz: 416
     device: cpu
     save_crop: true
-    save_txt: false
+    save_txt: true
+  darknet:
+    model_name: yolov5
+  yolov8:
+    model_name: yolov8s
+  yolov5:
+    model_name: yolov5
 data_augmentor:
   data:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s
+    input_dir: /app/data/sample/original_crop/yolov5
     output_dir: null
   split:
     train_ratio: 0.8
@@ -101,15 +111,15 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /home/stu_hwang_kh/Research/data/sample/original_crop/yolov8s/dataset
+    input_dir: /app/data/sample/original_crop/yolov5/dataset
   train:
     model_name: mobilenet_v2
     batch_size: 2
     epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: ./saved_model/classifier
-    metric_dir: ./metrics/classifier
+    save_dir: saved_model/classifier/sample/original_crop/yolov5
+    metric_dir: metrics/classifier/sample/original_crop/yolov5
     check_dir: ./checkpoints/classifier
   wandb:
     enabled: false

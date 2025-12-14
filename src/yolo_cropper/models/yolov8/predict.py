@@ -95,42 +95,55 @@ class YOLOv8Predictor:
 
         """
         # --------------------------------------------------------
-        # Step 0. Resolve model weights (trained OR pretrained)
+        # Step 0. Resolve model weights (Check Integrity FIRST)
         # --------------------------------------------------------
+        weight_file = self.weights_path
+        
+        model_url = self.cfg.get("weights", {}).get(self.model_name)
+        expected_sha = self.cfg.get("sha256", {}).get(self.model_name)
 
-        weight_file = self.weights_path  # saved_model/yolo_cropper/yolov8s.pt
-
+        need_download = True
+        
         if weight_file.exists():
-            self.logger.info(f"[WEIGHT] Using existing weight: {weight_file}")
-
-        else:
-            self.logger.info(f"[WEIGHT] Local weight missing → downloading...")
-
-            if self.model_name in self.cfg["weights"]:
-                url = self.cfg["weights"][self.model_name]
-                sha = self.cfg["sha256"].get(self.model_name)
-
-                weight_file.parent.mkdir(parents=True, exist_ok=True)
-
-                # Download to saved_model/<model_name>.pt
-                download_file(url, weight_file)
-
-                # SHA verification
-                if sha:
-                    if verify_sha256(weight_file, sha):
-                        self.logger.info("[OK] SHA256 verified.")
-                    else:
-                        raise RuntimeError(
-                            f"SHA256 mismatch for downloaded file: {weight_file}"
-                        )
+            if expected_sha:
+                self.logger.info(f"[CHECK] Verifying hash for existing file: {weight_file}")
+                if verify_sha256(weight_file, expected_sha):
+                    self.logger.info("[OK] Existing file verified.")
+                    need_download = False
                 else:
-                    self.logger.warning("[WARN] No SHA256 provided — skipping integrity check.")
-
+                    self.logger.warning("[WARN] File exists but hash mismatch! Deleting and re-downloading.")
+                    weight_file.unlink()
             else:
-                raise FileNotFoundError(
-                    f"No pretrained URL found for model '{self.model_name}', "
-                    f"and no local weight exists at {weight_file}"
+                self.logger.info("[INFO] Found file, skipping hash check (No SHA provided).")
+                need_download = False
+
+        if need_download:
+            if not model_url:
+                 raise FileNotFoundError(
+                    f"No local weight at {weight_file} and no URL provided for '{self.model_name}'"
                 )
+            
+            self.logger.info(f"[WEIGHT] Downloading from {model_url}...")
+            weight_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            temp_file = weight_file.with_suffix(".tmp")
+            try:
+                download_file(model_url, temp_file)
+                
+                if expected_sha:
+                    if verify_sha256(temp_file, expected_sha):
+                        temp_file.rename(weight_file)
+                        self.logger.info("[OK] Download & Verification complete.")
+                    else:
+                        raise RuntimeError("Downloaded file hash mismatch!")
+                else:
+                    temp_file.rename(weight_file)
+                    self.logger.info("[OK] Download complete (No SHA verification).")
+                    
+            except Exception as e:
+                if temp_file.exists():
+                    temp_file.unlink()
+                raise e
 
         self.logger.info(f"Loading YOLOv8 model from: {weight_file}")
         model = YOLO(str(weight_file))

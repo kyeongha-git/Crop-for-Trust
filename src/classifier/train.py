@@ -45,7 +45,6 @@ def validate(model: nn.Module, dataloader, criterion, device: torch.device):
     model.eval()
     total_loss, total_correct = 0.0, 0
     
-    # [Safety] 데이터셋이 비어있으면 0.0 반환하고 종료
     if len(dataloader.dataset) == 0:
         return 0.0, 0.0
 
@@ -87,6 +86,7 @@ def train_model(
 
     - Saves last checkpoint every epoch
     - Updates best checkpoint when validation accuracy improves
+    - [Modified] Ensures a model file is saved even if accuracy is 0.0
     - Copies final best model to save_path after training
     """
     best_acc = 0.0
@@ -122,15 +122,23 @@ def train_model(
 
         torch.save(model.state_dict(), last_ckpt)
 
-        if val_acc > best_acc:
-            best_acc = val_acc
+        if val_acc > best_acc or epoch == 0:
+            if val_acc > best_acc:
+                best_acc = val_acc
+            
             torch.save(model.state_dict(), best_ckpt)
             print(f"Best checkpoint updated: {best_ckpt}")
+
+    if not os.path.exists(best_ckpt) and os.path.exists(last_ckpt):
+        print(f"[WARN] No best checkpoint found. Using last checkpoint instead.")
+        shutil.copy2(last_ckpt, best_ckpt)
 
     if os.path.exists(best_ckpt):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         shutil.copy2(best_ckpt, save_path)
         print(f"Copied final best model to: {save_path}")
+    else:
+        print(f"[ERROR] Failed to save model to {save_path}")
 
     print(f"\nTraining Complete! Best Validation Accuracy: {best_acc:.4f}")
     return best_acc
