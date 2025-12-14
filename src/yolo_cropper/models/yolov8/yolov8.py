@@ -18,6 +18,7 @@ Steps:
 
 import sys
 from pathlib import Path
+import shutil
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
@@ -63,6 +64,7 @@ class YOLOv8Pipeline:
         self.yolov8_cfg = yolo_cropper_cfg.get("yolov8", {})
         self.train_cfg = yolo_cropper_cfg.get("train", {})
         self.dataset_cfg = yolo_cropper_cfg.get("dataset", {})
+        
 
         # Paths
         self.model_name = self.main_cfg.get("model_name", "yolov8s").lower()
@@ -75,6 +77,10 @@ class YOLOv8Pipeline:
         self.demo_mode = self.global_main_cfg.get("demo", "off") == "on"
 
         self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
+        self.detect_output_dir = Path(
+            self.dataset_cfg.get("detect_output_dir", "runs/detect")
+        ).resolve()
+        self.cleanup_previous_runs()
 
         # Derived paths
         self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
@@ -85,6 +91,18 @@ class YOLOv8Pipeline:
         self.logger.info(f" - Training Dataset dir    : {self.train_dataset_dir}")
         self.logger.info(f" - Saved model dir: {self.weight_path}")
         self.logger.info(f" - Input dir      : {self.input_dir}")
+
+
+    # --------------------------------------------------------
+    # Step 0. Cleanup Previous Results
+    # --------------------------------------------------------
+    def cleanup_previous_runs(self):
+        if self.detect_output_dir.exists():
+            self.logger.warning(f"[CleanUp] Removing previous run results: {self.detect_output_dir}")
+            try:
+                shutil.rmtree(self.detect_output_dir)
+            except Exception as e:
+                self.logger.warning(f"[CleanUp] Failed to remove {self.detect_output_dir}: {e}")
 
     # --------------------------------------------------------
     # Step 1. Train

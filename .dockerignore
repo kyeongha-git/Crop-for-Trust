@@ -11,7 +11,7 @@ data/*
 
 # YOLO-Crop
 src/yolo_cropper/models/darknet
-src/yolo_cropper/models/yolov5
+src/yolo_cropper/models/yolov8
 
 # Logs / temporary outputs
 logs/
