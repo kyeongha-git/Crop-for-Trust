@@ -53,7 +53,6 @@ class YOLOv5Predictor:
         self.train_cfg = self.yolo_cropper_cfg.get("train", {})
         self.dataset_cfg = self.yolo_cropper_cfg.get("dataset", {})
         
-        # [수정] Missing Attribute Fix: project_root 정의 추가
         self.project_root = ROOT_DIR
         
         self.model_name = self.main_cfg.get("model_name", "yolov5")
