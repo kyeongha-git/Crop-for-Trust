@@ -160,7 +160,7 @@ class YOLOv5Predictor:
             "--name",
             exp_name,
             "--device",
-            "cpu",
+            self.device,
         ]
 
         if self.save_crop:

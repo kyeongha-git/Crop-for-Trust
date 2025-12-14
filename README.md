@@ -41,27 +41,6 @@ docker run -it --rm \
   kyeonghah/crop-for-trust:latest
 ```
 
-### 3. Run & Save Results (Recommended)
-
-To inspect the generated images (cleaned annotations, cropped regions) and result metrics locally, mount a volume to the container.
-
-```bash
-# 1. Create a local directory for results
-mkdir -p ./reproduction_results
-
-# 2. Run with Volume Mapping (-v)
-# This maps your local './reproduction_results' to the container's data folder
-docker run -it --rm \
-  -e GEMINI_API_KEY="YOUR_GEMINI_API_KEY" \
-  -v "$(pwd)/reproduction_results:/app/data/sample" \
-  kyeonghah/crop-for-trust:latest
-```
-
-After execution, check ./reproduction_results:
-- generation/: Images restored by GAC (Markings removed).
-- generation_crop/: ROI images cropped by YOLOv8s.
-- generation_crop/dataset/: Final dataset split (Train/Valid/Test) used for classification.
-
 ### Pipeline Workflow (Demo Mode)
 
 When executed, the container automatically runs the src/main.py orchestrator in Demo Mode:

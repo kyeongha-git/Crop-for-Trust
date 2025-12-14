@@ -74,7 +74,7 @@ class YOLOv5Trainer:
         self.epochs = self.train_cfg.get("epochs", 400)
         self.batch_size = self.train_cfg.get("batch_size", 16)
         self.imgsz = self.train_cfg.get("imgsz", 416)
-        self.device = str(self.train_cfg.get("device", 0)).strip()
+        self.device = str(self.train_cfg.get("device", "cpu")).strip()
         self.name_prefix = self.model_name
 
         self.logs_dir = self.yolov5_dir / "logs"
