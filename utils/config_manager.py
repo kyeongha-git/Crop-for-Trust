@@ -142,7 +142,7 @@ class ConfigManager:
             self.cfg["annotation_cleaner"] = annotation_cfg
 
         # ======================================================
-        # YOLO Cropper (Single Source of Truth)
+        # YOLO Cropper
         # ======================================================
         if self.yolo_crop == "on":
             crop_output_dir = (

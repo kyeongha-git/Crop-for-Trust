@@ -80,7 +80,9 @@ class YOLOv5Trainer:
         self.logs_dir = self.yolov5_dir / "logs"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info("YOLOv5Trainer initialized (config-driven)")
+        self.final_model_path = self.saved_model_dir / f"{self.model_name}.pt"
+
+        self.logger.info("YOLOv5Trainer initialized")
         self.logger.debug(f"Repo Dir : {self.yolov5_dir}")
         self.logger.debug(f"Data YAML: {self.data_yaml_path}")
 
@@ -119,6 +121,25 @@ class YOLOv5Trainer:
 
         self.logger.info(f"Temporary data.yaml created → {resolved_yaml}")
         return resolved_yaml
+    
+
+    def _save_best_weight(self):
+        """
+        Copy the best YOLOv5 model checkpoint to the saved model directory.
+
+        The best checkpoint is located under the checkpoints directory and saved
+        as `best.pt`. This method copies it to `saved_model/yolo_cropper/yolov5.pt`
+        for downstream tasks or inference.
+
+        """
+        best_weight_src = next(self.checkpoints_dir.rglob("best.pt"), None)
+        target_path = self.saved_model_dir / "yolov5.pt"
+
+        if best_weight_src and best_weight_src.exists():
+            shutil.copy2(best_weight_src, target_path)
+            self.logger.info(f"Copied best weight → {target_path}")
+        else:
+            self.logger.warning("No best.pt found in checkpoints directory.")
 
     def run(self):
         """
@@ -132,6 +153,10 @@ class YOLOv5Trainer:
             Path: Path to the generated training log file.
 
         """
+        if self.final_model_path.exists():
+            self.logger.info(f"[SKIP] Found existing model → {self.final_model_path}")
+            return
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"train_{timestamp}.log"
         exp_name = f"{self.name_prefix}_{timestamp}"
@@ -177,21 +202,3 @@ class YOLOv5Trainer:
         self.logger.info(f"Training complete → {log_path}")
         self._save_best_weight()
         return log_path
-
-    def _save_best_weight(self):
-        """
-        Copy the best YOLOv5 model checkpoint to the saved model directory.
-
-        The best checkpoint is located under the checkpoints directory and saved
-        as `best.pt`. This method copies it to `saved_model/yolo_cropper/yolov5.pt`
-        for downstream tasks or inference.
-
-        """
-        best_weight_src = next(self.checkpoints_dir.rglob("best.pt"), None)
-        target_path = self.saved_model_dir / "yolov5.pt"
-
-        if best_weight_src and best_weight_src.exists():
-            shutil.copy2(best_weight_src, target_path)
-            self.logger.info(f"Copied best weight → {target_path}")
-        else:
-            self.logger.warning("No best.pt found in checkpoints directory.")

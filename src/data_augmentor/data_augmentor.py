@@ -16,7 +16,6 @@ Demo mode behavior (main.demo == 'on'):
 - Original images in input_dir are preserved, and splits are created under `dataset/`.
 """
 
-import argparse
 import shutil
 import sys
 from pathlib import Path
@@ -90,7 +89,7 @@ class DataAugmentor:
         self.logger.info("Split completed!")
 
     # ============================================================
-    # 🔹 Augmentation Stage
+    # Augmentation Stage
     # ============================================================
     def _run_augment(self):
         """Run augmentation if enabled in the configuration."""
@@ -105,7 +104,7 @@ class DataAugmentor:
         self.logger.info("Augmentation completed!")
 
     # ============================================================
-    # 🔹 Cleanup Stage
+    # Cleanup Stage
     # ============================================================
     def _cleanup_original_folders(self):
         """Remove original class folders in full mode (demo=off)."""
@@ -126,7 +125,7 @@ class DataAugmentor:
             self.logger.info(f"Removed original folder: {item}")    
 
     # ============================================================
-    # 🔹 Full Execution
+    # Full Execution
     # ============================================================
     def run(self):
         """

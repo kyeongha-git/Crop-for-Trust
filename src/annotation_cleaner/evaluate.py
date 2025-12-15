@@ -297,10 +297,10 @@ class Evaluator:
 
         download_fine_tuned_weights(
             cfg=self.cfg,
-            model_name=self.model_name,
+            model_name=self.yolo_model,
             saved_model_path=self.saved_model_path,
             logger=self.logger,
-        )        
+        )
 
         avg_full = self.evaluate_full_images(full_path)
         avg_crop = self.evaluate_with_yolo_crop(crop_path)
