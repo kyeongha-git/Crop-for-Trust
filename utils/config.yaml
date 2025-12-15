@@ -2,7 +2,7 @@ main:
   input_dir: data/sample/original
   annot_clean: 'off'
   yolo_crop: 'on'
-  yolo_model: yolov5
+  yolo_model: yolov2
   classify_model: mobilenetv2
   saved_model: saved_model/
   metrics_dir: results/
@@ -70,9 +70,9 @@ annotation_cleaner:
     imgsz: 416
 yolo_cropper:
   main:
-    model_name: yolov5
+    model_name: yolov2
     input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov5
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2
   dataset:
     results_dir: outputs/json_results
     train_data_dir: data/yolo_cropper
@@ -90,7 +90,7 @@ yolo_cropper:
     save_txt: true
     save_conf: true
   darknet:
-    model_name: yolov5
+    model_name: yolov2
     build_mode: cpu
     darknet_dir: third_party/darknet
     darknet_data_dir: third_party/darknet/data
@@ -141,7 +141,7 @@ yolo_cropper:
     model_name: yolov8x
 data_augmentor:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov5
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2
     output_dir: null
   split:
     train_ratio: 0.8
@@ -171,14 +171,14 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov5/dataset
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original_crop/yolov2/dataset
   train:
-    batch_size: 2
-    epochs: 1
+    batch_size: 32
+    epochs: 80
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/original_crop/yolov5
-    metric_dir: metrics/classifier/sample/original_crop/yolov5
+    save_dir: saved_model/classifier/sample/original_crop/yolov2
+    metric_dir: metrics/classifier/sample/original_crop/yolov2
     check_dir: ./checkpoints/
   wandb:
     enabled: false

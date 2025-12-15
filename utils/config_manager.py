@@ -159,7 +159,7 @@ class ConfigManager:
         yolo_cropper_cfg["main"]["output_dir"] = str(crop_output_dir)
         yolo_cropper_cfg["main"]["model_name"] = self.yolo_model
 
-        # --- 🔑 Darknet sync ---
+        # --- Darknet sync ---
         darknet_cfg = yolo_cropper_cfg.get("darknet", {})
         darknet_cfg["model_name"] = self.yolo_model
         yolo_cropper_cfg["darknet"] = darknet_cfg

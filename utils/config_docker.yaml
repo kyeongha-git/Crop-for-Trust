@@ -1,6 +1,6 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'off'
+  annot_clean: 'on'
   yolo_crop: 'on'
   yolo_model: yolov5
   classify_model: mobilenet_v2
@@ -8,25 +8,37 @@ main:
   metrics_dir: metrics/
   demo: 'on'
 weights:
+  yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
+  yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights
   yolov5: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov5.pt
+  yolov8s: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8s.pt
+  yolov8m: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8m.pt
+  yolov8l: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8l.pt
+  yolov8x: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8x.pt
 sha256:
+  yolov2: 25c06d72ab7be602128dec074b8b8dbf36c2aead41637352cde5821de2157ebf
+  yolov4: 202e6cea417e12bc6d65f8db91a7ef8c334ae69cbf1044d4594bb2c265d759b3
   yolov5: 07e8ad9d67c42a4462ec4adf73ca40f4dc8730ab51b1c7f33b168474dba51f4c
+  yolov8s: e9c6f26b7654639fca041faad31beca1a1c388ffc05e805581f9b03b798491ce
+  yolov8m: 14de68f9120fc4c0cd9ab26e0f2f78cbf8b456a19e141f437f3b34e9203e9062
+  yolov8l: ca2848fcd25580ec765a95cc2aa72e0445331d5fccef7c4b5939164a5176c333
+  yolov8x: 79d058f5165fd663192d6885b10e88956fe4c36dcc2cd340a9033bed14bd065d
 annotation_cleaner:
   main:
-    input_dir: /app/data/sample/original
-    output_dir: /app/data/sample/generation
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
     categories:
     - repair
     - replace
     metadata_name: padding_info.json
     keep_metadata: false
   image_padding:
-    input_dir: /app/data/sample/annotation_cleaner/only_annotation_image
-    output_dir: /app/data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image_padded
     target_size: 1024
   annotation_clean:
-    input_dir: /app/data/sample/annotation_cleaner/only_annotation_image_padded
-    output_dir: /app/data/sample/annotation_cleaner/generated_image_padded
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image_padded
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image_padded
     test_mode: 'off'
     test_limit: 6
     model: gemini-2.5-flash-image-preview
@@ -43,12 +55,12 @@ annotation_cleaner:
     max_retries: 3
     timeout: 60
   restore_crop:
-    input_dir: /app/data/sample/annotation_cleaner/generated_image_padded
-    output_dir: /app/data/sample/annotation_cleaner/generated_image
-    metadata_root: /app/data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image_padded
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image
+    metadata_root: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image_padded
   evaluate:
-    orig_dir: /app/data/sample/annotation_cleaner/only_annotation_image
-    gen_dir: /app/data/sample/annotation_cleaner/generated_image
+    orig_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image
+    gen_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image
     metric_dir: ./metrics/annotation_cleaner
     metrics:
     - ssim
@@ -59,8 +71,8 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov5
-    input_dir: /app/data/sample/original
-    output_dir: /app/data/sample/original_crop/yolov5
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
+    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation_crop/yolov5
     mode: detect
   dataset:
     results_dir: outputs/json_results
@@ -75,13 +87,54 @@ yolo_cropper:
     save_txt: true
   darknet:
     model_name: yolov5
+    build_mode: cpu
+    darknet_dir: third_party/darknet
+    modes:
+      cpu:
+        GPU: 0
+        CUDNN: 0
+        CUDNN_HALF: 0
+        OPENCV: 1
+        MAKE_JOBS: 4
+      gpu:
+        GPU: 1
+        CUDNN: 1
+        CUDNN_HALF: 1
+        OPENCV: 1
+        MAKE_JOBS: 8
+    cfg_overrides:
+      batch: 64
+      subdivisions: 16
+      width: 416
+      height: 416
+      channels: 3
+      momentum: 0.949
+      decay: 0.0005
+      learning_rate: 0.001
+      burn_in: 1000
+      max_batches: 6000
+      policy: steps
+      steps: 4800,5400
+      scales: .1,.1
+      mosaic: 0
+      saturation: 1.5
+      exposure: 1.5
+      hue: 0.1
+      classes: 2
+      iou_loss: ciou
+      nms_kind: greedynms
+      beta_nms: 0.6
+      iou_thresh: 0.213
+      cls_normalizer: 1.0
+      iou_normalizer: 0.07
   yolov8:
     model_name: yolov8s
   yolov5:
     model_name: yolov5
+    yolov5_dir: third_party/yolov5
 data_augmentor:
   data:
-    input_dir: /app/data/sample/original_crop/yolov5
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation_crop/yolov5
     output_dir: null
   split:
     train_ratio: 0.8
@@ -111,15 +164,15 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /app/data/sample/original_crop/yolov5/dataset
+    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation_crop/yolov5/dataset
   train:
     model_name: mobilenet_v2
     batch_size: 2
     epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/original_crop/yolov5
-    metric_dir: metrics/classifier/sample/original_crop/yolov5
+    save_dir: saved_model/classifier/sample/generation_crop/yolov5
+    metric_dir: metrics/classifier/sample/generation_crop/yolov5
     check_dir: ./checkpoints/classifier
   wandb:
     enabled: false

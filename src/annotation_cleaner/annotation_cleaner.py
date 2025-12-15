@@ -146,7 +146,7 @@ class AnnotationCleaner:
         """
         self.logger.info("===== Starting Annotation Cleaner Pipeline =====")
 
-        # 1️⃣ Image Padding
+        # 1. Image Padding
         self.logger.info("[1/4] IMAGE PADDING")
         ImagePadder(
             input_dir=self.img_padd_cfg["input_dir"],
@@ -156,7 +156,7 @@ class AnnotationCleaner:
             metadata_name=self.metadata_name,
         ).run()
 
-        # 2️⃣ Annotation Cleaning
+        # 2. Annotation Cleaning
         self.logger.info("[2/4] ANNOTATION CLEANING")
 
         # Enable test mode if requested
@@ -180,7 +180,7 @@ class AnnotationCleaner:
             test_limit=test_limit,
         ).run()
 
-        # 3️⃣ Restore Crop
+        # 3. Restore Crop
         self.logger.info("[3/4] RESTORE CROP")
         RestoreCropper(
             input_dir=self.restore_crop_cfg["input_dir"],
@@ -190,12 +190,12 @@ class AnnotationCleaner:
             metadata_name=self.metadata_name,
         ).run()
 
-        # 4️⃣ Merge & Cleanup
+        # 4. Merge & Cleanup
         self.logger.info("[4/4] MERGE RESULTS AND CLEANUP")
         self.replace_and_export()
         self.cleanup_temp_dirs()
 
-        # 5️⃣ Evaluation
+        # 5. Evaluation
         self.logger.info("[5/5] EVALUATION")
         Evaluator(
             orig_dir=self.evaluate_cfg["orig_dir"],

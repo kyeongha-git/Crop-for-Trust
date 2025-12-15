@@ -1,90 +1,84 @@
 #!/bin/bash
 set -e
 
+# Default setting
+MODEL_TYPE="yolov5"
+
+# Parse arguments to determine which model is being used
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --yolo_model) MODEL_TYPE="$2"; shift ;;
+        *) ;; # Ignore other arguments, let them pass or handled by fixed config
+    esac
+    shift
+done
+
 echo "========================================================"
-echo "   Crop for Trust: Full Reproduction Setup"
-echo "   (Linux Host - Legacy Models & Darknet Compilation)"
+echo "   Crop for Trust: Reliability-Aware Pipeline Demo      "
+echo "          (Docker Environment - $MODEL_TYPE)            "
 echo "========================================================"
 
-# ---------------------------------------------------------
-# 1. Environment Check
-# ---------------------------------------------------------
-echo -e "\n[1/4] Checking Environment..."
+# 1. API Key Check
 if [ -z "$GEMINI_API_KEY" ]; then
-    echo "⚠️  Warning: GEMINI_API_KEY is NOT set."
-    echo "    GAC module will not work until you run:"
-    echo "    export GEMINI_API_KEY=your_key_here"
-else
-    echo "GEMINI_API_KEY detected."
+    echo "Error: GEMINI_API_KEY is missing!"
+    exit 1
 fi
 
-# ---------------------------------------------------------
-# 2. Install Python Dependencies
-# ---------------------------------------------------------
-echo -e "\n[2/4] Installing Python Dependencies..."
-pip install --upgrade pip
+# 2. Environment Sanity Check (Based on Model Type)
+echo "[Init] Checking environment for $MODEL_TYPE..."
 
-# Important: do NOT include torch/vision installs here manually.
-# Your requirements.txt ALREADY includes the correct versions.
-pip install -r requirements.txt
+if [[ "$MODEL_TYPE" == "yolov5" ]]; then
+    # Check if YOLOv5 source code exists (cloned in Dockerfile)
+    if [ ! -d "third_party/yolov5" ]; then
+        echo "Error: YOLOv5 source code is missing in /app/third_party/yolov5"
+        exit 1
+    else
+        echo " -> YOLOv5 Source Code detected."
+    fi
 
-# ---------------------------------------------------------
-# 3. Setup Third-party Repositories
-# ---------------------------------------------------------
-echo -e "\n[3/4] Setting up Third-party Repositories..."
-mkdir -p third_party
+elif [[ "$MODEL_TYPE" == "yolov2" || "$MODEL_TYPE" == "yolov4" ]]; then
+    # Check if Darknet binary exists (compiled in Dockerfile)
+    if [ ! -f "third_party/darknet/darknet" ]; then
+        echo "Error: Darknet executable not found! Compilation failed in Dockerfile."
+        exit 1
+    else
+        echo " -> Darknet executable detected."
+    fi
 
-# --- YOLOv5 ---
-if [ ! -d "third_party/yolov5" ]; then
-    echo " - Cloning YOLOv5..."
-    git clone https://github.com/ultralytics/yolov5.git third_party/yolov5
-else
-    echo " - YOLOv5 already exists. Skipping."
+elif [[ "$MODEL_TYPE" == "yolov8" ]]; then
+    # YOLOv8 uses the 'ultralytics' pip package (installed in Dockerfile)
+    echo " -> Using Ultralytics (YOLOv8) library."
 fi
 
-# --- Darknet ---
-if [ ! -d "third_party/darknet" ]; then
-    echo " - Cloning Darknet..."
-    git clone https://github.com/AlexeyAB/darknet.git third_party/darknet
+# 3. Run Pipeline
+# Passing the detected --yolo_model argument to Python script
+echo -e "\n[Pipeline] Starting src/main.py..."
+python src/main.py --yolo_model "$MODEL_TYPE" --config utils/config_docker.yaml
+
+echo -e "\n--------------------------------------------------------"
+echo "[DEBUG] Post-Run Verification"
+
+echo "1. Saved Model Check (Downloaded by Python if needed):"
+# Note: File extension might differ (pt vs weights), checking loosely based on dir
+if [ -d "/app/saved_model/yolo_cropper" ]; then
+    ls -lh /app/saved_model/yolo_cropper/ | grep "$MODEL_TYPE" || echo "Warning: No model file found for $MODEL_TYPE!"
 else
-    echo " - Darknet already exists. Skipping."
+    echo "Warning: saved_model directory not found!"
 fi
 
-# ---------------------------------------------------------
-# 4. Download Pretrained Weights
-# ---------------------------------------------------------
-echo -e "\n[4/4] Downloading Darknet Pretrained Weights..."
-DARKNET_DIR="third_party/darknet"
+echo "2. Input Images Check:"
+ls -1 /app/data/sample/original | head -n 3 || echo "Input dir empty!"
 
-# YOLOv2
-if [ ! -f "$DARKNET_DIR/yolov2.weights" ]; then
-    echo " - Downloading yolov2.weights..."
-    wget -q --show-progress -O "$DARKNET_DIR/yolov2.weights" \
-        "https://github.com/hank-ai/darknet/releases/download/v2.0/yolov2.weights"
+echo "3. Output Crops Check:"
+# Output folder name changes dynamically based on the model
+if [ -d "/app/data/sample/original_crop/$MODEL_TYPE" ]; then
+    ls -1 "/app/data/sample/original_crop/$MODEL_TYPE" | head -n 3 || echo "No crops found in $MODEL_TYPE folder!"
 else
-    echo " - yolov2.weights already exists."
+    echo "Error: Output directory for $MODEL_TYPE was not created."
 fi
 
-# YOLOv4
-if [ ! -f "$DARKNET_DIR/yolov4.conv.137" ]; then
-    echo " - Downloading yolov4.conv.137..."
-    wget -q --show-progress -O "$DARKNET_DIR/yolov4.conv.137" \
-        "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.conv.137"
-else
-    echo " - yolov4.conv.137 already exists."
-fi
+echo "--------------------------------------------------------"
 
-echo ""
-echo "Darknet Weights Installed:"
-echo " - $DARKNET_DIR/yolov2.weights"
-echo " - $DARKNET_DIR/yolov4.conv.137"
-
-echo ""
 echo "========================================================"
-echo " SETUP COMPLETE!"
-echo " You can now run the full pipeline manually:"
-echo ""
-echo "   export GEMINI_API_KEY=your_key_here"
-echo "   python src/main.py --config utils/config.yaml"
-echo ""
+echo "   🎉 Demo Pipeline Completed Successfully!             "
 echo "========================================================"
