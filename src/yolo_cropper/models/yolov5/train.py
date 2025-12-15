@@ -84,7 +84,6 @@ class YOLOv5Trainer:
         self.logger.debug(f"Repo Dir : {self.yolov5_dir}")
         self.logger.debug(f"Data YAML: {self.data_yaml_path}")
 
-        # Resolve data.yaml paths to absolute before training
         self.data_yaml = self._resolve_data_yaml(self.data_yaml_path)
 
     def _resolve_data_yaml(self, data_yaml_path: Path) -> Path:
@@ -156,7 +155,6 @@ class YOLOv5Trainer:
             exp_name,
         ]
 
-        self.logger.info("Starting YOLOv5 training")
         for key, val in {
             "Epochs": self.epochs,
             "Batch": self.batch_size,

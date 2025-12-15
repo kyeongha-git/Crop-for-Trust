@@ -6,7 +6,7 @@ main:
   classify_model: mobilenetv2
   saved_model: saved_model/
   metrics_dir: results/
-  demo: 'on'
+  demo: true
 weights:
   yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
   yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights

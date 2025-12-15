@@ -58,8 +58,7 @@ class DataAugmentor:
         self.data_cfg = augmentor_cfg.get("data", {})
         self.split_cfg = augmentor_cfg.get("split", {})
         self.aug_cfg = augmentor_cfg.get("augmentation", {})
-        demo_raw = str(self.main_cfg.get("demo", "off")).lower()
-        self.demo_mode = demo_raw == "on"
+        self.demo_mode = self.main_cfg.get("demo", False)
 
         self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
 
@@ -71,10 +70,11 @@ class DataAugmentor:
                 self.data_cfg.get("output_dir", str(self.input_dir))
             )
 
-        self.logger.info(f"Config loaded from: {self.config_path}")
-        self.logger.info(f"Demo mode : {'ON' if self.demo_mode else 'OFF'}")
-        self.logger.info(f"Input dir : {self.input_dir}")
-        self.logger.info(f"Output dir: {self.output_dir}")
+        self.logger.info(f"Initialized Data Augmentor Pipeline")
+        self.logger.info(f" - Demo Mode  : {self.demo_mode}")
+        self.logger.info(f" - Config path: {self.config_path}")
+        self.logger.info(f" - Input dir  : {self.input_dir}")
+        self.logger.info(f" - Output dir : {self.output_dir}")
 
     # ============================================================
     # Split Stage

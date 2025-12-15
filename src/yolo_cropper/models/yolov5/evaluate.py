@@ -13,6 +13,7 @@ results as CSV files for easy tracking and comparison across experiments.
 
 import csv
 import subprocess
+import argparse
 import sys
 import tempfile
 from datetime import datetime
@@ -114,7 +115,6 @@ class YOLOv5Evaluator:
             "--save-json",
         ]
 
-        self.logger.info(f"Starting YOLOv5 evaluation ({self.model_name.upper()})")
         self.logger.debug(f"[CMD] {' '.join(cmd)}")
 
         with open(log_path, "w", encoding="utf-8") as log_f:
@@ -166,7 +166,6 @@ def main():
     Example:
         python src/yolo_cropper/models/yolov5/evaluate.py --config utils/config.yaml
     """
-    import argparse
 
     parser = argparse.ArgumentParser(description="Standalone YOLOv5 Evaluator")
     parser.add_argument(

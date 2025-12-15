@@ -1,12 +1,12 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'on'
+  annot_clean: 'off'
   yolo_crop: 'on'
   yolo_model: yolov5
   classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
-  demo: 'on'
+  demo: true
 weights:
   yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
   yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights
@@ -71,8 +71,8 @@ annotation_cleaner:
 yolo_cropper:
   main:
     model_name: yolov5
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation_crop/yolov5
+    input_dir: /app/data/sample/original
+    output_dir: /app/data/sample/original_crop/yolov5
     mode: detect
   dataset:
     results_dir: outputs/json_results
@@ -134,8 +134,8 @@ yolo_cropper:
     yolov5_dir: third_party/yolov5
 data_augmentor:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation_crop/yolov5
-    output_dir: null
+    input_dir: /app/data/sample/original_crop/yolov5
+    output_dir: /app/data/sample/original_crop/yolov5/dataset
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -164,15 +164,15 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation_crop/yolov5/dataset
+    input_dir: /app/data/sample/original_crop/yolov5/dataset
   train:
     model_name: mobilenet_v2
     batch_size: 2
     epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/generation_crop/yolov5
-    metric_dir: metrics/classifier/sample/generation_crop/yolov5
+    save_dir: saved_model/classifier/sample/original_crop/yolov5
+    metric_dir: metrics/classifier/sample/original_crop/yolov5
     check_dir: ./checkpoints/classifier
   wandb:
     enabled: false

@@ -103,7 +103,7 @@ class DarknetTrainer:
         self.logger.info("All required files are present for training.")
         return True
 
-    def train(self, weights_init: str = None):
+    def run(self, weights_init: str = None):
         """
         Start the Darknet training process.
 
@@ -135,7 +135,6 @@ class DarknetTrainer:
             ),
         ]
 
-        self.logger.info(f"Starting Darknet training ({self.model_name.upper()})")
         self.logger.debug(f"[CMD] {' '.join(cmd[2:])}")
 
         process = subprocess.run(cmd, cwd=self.darknet_dir, shell=False)

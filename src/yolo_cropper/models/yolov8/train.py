@@ -105,7 +105,7 @@ class YOLOv8Trainer:
         """
         if self.final_model_path.exists():
             self.logger.info(f"[SKIP] Found existing model → {self.final_model_path}")
-            return self.final_model_path
+            return
 
         self.logger.info(f"Starting YOLOv8 training for {self.epochs} epochs")
         self.logger.info(f"   Model : {self.model_name}")

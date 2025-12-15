@@ -63,32 +63,6 @@ class DarknetDataPreparer:
             f"→ base_dir={self.base_dir}/{self.model_name}, darknet_data_dir={self.darknet_data_dir}"
         )
 
-    def prepare(self):
-        """
-        Prepare all Darknet-compatible dataset files.
-
-        This method generates:
-            - train.txt / valid.txt / test.txt (image paths)
-            - obj.data and obj.names (Darknet configuration files)
-
-        Returns:
-            dict: A dictionary containing paths to all generated files.
-        """
-        self.logger.info(
-            f"Preparing Darknet dataset for {self.model_name.upper()} → {self.darknet_data_dir}"
-        )
-        self._generate_split_lists()
-        class_names = self._get_class_names()
-        self._generate_obj_files(class_names)
-        self.logger.info("Darknet dataset preparation complete.")
-        return {
-            "train_txt": str(self.darknet_data_dir / "train.txt"),
-            "valid_txt": str(self.darknet_data_dir / "valid.txt"),
-            "test_txt": str(self.darknet_data_dir / "test.txt"),
-            "obj_data": str(self.darknet_data_dir / "obj.data"),
-            "obj_names": str(self.darknet_data_dir / "obj.names"),
-        }
-
     def _generate_split_lists(self):
         """
         Generate image list files (train.txt, valid.txt, test.txt).
@@ -177,19 +151,28 @@ class DarknetDataPreparer:
         self.logger.info(f"obj.data / obj.names created ({num_classes} classes)")
         self.logger.info(f"Backup path set to: {backup_dir.resolve()}")
 
-    def update_backup_path(self, backup_dir: str):
+    def run(self):
         """
-        Update the backup path defined in obj.data.
+        Prepare all Darknet-compatible dataset files.
 
+        This method generates:
+            - train.txt / valid.txt / test.txt (image paths)
+            - obj.data and obj.names (Darknet configuration files)
+
+        Returns:
+            dict: A dictionary containing paths to all generated files.
         """
-        obj_data_path = self.darknet_data_dir / "obj.data"
-        if not obj_data_path.exists():
-            raise FileNotFoundError(f"obj.data not found: {obj_data_path}")
-
-        lines = obj_data_path.read_text(encoding="utf-8").splitlines()
-        new_lines = [
-            f"backup = {backup_dir}" if line.strip().startswith("backup") else line
-            for line in lines
-        ]
-        obj_data_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-        self.logger.info(f"updated backup path → {backup_dir}")
+        self.logger.info(
+            f"Preparing Darknet dataset for {self.model_name.upper()} → {self.darknet_data_dir}"
+        )
+        self._generate_split_lists()
+        class_names = self._get_class_names()
+        self._generate_obj_files(class_names)
+        self.logger.info("Darknet dataset preparation complete.")
+        return {
+            "train_txt": str(self.darknet_data_dir / "train.txt"),
+            "valid_txt": str(self.darknet_data_dir / "valid.txt"),
+            "test_txt": str(self.darknet_data_dir / "test.txt"),
+            "obj_data": str(self.darknet_data_dir / "obj.data"),
+            "obj_names": str(self.darknet_data_dir / "obj.names"),
+        }

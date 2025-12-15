@@ -74,7 +74,7 @@ class YOLOCropper:
         self.logger.debug(f" - Output  : {self.output_dir}")
 
     # --------------------------------------------------------
-    def crop_from_json(self):
+    def run(self):
         """
         Crop detected regions from images according to YOLO `result.json`.
 

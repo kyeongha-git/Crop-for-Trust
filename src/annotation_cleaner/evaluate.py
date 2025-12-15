@@ -25,6 +25,7 @@ sys.path.append(str(ROOT_DIR))
 from src.annotation_cleaner.metrics.metrics import (edge_iou, l1_distance,
                                                     ssim_score)
 from utils.logging import get_logger, setup_logging
+from utils.model_hub import download_fine_tuned_weights
 
 
 # ============================================================
@@ -282,9 +283,6 @@ class Evaluator:
         self.logger.info(f"YOLO Crop results saved → {save_path}")
         return avg
 
-    # ============================================================
-    # Run All Evaluations
-    # ============================================================
     def run(self) -> Dict[str, Optional[Dict[str, float]]]:
         """
         Runs both full-image and YOLO crop-based evaluations, saving all results.
@@ -292,8 +290,17 @@ class Evaluator:
         Returns:
             Dict[str, Optional[Dict[str, float]]]: Average metric results for each evaluation mode.
         """
+
+
         full_path = self.metric_dir / "metrics_full_image.csv"
         crop_path = self.metric_dir / "metrics_yolo_crop.csv"
+
+        download_fine_tuned_weights(
+            cfg=self.cfg,
+            model_name=self.model_name,
+            saved_model_path=self.saved_model_path,
+            logger=self.logger,
+        )        
 
         avg_full = self.evaluate_full_images(full_path)
         avg_crop = self.evaluate_with_yolo_crop(crop_path)

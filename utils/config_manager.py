@@ -33,7 +33,7 @@ class ConfigManager:
         self.base_dir = Path(main_cfg.get("input_dir", "data/original")).resolve()
 
         # Mode flags
-        self.demo_mode = str(main_cfg.get("demo", "off")).lower() == "on"
+        self.demo_mode = main_cfg.get("demo", False)
         self.annot_clean = main_cfg.get("annot_clean", "on")
         self.yolo_crop = main_cfg.get("yolo_crop", "on")
 
@@ -183,10 +183,11 @@ class ConfigManager:
         data_aug_cfg["data"]["input_dir"] = str(crop_output_dir)
 
         if self.demo_mode:
-            data_aug_cfg["data"]["output_dir"] = None
+            aug_output_dir = crop_output_dir / "dataset"
         else:
-            data_aug_cfg["data"]["output_dir"] = str(crop_output_dir)
+            aug_output_dir = crop_output_dir
 
+        data_aug_cfg["data"]["output_dir"] = str(aug_output_dir)
         self.cfg["data_augmentor"] = data_aug_cfg
 
         # ======================================================
@@ -195,14 +196,9 @@ class ConfigManager:
         classifier_cfg = self.cfg.get("classifier", {})
         classifier_cfg.setdefault("data", {})
 
-        classifier_input = (
-            Path(crop_output_dir) / "dataset"
-            if self.demo_mode
-            else Path(crop_output_dir)
-        )
-        classifier_cfg["data"]["input_dir"] = str(classifier_input)
+        classifier_cfg["data"]["input_dir"] = str(aug_output_dir)
 
-        dynamic_save_dir = self._build_classifier_save_dir(classifier_input)
+        dynamic_save_dir = self._build_classifier_save_dir(aug_output_dir)
         classifier_cfg.setdefault("train", {})
         classifier_cfg["train"]["save_dir"] = str(dynamic_save_dir)
 

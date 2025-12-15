@@ -159,7 +159,7 @@ class CfgManager:
             f"Updated filters={filters}, classes={num_classes} ({self.model_name.upper()})"
         )
 
-    def generate(self) -> str:
+    def run(self) -> str:
         """
         Generate the final Darknet cfg file.
 

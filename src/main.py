@@ -64,6 +64,7 @@ def main():
     yolo_crop = main_cfg.get("yolo_crop", "on")
     yolo_model = main_cfg.get("yolo_model", "yolov8s")
     classify_model = main_cfg.get("classify_model", "vgg16")
+    demo_mode = main_cfg.get("demo", False)
 
     # --------------------------------------------------------
     # Logging
@@ -72,6 +73,7 @@ def main():
     logger = get_logger("main")
 
     logger.info("Unified AI Pipeline Starting")
+    logger.info(f"demo mode      : {demo_mode}")
     logger.info(f"annot_clean    : {annot_clean}")
     logger.info(f"yolo_crop      : {yolo_crop}")
     logger.info(f"yolo_model     : {yolo_model}")

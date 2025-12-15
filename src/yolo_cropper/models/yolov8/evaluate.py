@@ -9,6 +9,7 @@ This module evaluates a YOLOv8 model in a config-driven pipeline.
 
 import csv
 import sys
+import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -112,7 +113,6 @@ def main():
     Example:
         python src/yolo_cropper/models/yolov8/evaluator.py --config utils/config.yaml
     """
-    import argparse
 
     parser = argparse.ArgumentParser(description="Standalone YOLOv8 Evaluator")
     parser.add_argument(
@@ -125,9 +125,6 @@ def main():
 
     setup_logging("logs/yolo_cropper")
     logger = get_logger("yolo_cropper.yolov8_eval")
-
-    logger.info("Starting standalone YOLOv8 evaluation")
-    logger.info(f"Using config: {args.config}")
 
     try:
         # 1. Sync config (overwrite)

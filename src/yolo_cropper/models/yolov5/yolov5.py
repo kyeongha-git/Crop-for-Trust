@@ -20,6 +20,7 @@ Steps:
 
 import sys
 from pathlib import Path
+import shutil
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
@@ -51,99 +52,118 @@ class YOLOv5Pipeline:
         self.config_path = Path(config_path)
         self.cfg = load_yaml_config(self.config_path)
 
-        main_cfg = self.cfg.get("main", {})
-        self.demo_mode = str(main_cfg.get("demo", "off")).lower()
+        self.global_main_cfg = self.cfg.get("main", {})
+        self.demo_mode = self.global_main_cfg.get("demo", False)
 
+        # Shortcut configs
         yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = yolo_cropper_cfg.get("main", {})
         self.yolov5_cfg = yolo_cropper_cfg.get("yolov5", {})
         self.dataset_cfg = yolo_cropper_cfg.get("dataset", {})
 
+        # Paths
         self.model_name = self.main_cfg.get("model_name", "yolov5").lower()
-        self.saved_model_dir = Path(self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")).resolve()
-        self.saved_weight_path = self.saved_model_dir / f"{self.model_name}.pt"
-
+        self.saved_model_dir = Path(
+            self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
+        ).resolve()
+        self.train_dataset_dir = Path(
+            f"{self.yolov5_cfg.get('data_yaml', 'data/yolo_cropper/yolov5/data.yaml')}"
+        ).resolve()        
         self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
-        self.train_dataset_dir = Path(self.yolov5_cfg.get('data_yaml', 'data/yolo_cropper/yolov5/data.yaml')).resolve()
+        self.detect_output_dir = Path(
+            self.dataset_cfg.get("detect_output_dir", "runs/detect")
+        ).resolve()
 
-        self.logger.info(f"Initialized YOLO v5 Pipeline ({self.model_name.upper()})")
-        self.logger.info(f"Demo mode         : {self.demo_mode}")
-        self.logger.info(f"Training Data     : {self.train_dataset_dir}")
-        self.logger.info(f"Saved weights     : {self.saved_weight_path}")
-        self.logger.info(f"Input dir         : {self.input_dir}")
+        # Derived paths
+        self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
+
+        # Logging info
+        self.logger.info(f"Initialized YOLOv5 Pipeline ({self.model_name.upper()})")
+        self.logger.info(f" - Demo mode      : {self.demo_mode}")
+        self.logger.info(f" - Config path    : {self.config_path}")
+        self.logger.info(f" - Input dir      : {self.input_dir}")
+        self.logger.info(f" - Saved model dir: {self.weight_path}")
+
+
+    # --------------------------------------------------------
+    # Step 0. Cleanup Previous Results
+    # --------------------------------------------------------
+    def cleanup_previous_runs(self):
+        if self.detect_output_dir.exists():
+            self.logger.warning(f"[CleanUp] Removing previous run results: {self.detect_output_dir}")
+            try:
+                shutil.rmtree(self.detect_output_dir)
+            except Exception as e:
+                self.logger.warning(f"[CleanUp] Failed to remove {self.detect_output_dir}: {e}")
 
     # --------------------------------------------------------
     # Step 1. Train
     # --------------------------------------------------------
     def step_train(self):
-        if self.demo_mode == "on":
-            self.logger.info("[STEP 1] Demo mode ON → Skipping training")
+        if self.demo_mode:
+            self.logger.info("[STEP 1] Demo mode → Skipping training")
             return
 
         self.logger.info("[STEP 1] Starting YOLO v5 training...")
-        if self.saved_weight_path.exists():
-            self.logger.info(f"[SKIP] Existing trained model: {self.saved_weight_path}")
-            return
 
         trainer = YOLOv5Trainer(config=self.cfg)
         trainer.run()
-        self.logger.info("Training complete")
 
     # --------------------------------------------------------
     # Step 2. Evaluate
     # --------------------------------------------------------
     def step_evaluate(self):
-        if self.demo_mode == "on":
-            self.logger.info("[STEP 2] Demo mode ON → Skipping evaluation")
+        if self.demo_mode:
+            self.logger.info("[STEP 2] Demo mode → Skipping evaluation")
             return None
 
-        self.logger.info("[STEP 2] Running evaluation...")
+        self.logger.info("[STEP 2] Evaluating YOLOv5 model...")
         evaluator = YOLOv5Evaluator(config=self.cfg)
         metrics = evaluator.run()
         return metrics
-
+    
     # --------------------------------------------------------
-    # Step 3. Predict
-    # --------------------------------------------------------
-    def step_predict(self):
-        self.logger.info("[STEP 3] Prediction…")
-        predictor = YOLOv5Predictor(config=self.cfg)
-        predictor.run()
-
-    # --------------------------------------------------------
-    # Step 4. Make predict.txt
+    # Step 3. Make predict.txt
     # --------------------------------------------------------
     def step_make_predict(self):
-        self.logger.info("[STEP 4] Generating predict.txt")
+        self.logger.info("[STEP 3] Generating predict.txt")
         maker = YOLOPredictListGenerator(config=self.cfg)
         maker.run()
 
     # --------------------------------------------------------
-    # Step 5. Convert to result.json
+    # Step 4. Predict
     # --------------------------------------------------------
-    def step_converter(self):
-        self.logger.info("[STEP 5] Converting YOLO outputs → result.json")
-        conv = YOLOConverter(config=self.cfg)
-        conv.run()
+    def step_predict(self):
+        self.logger.info("[STEP 4] Running YOLOv5 prediction...")
+        predictor = YOLOv5Predictor(config=self.cfg)
+        predictor.run()
 
     # --------------------------------------------------------
-    # Step 6. Crop from JSON
+    # Step 5. Converter
+    # --------------------------------------------------------
+    def step_converter(self):
+        self.logger.info("[STEP 5] Converting YOLOv5 detects → result.json")
+        converter = YOLOConverter(config=self.cfg)
+        converter.run()
+
+    # --------------------------------------------------------
+    # Step 6. Cropper
     # --------------------------------------------------------
     def step_cropper(self):
         self.logger.info("[STEP 6] Cropping from result.json")
         cropper = YOLOCropper(config=self.cfg)
-        cropper.crop_from_json()
+        cropper.run()
 
     # --------------------------------------------------------
     # Entrypoint
     # --------------------------------------------------------
     def run(self):
         self.logger.info("Running YOLOv5 Pipeline")
+        self.cleanup_previous_runs()
         self.step_train()
         self.step_evaluate()
-        self.step_predict()
         self.step_make_predict()
+        self.step_predict()
         self.step_converter()
         self.step_cropper()
-
-        self.logger.info("YOLOv5 pipeline completed successfully!")
+        self.logger.info("\nYOLOv5 pipeline completed successfully!")

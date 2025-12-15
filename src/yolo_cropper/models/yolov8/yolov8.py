@@ -57,14 +57,15 @@ class YOLOv8Pipeline:
         self.config_path = Path(config_path)
         self.cfg = load_yaml_config(self.config_path)
 
-        # Shortcut configs
         self.global_main_cfg = self.cfg.get("main", {})
+        self.demo_mode = self.global_main_cfg.get("demo", False)
+
+        # Shortcut configs
         yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = yolo_cropper_cfg.get("main", {})
         self.yolov8_cfg = yolo_cropper_cfg.get("yolov8", {})
         self.train_cfg = yolo_cropper_cfg.get("train", {})
         self.dataset_cfg = yolo_cropper_cfg.get("dataset", {})
-        
 
         # Paths
         self.model_name = self.main_cfg.get("model_name", "yolov8s").lower()
@@ -74,23 +75,20 @@ class YOLOv8Pipeline:
         self.train_dataset_dir = Path(
             f"{self.yolov8_cfg.get('data_yaml', 'data/yolo_cropper/yolov8/data.yaml')}"
         ).resolve()
-        self.demo_mode = self.global_main_cfg.get("demo", "off") == "on"
-
         self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
         self.detect_output_dir = Path(
             self.dataset_cfg.get("detect_output_dir", "runs/detect")
         ).resolve()
-        self.cleanup_previous_runs()
 
         # Derived paths
         self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
 
         # Logging info
-        self.logger.info(f"Initialized YOLO v8 Pipeline ({self.model_name.upper()})")
+        self.logger.info(f"Initialized YOLOv8 Pipeline ({self.model_name.upper()})")
+        self.logger.info(f" - Demo Mode      : {self.demo_mode}")
         self.logger.info(f" - Config path    : {self.config_path}")
-        self.logger.info(f" - Training Dataset dir    : {self.train_dataset_dir}")
-        self.logger.info(f" - Saved model dir: {self.weight_path}")
         self.logger.info(f" - Input dir      : {self.input_dir}")
+        self.logger.info(f" - Saved model dir: {self.weight_path}")
 
 
     # --------------------------------------------------------
@@ -109,20 +107,14 @@ class YOLOv8Pipeline:
     # --------------------------------------------------------
     def step_train(self):
         if self.demo_mode:
-            self.logger.info("[STEP 1] Demo mode → Skipping training entirely.")
+            self.logger.info("[STEP 1] Demo mode → Skipping training")
             return
 
         self.logger.info("[STEP 1] Starting YOLO v8 training...")
 
-        if self.weight_path.exists():
-            self.logger.info(
-                f"[SKIP] Found existing trained model → {self.weight_path}"
-            )
-            return
-
         trainer = YOLOv8Trainer(config=self.cfg)
         trainer.run()
-        self.logger.info("Training step done")
+
     # --------------------------------------------------------
     # Step 2. Evaluate
     # --------------------------------------------------------
@@ -133,51 +125,46 @@ class YOLOv8Pipeline:
 
         self.logger.info("[STEP 2] Evaluating YOLOv8 model...")
         evaluator = YOLOv8Evaluator(config=self.cfg)
-        metrics = evaluator.run()
-        self.logger.info("Evaluation complete.")
-        return metrics
-
+        evaluator.run()
+        
     # --------------------------------------------------------
     # Step 3. Make predict.txt
     # --------------------------------------------------------
     def step_make_predict(self):
-        self.logger.info("[STEP 4] Generating predict.txt")
-        maker = YOLOPredictListGenerator(config=self.cfg)  # config-driven
+        self.logger.info("[STEP 3] Generating predict.txt")
+        maker = YOLOPredictListGenerator(config=self.cfg)
         maker.run()
-        self.logger.info("predict.txt generated")
 
     # --------------------------------------------------------
-    # Step 4. Predict (auto multi-folder)
+    # Step 4. Predict
     # --------------------------------------------------------
     def step_predict(self):
-        self.logger.info("[STEP 3] Preparing dataset for YOLOv8...")
+        self.logger.info("[STEP 4] Running YOLOv8 prediction...")
         predictor = YOLOv8Predictor(config=self.cfg)
         predictor.run()
-        self.logger.info("Prediction step done")
 
     # --------------------------------------------------------
-    # Step 5. Converter (YOLOv5 detect → unified result.json)
+    # Step 5. Converter
     # --------------------------------------------------------
     def step_converter(self):
         self.logger.info("[STEP 5] Converting YOLOv8 detects → result.json")
         conv = YOLOConverter(config=self.cfg)
         conv.run()
-        self.logger.info("Conversion step done")
 
     # -------------------------------------------------
-    # Step 6. Cropper (result.json based ROI crop)
+    # Step 6. Cropper
     # -------------------------------------------------
     def step_cropper(self):
         self.logger.info("[STEP 6] Cropping from result.json")
         cropper = YOLOCropper(config=self.cfg)
-        cropper.crop_from_json()
-        self.logger.info("Cropping step done")
+        cropper.run()
 
     # --------------------------------------------------------
-    # Unified Runner
+    # Entrypoint
     # --------------------------------------------------------
     def run(self):
         self.logger.info("Running YOLOv8 Pipeline")
+        self.cleanup_previous_runs()
         self.step_train()
         self.step_evaluate()
         self.step_make_predict()

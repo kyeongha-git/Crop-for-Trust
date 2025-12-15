@@ -24,7 +24,7 @@ ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger
-from utils.weights import download_file, verify_sha256
+from utils.model_hub import download_fine_tuned_weights
 
 
 class YOLOv5Predictor:
@@ -45,8 +45,11 @@ class YOLOv5Predictor:
                 controller, containing YOLOv5, dataset, and runtime parameters.
         """
         self.logger = get_logger("yolo_cropper.YOLOv5Predictor")
-
         self.cfg = config
+        
+        self.global_main_cfg = self.cfg.get("main", {})
+        self.demo_mode = self.global_main_cfg.get("demo", False)
+        
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
         self.yolov5_cfg = self.yolo_cropper_cfg.get("yolov5", {})
@@ -86,44 +89,6 @@ class YOLOv5Predictor:
         self.logger.debug(f"Weights    : {self.saved_model_path}")
         self.logger.debug(f"Source Dir : {self.input_root}")
         self.logger.debug(f"Output Dir : {self.detect_root}")
-
-    def _prepare_weights(self):
-        """
-        Ensure YOLOv5 weight exists in saved_model directory.
-        If missing, download from config-defined pretrained weights.
-        """
-        weight_file = self.saved_model_path
-
-        if weight_file.exists():
-            self.logger.info(f"[WEIGHT] Using existing weight: {weight_file}")
-            return
-
-        self.logger.info("[WEIGHT] Local YOLOv5 weight missing → downloading...")
-
-        weights_cfg = self.cfg.get("weights", {})
-        sha_cfg = self.cfg.get("sha256", {})
-
-        if self.model_name not in weights_cfg:
-            raise FileNotFoundError(
-                f"No pretrained weight URL found for model '{self.model_name}', "
-                f"and local weight does not exist: {weight_file}"
-            )
-
-        url = weights_cfg[self.model_name]
-        sha = sha_cfg.get(self.model_name)
-
-        weight_file.parent.mkdir(parents=True, exist_ok=True)
-        download_file(url, weight_file)
-
-        if sha:
-            if verify_sha256(weight_file, sha):
-                self.logger.info("[WEIGHT] SHA256 verified.")
-            else:
-                raise RuntimeError(
-                    f"SHA256 mismatch for downloaded YOLOv5 weight: {weight_file}"
-                )
-        else:
-            self.logger.warning("[WEIGHT] No SHA256 provided — skipping integrity check.")
 
     def _run_inference(self, folder_path: Path):
         """
@@ -196,14 +161,15 @@ class YOLOv5Predictor:
             self.logger.info(f"Detection complete → {exp_dir}")
 
     def run(self):
-        """
-        Perform YOLOv5 inference for every subfolder under the input root directory.
+        if self.demo_mode:
+            self.logger.info("Demo mode → Download fine-tuned YOLO weights")
 
-        This method scans all subdirectories inside the configured input path
-        (e.g., `data/original`), then runs `_run_inference()` sequentially
-        for each. Each folder’s results are stored in separate output directories.
-        """
-        self._prepare_weights()
+            download_fine_tuned_weights(
+                cfg=self.cfg,
+                model_name=self.model_name,
+                saved_model_path=self.saved_model_path,
+                logger=self.logger,
+            )
 
         subfolders = [p for p in self.input_root.iterdir() if p.is_dir()]
         if not subfolders:
@@ -212,7 +178,6 @@ class YOLOv5Predictor:
         self.logger.info(
             f"Found {len(subfolders)} folders → {[p.name for p in subfolders]}"
         )
+
         for folder in subfolders:
             self._run_inference(folder)
-
-        self.logger.info("All detections complete.")

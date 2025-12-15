@@ -17,6 +17,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
+import argparse
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
@@ -24,6 +25,7 @@ sys.path.append(str(ROOT_DIR))
 from src.yolo_cropper.metrics.metrics import get_metrics_parser
 from utils.logging import get_logger, setup_logging
 from utils.load_config import load_yaml_config
+from utils.config_manager import ConfigManager
 
 
 class DarknetEvaluator:
@@ -140,9 +142,6 @@ def main():
     Example:
         python src/yolo_cropper/models/darknet/evaluate.py --config utils/config.yaml
     """
-    import argparse
-    from utils.config_manager import ConfigManager
-
     parser = argparse.ArgumentParser(
         description="Standalone Darknet Evaluator"
     )

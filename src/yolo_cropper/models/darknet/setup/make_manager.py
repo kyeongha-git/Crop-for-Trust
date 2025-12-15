@@ -140,3 +140,8 @@ class MakeManager:
                 raise
 
         self.logger.info(f"Patched Makefile with flags: {flags}")
+
+    def run(self):
+        self.configure()
+        self.rebuild()
+        self.verify_darknet()
