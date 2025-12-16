@@ -82,7 +82,7 @@ class Evaluator:
             raise FileNotFoundError(f"Model file not found: {model_path}")
 
         model.load_state_dict(
-            torch.load(model_path, map_location=self.device)
+            torch.load(model_path, map_location=self.device, weights_only=True)
         )
         model.to(self.device).eval()
 

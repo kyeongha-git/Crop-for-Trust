@@ -68,14 +68,23 @@ def main():
     yolo_model = main_cfg.get("yolo_model", "yolov8s")
     classify_model = main_cfg.get("classify_model", "vgg16")
     demo_mode = main_cfg.get("demo", False)
-
+    yolo_result = (
+    Path(
+        updated_cfg
+        .get("yolo_cropper", {})
+        .get("dataset", {})
+        .get("results_dir", "outputs/json_results")
+    )
+    / yolo_model
+    / "result.json"
+    )
     # --------------------------------------------------------
     # Logging
     # --------------------------------------------------------
     setup_logging("logs/main")
     logger = get_logger("main")
 
-    logger.info("Unified AI Pipeline Starting")
+    logger.info("Crop for Trust Pipeline Starting...")
     logger.info(f"demo mode      : {demo_mode}")
     logger.info(f"annot_clean_test_mode : {annot_clean_test_mode}")
     logger.info(f"annot_clean    : {annot_clean}")
@@ -84,38 +93,55 @@ def main():
     logger.info(f"classify_model : {classify_model}")
 
     # --------------------------------------------------------
-    # AnnotationCleaner
+    # Step 1. AnnotationCleaner
     # --------------------------------------------------------
     if annot_clean:
         try:
-            print("\n[1] Running AnnotationCleaner...")
+            logger.info("[STEP 1] Starting Annotation Cleaner...")
             cleaner = AnnotationCleaner(config_path=args.config)
             cleaner.run()
         except Exception as e:
             logger.error(f"[AnnotationCleaner] Failed: {e}")
             traceback.print_exc()
     else:
-        print("[1] AnnotationCleaner skipped")
+        logger.info("[STEP 1] Annotation Cleaner skipped.")
 
     # --------------------------------------------------------
-    # YOLOCropper
+    # Step 2. YOLOCropper
     # --------------------------------------------------------
     if yolo_crop:
         try:
-            print(f"\n[2] Running YOLOCropper ({yolo_model})...")
+            logger.info(f"[STEP 2] Starting YOLOCropper ({yolo_model})...")
             yolo_cropper = YOLOCropperController(config_path=args.config)
             yolo_cropper.run()
         except Exception as e:
             logger.error(f"[YOLOCropper] Failed: {e}")
             traceback.print_exc()
     else:
-        print("[2] YOLOCropper skipped")
+        print("[STEP 2] YOLOCropper skipped")
 
     # --------------------------------------------------------
-    # DataAugmentor
+    # Step 3. Annotation Cleaner Evaluation (Crop Evaluation)
+    # --------------------------------------------------------
+    if annot_clean:
+        try:
+            if yolo_result.exists():
+                logger.info("[STEP 3] Evaluating Annotation Cleaner (usi    ng existing YOLO results)...")
+                cleaner.step_evaluate()
+            else:
+                logger.info("[STEP 3] YOLO results not found. Running YOLO for evaluation only...")
+                yolo_cropper = YOLOCropperController(config_path=args.config)
+                yolo_cropper.run()
+                cleaner.step_evaluate()
+        except Exception as e:
+            logger.error(f"[AnnotationCleaner] Evaluation Failed: {e}")
+            traceback.print_exc()
+
+    # --------------------------------------------------------
+    # Step 4. DataAugmentor
     # --------------------------------------------------------
     try:
-        print("\n[3] Running DataAugmentor...")
+        logger.info("[STEP 4] Starting DataAugmentor...")
         augmentor = DataAugmentor(config_path=args.config)
         augmentor.run()
     except Exception as e:
@@ -123,17 +149,17 @@ def main():
         traceback.print_exc()
 
     # --------------------------------------------------------
-    # Classifier
+    # Step 5. Classifier
     # --------------------------------------------------------
     try:
-        print(f"\n[4] Running Classifier ({classify_model})...")
+        logger.info("[STEP 4] Starting Classifier ({classify_model})...")
         classifier = Classifier(config_path=args.config)
         classifier.run()
     except Exception as e:
         logger.error(f"[Classifier] Failed: {e}")
         traceback.print_exc()
 
-    print("\n All pipeline stages completed!")
+
     logger.info("All pipeline stages completed successfully.")
 
 

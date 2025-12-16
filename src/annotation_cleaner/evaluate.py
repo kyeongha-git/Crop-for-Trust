@@ -13,14 +13,13 @@ Fully configuration-driven:
 """
 
 import sys
-import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import cv2
+import json
 import pandas as pd
 from tqdm import tqdm
-from ultralytics import YOLO
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
@@ -31,7 +30,6 @@ from src.annotation_cleaner.metrics.metrics import (
     ssim_score,
 )
 from utils.logging import get_logger, setup_logging
-from utils.model_hub import download_fine_tuned_weights
 
 
 class Evaluator:
@@ -52,12 +50,24 @@ class Evaluator:
         self.cfg = config
         global_main_cfg = self.cfg.get("main", {})
         cleaner_cfg = self.cfg.get("annotation_cleaner", {})
+        yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.eval_cfg = cleaner_cfg.get("evaluate", {})
         self.main_cfg = cleaner_cfg.get("main", {})
+        self.debug = self.eval_cfg.get("debug", True)
 
         self.orig_dir = Path(self.eval_cfg.get("orig_dir")).resolve()
         self.gen_dir = Path(self.eval_cfg.get("gen_dir")).resolve()
         self.metric_dir = Path(self.eval_cfg.get("metric_dir", "metrics/annotation_cleaner")).resolve()
+        self.debug_dir = self.metric_dir / "debug_crops"
+        self.yolo_model = global_main_cfg.get("yolo_model", "yolov5")
+        self.metadata_root = (
+            Path(
+                yolo_cropper_cfg.get("dataset", {})
+                .get("results_dir", "outputs/json_results")
+                )
+                / self.yolo_model
+                / "result.json"
+                )
 
         self.metrics: List[str] = self.eval_cfg.get(
             "metrics", ["ssim", "l1", "edge_iou"]
@@ -65,28 +75,28 @@ class Evaluator:
         self.categories: List[str] = self.main_cfg.get(
             "categories", ["repair", "replace"]
         )
-
-        self.yolo_model: str = self.eval_cfg.get(
-            "yolo_model", "saved_model/yolo_cropper/yolov5.pt"
-        )
-
-        self.yolo_model_name = global_main_cfg.get("yolo_model", "yolov5")
-        self.imgsz: int = int(self.eval_cfg.get("imgsz", 416))
-        self.conf_thres: float = float(self.eval_cfg.get("conf_thres", 0.25))
-
-        self.saved_model_path = Path(self.yolo_model).resolve()
         test_mode = "test" in self.gen_dir.name
 
         # --------------------------------------------------
         # Logging
         # --------------------------------------------------
         self.logger.info("Initialized Evaluator")
-        self.logger.info(f" - YOLO model   : {self.yolo_model_name}")
         self.logger.info(f" - Original dir : {self.orig_dir}")
         self.logger.info(f" - Generated dir: {self.gen_dir}")
         self.logger.info(f" - Metric dir   : {self.metric_dir}")
         self.logger.info(f" - Metrics      : {self.metrics}")
         self.logger.info(f" - Test Mode    : {test_mode}")
+
+    def _rel_to_abs_bbox(self, bbox, img_w, img_h):
+        cx, cy = bbox["center_x"], bbox["center_y"]
+        w, h = bbox["width"], bbox["height"]
+
+        x1 = int((cx - w / 2) * img_w)
+        y1 = int((cy - h / 2) * img_h)
+        x2 = int((cx + w / 2) * img_w)
+        y2 = int((cy + h / 2) * img_h)
+
+        return max(0, x1), max(0, y1), min(img_w, x2), min(img_h, y2)
 
     def _compute_metrics(self, orig_img, gen_img) -> Dict[str, float]:
         results = {}
@@ -149,85 +159,87 @@ class Evaluator:
         df.to_csv(save_path, index=False)
 
         return avg
+    
+    def _evaluate_with_metadata(self, save_path: Path) -> Optional[Dict[str, float]]:
+        self.logger.info("[2/2] Metadata-based Crop Evaluation")
 
-    # ============================================================
-    # YOLO Crop Evaluation
-    # ============================================================
-    def _evaluate_with_yolo_crop(self, save_path: Path) -> Optional[Dict[str, float]]:
-        self.logger.info("[2/2] YOLO Crop Evaluation")
-
-        download_fine_tuned_weights(
-            cfg=self.cfg,
-            model_name=self.yolo_model_name,
-            saved_model_path=self.saved_model_path,
-            logger=self.logger,
-        )
-
-        yolo = YOLO(str(self.saved_model_path))
-        results = []
-
-        with tempfile.TemporaryDirectory(prefix="eval_yolo_") as temp_root:
-            temp_root = Path(temp_root)
-
-            image_list = [
-                img
-                for c in self.categories
-                for img in (self.gen_dir / c).glob("*.[jp][pn]g")
-            ]
-
-            for img_path in tqdm(image_list, desc="YOLO inference"):
-                img = cv2.imread(str(img_path))
-                if img is None:
-                    continue
-
-                preds = yolo.predict(
-                    source=str(img_path),
-                    imgsz=self.imgsz,
-                    conf=self.conf_thres,
-                    save=False,
-                    verbose=False,
-                )
-                if not preds or not preds[0].boxes.xyxy.numel():
-                    continue
-
-                split = img_path.parent.name
-                base = img_path.stem
-                orig_path = self.orig_dir / split / f"{base}.jpg"
-                if not orig_path.exists():
-                    continue
-
-                o_img = cv2.imread(str(orig_path))
-                if o_img is None:
-                    continue
-
-                for idx, box in enumerate(preds[0].boxes.xyxy):
-                    x1, y1, x2, y2 = map(int, box)
-                    c1 = o_img[y1:y2, x1:x2]
-                    c2 = img[y1:y2, x1:x2]
-                    if c1.size == 0 or c2.size == 0:
-                        continue
-                    if c1.shape != c2.shape:
-                        c2 = cv2.resize(c2, (c1.shape[1], c1.shape[0]))
-
-                    results.append(
-                        {
-                            "split": split,
-                            "file": base,
-                            "crop_idx": idx,
-                            **self._compute_metrics(c1, c2),
-                        }
-                    )
-
-        if not results:
+        metadata_path = self.metadata_root
+        if not metadata_path.exists():
+            self.logger.error(f"Metadata not found: {metadata_path}")
             return None
 
+        with open(metadata_path, "r") as f:
+            records = json.load(f)
+
+        results = []
+
+        # Visualization directory
+        self.debug_dir.mkdir(parents=True, exist_ok=True)
+
+        for record_idx, record in enumerate(tqdm(records, desc="Metadata evaluation")):
+            record_path = Path(record["filename"])
+            split = record_path.parent.name
+            fname = record_path.name
+            stem = record_path.stem
+
+            orig_path = self.orig_dir / split / fname
+            gen_path  = self.gen_dir  / split / fname
+
+            if not orig_path.exists() or not gen_path.exists():
+                continue
+
+            o_img = cv2.imread(str(orig_path))
+            g_img = cv2.imread(str(gen_path))
+            if o_img is None or g_img is None:
+                continue
+
+            h, w = o_img.shape[:2]
+
+            for idx, obj in enumerate(record.get("objects", [])):
+                bbox = obj.get("relative_coordinates", None)
+                if bbox is None:
+                    continue
+
+                x1, y1, x2, y2 = self._rel_to_abs_bbox(bbox, w, h)
+
+                c1 = o_img[y1:y2, x1:x2]
+                c2 = g_img[y1:y2, x1:x2]
+
+                if c1.size == 0 or c2.size == 0:
+                    continue
+
+                if c1.shape != c2.shape:
+                    c2 = cv2.resize(c2, (c1.shape[1], c1.shape[0]))
+
+                if record_idx < 5:
+                    cv2.imwrite(
+                        str(self.debug_dir / f"{stem}_{idx}_orig.png"), c1
+                    )
+                    cv2.imwrite(
+                        str(self.debug_dir / f"{stem}_{idx}_gen.png"), c2
+                    )
+
+                results.append(
+                    {
+                        "split": split,
+                        "file": stem,
+                        "crop_idx": idx,
+                        **self._compute_metrics(c1, c2),
+                    }
+                )
+
+        if not results:
+            self.logger.warning("No valid metadata-based crop results.")
+            return None
+
+        # --------------------------------------------------
+        # 6. Aggregate & save results
+        # --------------------------------------------------
         df = pd.DataFrame(results)
         avg = df.drop(columns=["split", "file", "crop_idx"]).mean().to_dict()
 
         avg_row = {**{k: "" for k in df.columns}, **avg}
-        avg_row["split"] = "AVG"
-        avg_row["file"] = "AVG"
-        avg_row["crop_idx"] = "AVG"
+        avg_row.update({"split": "AVG", "file": "AVG", "crop_idx": "AVG"})
 
         df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
         self.metric_dir.mkdir(parents=True, exist_ok=True)
@@ -235,15 +247,17 @@ class Evaluator:
 
         return avg
 
+
+
     def run(self) -> Dict[str, Optional[Dict[str, float]]]:
         full_path = self.metric_dir / "metrics_full_image.csv"
         crop_path = self.metric_dir / "metrics_yolo_crop.csv"
 
         avg_full = self._evaluate_full_images(full_path)
-        avg_crop = self._evaluate_with_yolo_crop(crop_path)
+        avg_crop = self._evaluate_with_metadata(crop_path)
 
         self.logger.info("Evaluation complete")
-        self.logger.info(f" - Full Image: {avg_full}")
-        self.logger.info(f" - YOLO Crop : {avg_crop}")
+        self.logger.info(f" - Global Evaluation: {avg_full}")
+        self.logger.info(f" - Local Evaluation : {avg_crop}")
 
         return {"full": avg_full, "crop": avg_crop}

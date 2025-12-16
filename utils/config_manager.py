@@ -162,6 +162,8 @@ class ConfigManager:
                 / f"{annot_output_dir.name}_crop"
                 / self.yolo_model
             )
+        elif self.annot_clean and not self.yolo_crop:
+            crop_output_dir = None
         else:
             crop_output_dir = annot_output_dir
 
