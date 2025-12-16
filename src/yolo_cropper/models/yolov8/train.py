@@ -10,10 +10,10 @@ It provides a fully automated workflow for training YOLOv8 using Ultralytics’ 
 saving both intermediate checkpoints and the final best-performing model.
 
 Steps:
-1️⃣ Load configuration and initialize YOLOv8 model
-2️⃣ Train model using provided parameters
-3️⃣ Save best and last checkpoints
-4️⃣ Export final best model to `saved_model/yolo_cropper/{model_name}.pt`
+1. Load configuration and initialize YOLOv8 model
+2. Train model using provided parameters
+3. Save best and last checkpoints
+4. Export final best model to `saved_model/yolo_cropper/{model_name}.pt`
 """
 
 import shutil

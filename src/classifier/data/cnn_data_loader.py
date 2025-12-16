@@ -82,9 +82,6 @@ def build_label_mappings(labels: List[str]) -> Tuple[Dict[str, int], Dict[int, s
     return label_to_idx, idx_to_label
 
 
-# ============================================================
-# PyTorch Dataset Class
-# ============================================================
 class ClassificationDataset(Dataset):
     """
     Dataset class for image classification tasks.
@@ -158,7 +155,7 @@ class ClassificationDataset(Dataset):
 
 
 # ============================================================
-# DataLoader Helper
+# Helper Functions
 # ============================================================
 def create_dataloader(
     input_dir: str,
@@ -198,42 +195,3 @@ def create_dataloader(
         pin_memory=True,
     )
     return loader
-
-
-# ============================================================
-# Lightweight Utility
-# ============================================================
-def load_dataset_as_list(
-    input_dir: str,
-    split: str = "train",
-    transform=None,
-) -> Tuple[List, List, Dict[str, int], Dict[int, str]]:
-    """
-    Load an entire dataset into memory for inspection or visualization.
-
-    Suitable only for small datasets; not recommended for training.
-
-    Args:
-        input_dir (str): Dataset root path.
-        split (str): Dataset split ('train', 'valid', or 'test').
-        transform (callable, optional): Image transform.
-
-    Returns:
-        Tuple[List, List, Dict[str, int], Dict[int, str]]:
-            (images, labels, label_to_idx, idx_to_label)
-    """
-    root_dir = os.path.join(input_dir, split)
-    image_label_pairs = list_image_paths(root_dir)
-    images, labels = [], []
-    label_to_idx, idx_to_label = build_label_mappings(
-        [label for _, label in image_label_pairs]
-    )
-
-    for img_path, label_name in image_label_pairs:
-        img = Image.open(img_path).convert("RGB")
-        if transform:
-            img = transform(img)
-        images.append(img)
-        labels.append(label_to_idx[label_name])
-
-    return images, labels, label_to_idx, idx_to_label

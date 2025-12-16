@@ -3,10 +3,14 @@
 
 """
 restore_crop.py
--------------------
-This module restores generated images (1024×1024) to their original size
-using stored padding metadata from the preprocessing stage.
-Each restored image matches the original dimensions before padding.
+----------------
+Restores generated images (e.g., 1024×1024) to their original dimensions
+using padding metadata produced during the image padding stage.
+
+This module is fully configuration-driven:
+- Receives only `config` at initialization
+- Reads required paths and parameters internally
+- Exposes a single public API: `run()`
 """
 
 import json
@@ -14,7 +18,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import cv2
 
@@ -27,49 +31,53 @@ from utils.logging import get_logger, setup_logging
 class RestoreCropper:
     """
     Restores images to their original dimensions using padding metadata.
-
-    This class reverses the padding applied during preprocessing by cropping
-    the central region of 1024×1024 generated images back to their original size.
-    It uses the JSON metadata produced during image padding to determine
-    the crop coordinates for each image.
     """
 
-    def __init__(
-        self,
-        input_dir: str,  # generated_image_padded
-        output_dir: str,  # generated_image
-        meta_dir: str,  # only_annotation_image_padded
-        categories: Optional[List[str]] = None,
-        metadata_name: str = "padding_info.json",
-    ):
+    def __init__(self, config: Dict):
         setup_logging("logs/annotation_cleaner")
-        self.logger = get_logger("RestoreCrop")
+        self.logger = get_logger("annotation_cleaner.RestoreCropper")
 
-        # --- Directory and configuration setup ---
-        self.input_root = Path(input_dir)
-        self.meta_root = Path(meta_dir)
-        self.output_root = Path(output_dir)
-        self.categories = categories or ["repair", "replace"]
-        self.meta_name = metadata_name
+        self.cfg = config
+        cleaner_cfg = self.cfg.get("annotation_cleaner", {})
+        self.main_cfg = cleaner_cfg.get("main", {})
+        self.restore_cfg = cleaner_cfg.get("restore_crop", {})
 
-        self.logger.info(f"Input folder: {self.input_root}")
-        self.logger.info(f"Metadata folder: {self.meta_root}")
-        self.logger.info(f"Output folder: {self.output_root}")
+        self.input_root = Path(
+            self.restore_cfg.get("input_dir", "data/annotation_cleaner/generated_image_padded")
+        ).resolve()
 
-    # ============================================================
-    # Internal Utilities
-    # ============================================================
+        self.output_root = Path(
+            self.restore_cfg.get("output_dir", "data/annotation_cleaner/generated_image")
+        ).resolve()
+
+        self.meta_root = Path(
+            self.restore_cfg.get("metadata_root", "data/annotation_cleaner/only_annotation_image_padded")
+        ).resolve()
+
+        self.categories: List[str] = self.main_cfg.get(
+            "categories", ["repair", "replace"]
+        )
+
+        self.meta_name: str = self.main_cfg.get(
+            "metadata_name", "padding_info.json"
+        )
+
+        test_mode = "test" in self.input_root.name
+
+        # --------------------------------------------------
+        # Logging
+        # --------------------------------------------------
+        self.logger.info("Initialized RestoreCropper")
+        self.logger.info(f" - Input dir   : {self.input_root}")
+        self.logger.info(f" - Output dir  : {self.output_root}")
+        self.logger.info(f" - Metadata dir: {self.meta_root}")
+        self.logger.info(f" - Test mode  : {test_mode}")
+
     def _load_metadata(self, meta_path: Path) -> Optional[dict]:
-        """
-        Loads the padding metadata (JSON) for a given category.
-
-        Returns:
-            dict: A mapping of image names to padding information.
-            None: If the metadata file is missing or cannot be loaded.
-        """
         if not meta_path.exists():
             self.logger.warning(f"Metadata not found: {meta_path}")
             return None
+
         try:
             with open(meta_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -81,19 +89,15 @@ class RestoreCropper:
     def _restore_single_image(
         self, img_path: Path, meta: dict, save_path: Path
     ) -> bool:
-        """
-        Restores a single image to its original dimensions.
-
-        Uses the stored padding information to crop out the valid region
-        from the 1024×1024 generated image.
-        """
         img = cv2.imread(str(img_path))
         if img is None:
             self.logger.warning(f"Failed to read image: {img_path.name}")
             return False
 
         h_orig, w_orig = meta["orig_size"]
-        top, left = meta["pad_info"]["top"], meta["pad_info"]["left"]
+        top = meta["pad_info"]["top"]
+        left = meta["pad_info"]["left"]
+
         roi = img[top : top + h_orig, left : left + w_orig]
 
         success = cv2.imwrite(str(save_path), roi)
@@ -104,17 +108,13 @@ class RestoreCropper:
             self.logger.error(f"Failed to save: {save_path.name}")
             return False
 
-    # ============================================================
-    # Public API
-    # ============================================================
     def run(self):
         """
-        Executes the full restoration process for all categories.
+        Executes the restoration process for all categories.
 
-        - Iterates through each category folder.
-        - Loads corresponding padding metadata.
-        - Restores each generated image to its original size.
-        - Copies images without padding metadata directly.
+        - Loads padding metadata for each category
+        - Restores padded images to original dimensions
+        - Copies images without metadata directly
         """
         if not self.input_root.exists():
             raise FileNotFoundError(f"Input folder not found: {self.input_root}")
@@ -124,8 +124,9 @@ class RestoreCropper:
 
         for category in self.categories:
             in_dir = self.input_root / category
-            meta_path = self.meta_root / category / self.meta_name
             out_dir = self.output_root / category
+            meta_path = self.meta_root / category / self.meta_name
+
             out_dir.mkdir(parents=True, exist_ok=True)
 
             if not in_dir.exists():
@@ -134,9 +135,11 @@ class RestoreCropper:
 
             metadata = self._load_metadata(meta_path)
             if not metadata:
+                self.logger.warning(f"No metadata for category: {category}")
                 continue
 
             restored_count = 0
+
             for file in sorted(os.listdir(in_dir)):
                 if not file.lower().endswith((".jpg", ".jpeg", ".png")):
                     continue
@@ -145,6 +148,7 @@ class RestoreCropper:
                 input_path = in_dir / file
                 save_path = out_dir / file
 
+                # No padding metadata → copy as-is
                 if name not in metadata:
                     shutil.copy(input_path, save_path)
                     self.logger.info(f"{file}: Copied (no padding metadata)")

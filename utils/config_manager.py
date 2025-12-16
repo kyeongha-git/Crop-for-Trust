@@ -34,17 +34,19 @@ class ConfigManager:
 
         # Mode flags
         self.demo_mode = main_cfg.get("demo", False)
-        self.annot_clean = main_cfg.get("annot_clean", "on")
-        self.yolo_crop = main_cfg.get("yolo_crop", "on")
+        self.annot_clean = main_cfg.get("annot_clean", True)
+        self.yolo_crop = main_cfg.get("yolo_crop", True)
+        self.saved_model_path = Path(
+            main_cfg.get("saved_model", "saved_model")
+        ).resolve()
 
         # Single source of truth
         self.yolo_model = main_cfg.get("yolo_model", "yolov8s").lower()
 
-        self.test_mode = (
-            self.cfg.get("annotation_cleaner", {})
-            .get("annotation_clean", {})
-            .get("test_mode", "off")
+        self.annot_clean_test_mode = (
+            main_cfg.get("annot_clean_test_mode", False)
         )
+        assert isinstance(self.annot_clean_test_mode, bool)
 
     # --------------------------------------------------------
     def _load_yaml(self) -> Dict[str, Any]:
@@ -76,10 +78,10 @@ class ConfigManager:
     # --------------------------------------------------------
     def update_paths(
         self,
-        annot_clean: Optional[str] = None,
-        yolo_crop: Optional[str] = None,
+        annot_clean: Optional[bool] = None,
+        yolo_crop: Optional[bool] = None,
         yolo_model: Optional[str] = None,
-        test_mode: Optional[str] = None,
+        annot_clean_test_mode: Optional[bool] = None,
     ) -> Dict[str, Any]:
 
         # ---------------------------
@@ -91,8 +93,8 @@ class ConfigManager:
             self.yolo_crop = yolo_crop
         if yolo_model is not None:
             self.yolo_model = yolo_model.lower()
-        if test_mode is not None:
-            self.test_mode = test_mode
+        if annot_clean_test_mode is not None:
+            self.annot_clean_test_mode = annot_clean_test_mode
 
         # Refresh base input dir
         self.base_dir = Path(
@@ -107,16 +109,22 @@ class ConfigManager:
         annot_root = base_root / "annotation_cleaner"
         annot_only = annot_root / "only_annotation_image"
         annot_only_padded = annot_root / "only_annotation_image_padded"
-        generated_padded = annot_root / "generated_image_padded"
-        generated_final = annot_root / "generated_image"
 
-        if self.annot_clean == "on":
-            annot_output_dir = base_root / "generation"
+        if self.annot_clean_test_mode:
+            generated_padded = annot_root / "generated_image_padded_test"
+            generated_final = annot_root / "generated_image_test"
+            annot_output_dir = base_root / "generation_test"
         else:
+            generated_padded = annot_root / "generated_image_padded"
+            generated_final = annot_root / "generated_image"
+            annot_output_dir = base_root / "generation"
+
+        if not self.annot_clean:
             annot_output_dir = self.base_dir
 
-        if self.annot_clean == "on":
+        if self.annot_clean:
             annotation_cfg = self.cfg.get("annotation_cleaner", {})
+
             annotation_cfg.setdefault("main", {})
             annotation_cfg["main"]["input_dir"] = str(self.base_dir)
             annotation_cfg["main"]["output_dir"] = str(annot_output_dir)
@@ -128,7 +136,7 @@ class ConfigManager:
             annotation_cfg.setdefault("annotation_clean", {})
             annotation_cfg["annotation_clean"]["input_dir"] = str(annot_only_padded)
             annotation_cfg["annotation_clean"]["output_dir"] = str(generated_padded)
-            annotation_cfg["annotation_clean"]["test_mode"] = self.test_mode
+            annotation_cfg["annotation_clean"]["test_mode"] = self.annot_clean_test_mode
 
             annotation_cfg.setdefault("restore_crop", {})
             annotation_cfg["restore_crop"]["input_dir"] = str(generated_padded)
@@ -138,13 +146,17 @@ class ConfigManager:
             annotation_cfg.setdefault("evaluate", {})
             annotation_cfg["evaluate"]["orig_dir"] = str(annot_only)
             annotation_cfg["evaluate"]["gen_dir"] = str(generated_final)
+            annotation_cfg["evaluate"]["yolo_model"] = str(
+                self.saved_model_path / "yolo_cropper" / f"{self.yolo_model}.pt"
+            )
 
             self.cfg["annotation_cleaner"] = annotation_cfg
+
 
         # ======================================================
         # YOLO Cropper
         # ======================================================
-        if self.yolo_crop == "on":
+        if self.yolo_crop:
             crop_output_dir = (
                 annot_output_dir.parent
                 / f"{annot_output_dir.name}_crop"

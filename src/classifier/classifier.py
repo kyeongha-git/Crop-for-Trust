@@ -28,7 +28,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
 
 from src.classifier.data.cnn_data_loader import ClassificationDataset
-from src.classifier.data.data_preprocessing import DataPreprocessor
+from src.classifier.data.data_preprocessor import DataPreprocessor
 from src.classifier.evaluate import Evaluator
 from src.classifier.models.factory import get_model
 from src.classifier.train import train_model
@@ -208,9 +208,9 @@ class Classifier:
         return model, criterion, optimizer
 
     # ==========================================================
-    # Training Wrapper
+    # Step 1. Train
     # ==========================================================
-    def _train_model(
+    def step_train(
         self, model, criterion, optimizer, train_loader, valid_loader, wandb_run
     ):
         """
@@ -239,38 +239,12 @@ class Classifier:
             check_path=check_path,
             wandb_run=wandb_run,
         )
-
-        self.logger.info(f"Training Complete — Best Val Acc: {best_acc:.4f}")
         return best_acc
-
+    
     # ==========================================================
-    # Full Pipeline (Train + Evaluate)
+    # Step 2. Evaluate
     # ==========================================================
-    def run(self):
-        """
-        Execute the complete training and evaluation pipeline.
-
-        Steps:
-            1. Load datasets
-            2. Build model and optimizer
-            3. Train model and track via wandb
-            4. Evaluate final test performance
-            5. Save metrics and finish session
-        """
-        self.logger.info(
-            f"Start Training {self.model_name.upper()} on {self.input_dir}"
-        )
-        train_loader, valid_loader = self._load_data()
-        model, criterion, optimizer = self._build_model()
-        wandb_run = self._init_wandb()
-
-        # Training phase
-        best_acc = self._train_model(
-            model, criterion, optimizer, train_loader, valid_loader, wandb_run
-        )
-        
-
-        # Evaluation phase
+    def step_evaluate(self, input_dir, model, save_dir, metric_dir, wandb_run):
         evaluator = Evaluator(
         input_dir=self.input_dir,
         model=self.model_name,
@@ -279,6 +253,32 @@ class Classifier:
         wandb_run=wandb_run,
         )
         acc, f1 = evaluator.run()
+        return acc, f1
+
+    # ==========================================================
+    # Entrypoint
+    # ==========================================================
+    def run(self):
+        self.logger.info(
+            f"Start Training {self.model_name.upper()} on {self.input_dir}"
+        )
+        train_loader, valid_loader = self._load_data()
+        model, criterion, optimizer = self._build_model()
+        wandb_run = self._init_wandb()
+
+        # Training phase
+        best_acc = self.step_train(
+            model, criterion, optimizer, train_loader, valid_loader, wandb_run
+        )
+
+        # Evaluation phase
+        acc, f1 = self.step_evaluate(
+        input_dir=self.input_dir,
+        model=self.model_name,
+        save_dir=self.train_cfg["save_dir"],
+        metric_dir=self.train_cfg["metric_dir"],
+        wandb_run=wandb_run,
+        )
 
         # Log and finalize
         if wandb_run:

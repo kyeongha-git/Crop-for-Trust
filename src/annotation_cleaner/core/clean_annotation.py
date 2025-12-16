@@ -4,29 +4,19 @@
 """
 clean_annotation.py
 -------------------
-This module automatically removes drawn annotations or visual marks
-from car windshield images using the Gemini API.
+Removes drawn annotations or visual marks from images using the Gemini API.
 
-Purpose:
-    - Clean annotated or marked images to create unbiased training data.
-    - Generate clear images suitable for machine learning or visual analysis.
-    - Support automated processing of multiple image categories.
-
-Usage Example:
-    >>> cleaner = CleanAnnotation(
-    ...     input_dir="data/original",
-    ...     output_dir="data/cleaned",
-    ...     model="gemini-1.5-pro",
-    ...     prompt="Remove any pen marks or drawn lines from this windshield image."
-    ... )
-    >>> cleaner.run()
+This module is fully configuration-driven:
+- Receives only `config` at initialization
+- Reads all parameters from `annotation_cleaner.annotation_clean`
+- Exposes a single public API: `run()`
 """
 
 import os
 import sys
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from google import genai
 from PIL import Image
@@ -37,14 +27,7 @@ sys.path.append(str(ROOT_DIR))
 from utils.logging import get_logger, setup_logging
 
 
-# ============================================================
-# Gemini Client Initialization
-# ============================================================
 def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
-    """
-    Initialize and return a Gemini API client.
-    Handles raw strings, environment variable lookups, and placeholders from YAML.
-    """
     if api_key and isinstance(api_key, str) and api_key.startswith("${"):
         env_var_name = api_key.strip("${}")
         key = os.getenv(env_var_name)
@@ -64,62 +47,66 @@ def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
         raise RuntimeError(f"Failed to initialize Gemini client: {e}")
 
 
-# ============================================================
-# CleanAnnotation Class
-# ============================================================
 class CleanAnnotation:
     """
-    A class that removes visual annotations or guide marks from images using the Gemini API.
+    Removes visual annotations from images using Gemini.
     """
 
-    def __init__(
-        self,
-        input_dir: str,
-        output_dir: str,
-        model: str,
-        prompt: str,
-        categories: Optional[List[str]] = None,
-        test_mode: bool = False,
-        test_limit: int = 3,
-        client: Optional[genai.Client] = None,
-    ):
-        """
-        Initialize the cleaning module with paths, model configuration, and logging.
-
-        Args:
-            input_dir (str): Folder containing input images grouped by category.
-            output_dir (str): Folder where cleaned images will be saved.
-            model (str): Gemini model to use for image cleaning.
-            prompt (str): Instruction for how to remove annotations.
-            categories (Optional[List[str]]): List of category subfolders to process.
-            test_mode (bool): If True, limits processing for debugging or preview.
-            test_limit (int): Number of images to process in test mode.
-            client (Optional[genai.Client]): Existing Gemini client, if already initialized.
-        """
+    def __init__(self, config: Dict):
         setup_logging("logs/annotation_cleaner")
-        self.logger = get_logger("CleanAnnotation")
+        self.logger = get_logger("annotation_cleaner.CleanAnnotation")
 
-        self.input_root = Path(input_dir)
-        self.output_root = Path(output_dir)
-        self.categories = categories or ["repair", "replace"]
-        self.model = model
-        self.prompt = prompt
-        self.test_mode = test_mode
-        self.test_limit = test_limit
+        self.cfg = config
+        cleaner_cfg = self.cfg.get("annotation_cleaner", {})
+        self.main_cfg = cleaner_cfg.get("main", {})
+        self.clean_cfg = cleaner_cfg.get("annotation_clean", {})
 
-        self.client = client or get_gemini_client()
+        self.input_root = Path(
+            self.clean_cfg.get(
+                "input_dir",
+                self.main_cfg.get(
+                    "input_dir",
+                    "data/annotation_cleaner/only_annotation_image_padded",
+                ),
+            )
+        ).resolve()
 
-        self.logger.info(f"Input directory: {self.input_root}")
-        self.logger.info(f"Output directory: {self.output_root}")
-        self.logger.info(f"Model: {self.model}")
+        self.output_root = Path(
+            self.clean_cfg.get(
+                "output_dir",
+                "data/annotation_cleaner/generated_image_padded",
+            )
+        ).resolve()
 
-    # ============================================================
-    # Internal Utility
-    # ============================================================
+        self.test_mode: bool = bool(self.clean_cfg.get("test_mode", False))
+        self.test_limit: int = int(self.clean_cfg.get("test_limit", 3))
+
+        self.categories: List[str] = self.main_cfg.get(
+            "categories", ["repair", "replace"]
+        )
+
+        self.model: str = self.clean_cfg.get(
+            "model", "gemini-2.5-flash-image-preview"
+        )
+        self.prompt: Optional[str] = self.clean_cfg.get("prompt")
+
+        api_key = self.clean_cfg.get("api_key")
+        self.client = get_gemini_client(api_key)
+
+        # --------------------------------------------------
+        # Logging
+        # --------------------------------------------------
+        self.logger.info("Initialized CleanAnnotation")
+        self.logger.info(f" - Input dir  : {self.input_root}")
+        self.logger.info(f" - Output dir : {self.output_root}")
+        self.logger.info(f" - Model      : {self.model}")
+        self.logger.info(f" - Test mode  : {self.test_mode}")
+        if self.test_mode:
+            self.logger.info(
+                f" - Test limit : {self.test_limit} images per category"
+            )
+
     def _generate_clean_image(self, image_path: Path, output_path: Path) -> bool:
-        """
-        Send an image to the Gemini model and save the cleaned output.
-        """
         try:
             image = Image.open(image_path)
             response = self.client.models.generate_content(
@@ -142,26 +129,21 @@ class CleanAnnotation:
         except Exception as e:
             self.logger.error(f"Error processing {image_path.name}: {e}")
             return False
+
         return False
 
-    # ============================================================
-    # Public API
-    # ============================================================
     def run(self):
         """
-        Clean all annotated images under each category folder.
-
-        The method scans each category directory (e.g., 'repair', 'replace'),
-        sends images to the Gemini model to remove visual marks,
-        and saves the cleaned images to the output directory.
+        Cleans annotated images under each category directory.
         """
         if not self.input_root.exists():
             raise FileNotFoundError(f"Input folder not found: {self.input_root}")
 
         self.output_root.mkdir(parents=True, exist_ok=True)
-        processed_count = 0
 
         for category in self.categories:
+            processed_count = 0
+
             in_dir = self.input_root / category
             out_dir = self.output_root / category
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -170,33 +152,40 @@ class CleanAnnotation:
                 self.logger.warning(f"Missing folder: {in_dir}")
                 continue
 
-            image_files = [
+            image_files = sorted(
                 f
                 for f in os.listdir(in_dir)
                 if f.lower().endswith((".jpg", ".jpeg", ".png"))
-            ]
+            )
 
             for filename in image_files:
                 input_path = in_dir / filename
                 output_path = out_dir / filename
 
                 if output_path.exists():
-                    self.logger.info(f"Skipping existing file: {filename}")
+                    if self.test_mode:
+                        self.logger.info(
+                            f"[TEST MODE] Skipping existing file: {filename}"
+                        )
+                    else:
+                        self.logger.info(f"Skipping existing file: {filename}")
                     continue
 
-                success = self._generate_clean_image(input_path, output_path)
+                success = self._generate_clean_image(
+                    input_path, output_path
+                )
                 processed_count += int(success)
 
-                if (
-                    self.test_mode
-                    and self.test_limit
-                    and processed_count >= self.test_limit
-                ):
+                if self.test_mode and processed_count >= self.test_limit:
                     self.logger.info(
-                        f"Test mode limit reached ({self.test_limit}). Stopping early."
+                        f"[TEST MODE] Category '{category}' reached limit "
+                        f"({self.test_limit}). Moving to next category."
                     )
-                    return
+                    break
 
-        self.logger.info(
-            f"Cleaning complete. Total processed: {processed_count} images."
-        )
+            self.logger.info(
+                f"Category '{category}' completed "
+                f"({processed_count} images processed)."
+            )
+
+        self.logger.info("Annotation cleaning process finished.")

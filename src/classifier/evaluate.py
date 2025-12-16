@@ -33,7 +33,7 @@ sys.path.append(str(ROOT_DIR))
 from utils.load_config import load_yaml_config
 from utils.logging import get_logger, setup_logging
 from src.classifier.data.cnn_data_loader import ClassificationDataset
-from src.classifier.data.data_preprocessing import DataPreprocessor
+from src.classifier.data.data_preprocessor import DataPreprocessor
 from src.classifier.models.factory import get_model
 
 

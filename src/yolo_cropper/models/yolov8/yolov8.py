@@ -15,7 +15,6 @@ Steps:
 6. Perform ROI cropping
 """
 
-
 import sys
 from pathlib import Path
 import shutil

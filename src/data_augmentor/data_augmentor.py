@@ -76,44 +76,42 @@ class DataAugmentor:
         self.logger.info(f" - Output dir : {self.output_dir}")
 
     # ============================================================
-    # Split Stage
+    # Step 1. Data Split
     # ============================================================
-    def _run_split(self):
+    def step_split(self):
         """Execute dataset splitting into train/valid/test subsets."""
-        self.logger.info("\n[1/2] Running Split stage...")
+        self.logger.info("[STEP 1] Starting Data Split...")
         split_dataset(
             data_dir=self.input_dir,
             output_dir=self.output_dir,
             split_cfg=self.split_cfg,
         )
-        self.logger.info("Split completed!")
 
     # ============================================================
-    # Augmentation Stage
+    # Step 2. Data Augmentation
     # ============================================================
-    def _run_augment(self):
+    def step_augment(self):
         """Run augmentation if enabled in the configuration."""
         if not self.aug_cfg.get("enable", False):
             self.logger.info(
-                "\n[2/2] Augmentation disabled (skipped per config.yaml)"
+                "[STEP 2] No Use Augmentation → Skip."
             )
             return
 
-        self.logger.info("\n[2/2] Running class imbalance augmentation...")
+        self.logger.info("[STEP 2] Starting Data Augmentation...")
         balance_augmentation(self.output_dir, self.aug_cfg)
-        self.logger.info("Augmentation completed!")
 
     # ============================================================
-    # Cleanup Stage
+    # Step 3. Cleanup (Only Full Code. Not Demo.)
     # ============================================================
-    def _cleanup_original_folders(self):
+    def step_cleanup(self):
         """Remove original class folders in full mode (demo=off)."""
         if self.demo_mode:
-            self.logger.info("Demo mode: original folders preserved.")
+            self.logger.info("[STEP 3] Demo mode → Skipping Cleanup.")
             return
         
         # full mode only cleaning
-        self.logger.info("Full mode: removing original class folders...")
+        self.logger.info("[STEP 3] Starting Cleanup...")
         protected = {"train", "valid", "test"}
 
         for item in self.input_dir.iterdir():
@@ -125,14 +123,9 @@ class DataAugmentor:
             self.logger.info(f"Removed original folder: {item}")    
 
     # ============================================================
-    # Full Execution
+    # Entrypoint
     # ============================================================
     def run(self):
-        """
-        Execute the full pipeline:
-        1. Split dataset
-        2. Perform augmentation (optional)
-        """
         if not self.input_dir.exists():
             raise FileNotFoundError(
                 f"Input data directory not found: {self.input_dir}"
@@ -146,8 +139,8 @@ class DataAugmentor:
             f" - Augmentation: {'Enabled' if self.aug_cfg.get('enable', False) else 'Disabled'}"
         )
 
-        self._run_split()
-        self._run_augment()
-        self._cleanup_original_folders()
+        self.step_split()
+        self.step_augment()
+        self.step_cleanup()
 
         self.logger.info("\n Augmentor pipeline completed successfully!")

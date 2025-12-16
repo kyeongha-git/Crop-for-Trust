@@ -50,9 +50,6 @@ assets/*
 # Ignore ALL saved_model contents
 saved_model/*
 
-# But DO NOT ignore yolov8s.pt (include it)
-!saved_model/yolo_cropper/yolov8s.pt
-
 # Also allow README files
 !saved_model/README*
 !saved_model/yolo_cropper/README*

@@ -33,17 +33,19 @@ def main():
         help="Path to configuration YAML file",
     )
 
-    parser.add_argument("--annot_clean", type=str, choices=["on", "off"], default=None)
-    parser.add_argument("--yolo_crop", type=str, choices=["on", "off"], default=None)
-    parser.add_argument("--yolo_model", type=str, default=None)
+    parser.add_argument("--annot_clean", action="store_true")
+    parser.add_argument("--no_annot_clean", action="store_false", dest="annot_clean")
+    parser.set_defaults(annot_clean=None)
 
-    parser.add_argument(
-        "--test",
-        type=str,
-        choices=["on", "off"],
-        default="off",
-        help="Test mode (AnnotationCleaner with 3 images only)",
-    )
+    parser.add_argument("--annot_clean_test_mode", action="store_true")
+    parser.add_argument("--no_annot_clean_test_mode", action="store_false", dest="annot_clean_test_mode")
+    parser.set_defaults(annot_clean_test_mode=None)
+
+    parser.add_argument("--yolo_crop", action="store_true")
+    parser.add_argument("--no_yolo_crop", action="store_false", dest="yolo_crop")
+    parser.set_defaults(yolo_crop=None)
+
+    parser.add_argument("--yolo_model", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -55,13 +57,14 @@ def main():
         annot_clean=args.annot_clean,
         yolo_crop=args.yolo_crop,
         yolo_model=args.yolo_model,
-        test_mode=args.test,
+        annot_clean_test_mode=args.annot_clean_test_mode,
     )
     cfg_mgr.save()
 
     main_cfg = updated_cfg.get("main", {})
-    annot_clean = main_cfg.get("annot_clean", "on")
-    yolo_crop = main_cfg.get("yolo_crop", "on")
+    annot_clean_test_mode = main_cfg.get("annot_clean_test_mode", True)
+    annot_clean = main_cfg.get("annot_clean", True)
+    yolo_crop = main_cfg.get("yolo_crop", True)
     yolo_model = main_cfg.get("yolo_model", "yolov8s")
     classify_model = main_cfg.get("classify_model", "vgg16")
     demo_mode = main_cfg.get("demo", False)
@@ -74,6 +77,7 @@ def main():
 
     logger.info("Unified AI Pipeline Starting")
     logger.info(f"demo mode      : {demo_mode}")
+    logger.info(f"annot_clean_test_mode : {annot_clean_test_mode}")
     logger.info(f"annot_clean    : {annot_clean}")
     logger.info(f"yolo_crop      : {yolo_crop}")
     logger.info(f"yolo_model     : {yolo_model}")
@@ -82,11 +86,11 @@ def main():
     # --------------------------------------------------------
     # AnnotationCleaner
     # --------------------------------------------------------
-    if annot_clean == "on":
+    if annot_clean:
         try:
             print("\n[1] Running AnnotationCleaner...")
             cleaner = AnnotationCleaner(config_path=args.config)
-            cleaner.run(test_mode=(args.test == "on"))
+            cleaner.run()
         except Exception as e:
             logger.error(f"[AnnotationCleaner] Failed: {e}")
             traceback.print_exc()
@@ -96,7 +100,7 @@ def main():
     # --------------------------------------------------------
     # YOLOCropper
     # --------------------------------------------------------
-    if yolo_crop == "on":
+    if yolo_crop:
         try:
             print(f"\n[2] Running YOLOCropper ({yolo_model})...")
             yolo_cropper = YOLOCropperController(config_path=args.config)

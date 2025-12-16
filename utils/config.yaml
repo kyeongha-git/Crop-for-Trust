@@ -1,12 +1,14 @@
 main:
   input_dir: data/sample/original
-  annot_clean: 'off'
-  yolo_crop: 'on'
-  yolo_model: yolov2
+  demo: False
+  annot_clean_test_mode: True
+  annot_clean: True
+  yolo_crop: True
+  yolo_model: yolov5
   classify_model: mobilenetv2
   saved_model: saved_model/
   metrics_dir: results/
-  demo: true
+
 weights:
   yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
   yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights

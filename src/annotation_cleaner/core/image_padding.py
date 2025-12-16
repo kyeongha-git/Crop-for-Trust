@@ -4,9 +4,12 @@
 """
 image_padding.py
 ----------------
-This module pads input images to a fixed square size (default: 1024×1024).
-Each image is centered within the new canvas, and padding information is saved
-as JSON metadata for later reference or restoration.
+Pads input images to a fixed square size (default: 1024×1024).
+
+This module is fully configuration-driven:
+- Receives only `config` at initialization
+- Reads required paths and parameters internally
+- Exposes a single public API: `run()`
 """
 
 import json
@@ -14,7 +17,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import cv2
 
@@ -26,50 +29,58 @@ from utils.logging import get_logger, setup_logging
 
 class ImagePadder:
     """
-    Pads images to a target square size and records metadata about the padding.
+    Pads images to a target square size and records padding metadata.
 
-    Features:
-    - Centers each image on a black background.
-    - Automatically skips images that are already large enough.
-    - Saves padding information (top, bottom, left, right) in a JSON file.
-    - Handles corrupted or unreadable image files safely.
+    Configuration section used:
+        annotation_cleaner:
+            main:
+                categories
+                metadata_name
+            image_padding:
+                input_dir
+                output_dir
+                target_size
     """
 
     DEFAULT_PADDING_COLOR = (0, 0, 0)
 
-    def __init__(
-        self,
-        input_dir: str,
-        output_dir: str,
-        categories: Optional[List[str]] = None,
-        target_size: int = 1024,
-        metadata_name: str = "padding_info.json",
-    ):
+    def __init__(self, config: Dict):
         setup_logging("logs/annotation_cleaner")
-        self.logger = get_logger("ImagePadder")
+        self.logger = get_logger("annotation_cleaner.ImagePadder")
 
-        self.input_root = Path(input_dir)
-        self.output_root = Path(output_dir)
-        self.categories = categories or ["repair", "replace"]
-        self.target_size = target_size
-        self.metadata_name = metadata_name
+        self.cfg = config
+        cleaner_cfg = self.cfg.get("annotation_cleaner", {})
+        self.main_cfg = cleaner_cfg.get("main", {})
+        self.pad_cfg = cleaner_cfg.get("image_padding", {})
+
+        self.input_root = Path(
+            self.pad_cfg.get("input_dir", self.main_cfg.get("input_dir", "data/original"))
+        ).resolve()
+
+        self.output_root = Path(
+            self.pad_cfg.get("output_dir", "data/annotation_cleaner/only_annotation_image_padded")
+        ).resolve()
+
+        self.categories: List[str] = self.main_cfg.get(
+            "categories", ["repair", "replace"]
+        )
+
+        self.target_size: int = int(self.pad_cfg.get("target_size", 1024))
+        self.metadata_name: str = self.main_cfg.get(
+            "metadata_name", "padding_info.json"
+        )
+
         self.padding_color = self.DEFAULT_PADDING_COLOR
 
-        self.logger.info(f"Input directory: {self.input_root}")
-        self.logger.info(f"Output directory: {self.output_root}")
-        self.logger.info(f"Target size: {self.target_size}")
+        # --------------------------------------------------
+        # Logging
+        # --------------------------------------------------
+        self.logger.info("Initialized ImagePadder")
+        self.logger.info(f" - Input dir  : {self.input_root}")
+        self.logger.info(f" - Output dir : {self.output_root}")
+        self.logger.info(f" - Target size: {self.target_size}")
 
-    # ============================================================
-    # Internal Utility: Padding Single Image
-    # ============================================================
     def _pad_image(self, image_path: Path, save_path: Path) -> Optional[dict]:
-        """
-        Pads a single image to the target size while keeping it centered.
-
-        Returns:
-            dict: A dictionary containing the original image size and padding details.
-            None: If the image failed to load or save.
-        """
         img = cv2.imread(str(image_path))
         if img is None:
             self.logger.error(f"{image_path.name}: Failed to load image.")
@@ -77,7 +88,7 @@ class ImagePadder:
 
         h, w = img.shape[:2]
 
-        # Skip padding if already larger than target
+        # Skip padding if already large enough
         if h >= self.target_size and w >= self.target_size:
             self.logger.info(f"{image_path.name}: Already large enough → copy only.")
             save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,7 +98,7 @@ class ImagePadder:
                 self.logger.error(f"{image_path.name}: Copy failed ({e})")
             return None
 
-        # Calculate padding (preventing negative values)
+        # Calculate padding
         top = max(0, (self.target_size - h) // 2)
         bottom = max(0, self.target_size - h - top)
         left = max(0, (self.target_size - w) // 2)
@@ -103,6 +114,7 @@ class ImagePadder:
                 cv2.BORDER_CONSTANT,
                 value=self.padding_color,
             )
+
             save_path.parent.mkdir(parents=True, exist_ok=True)
             success = cv2.imwrite(str(save_path), padded)
 
@@ -124,17 +136,9 @@ class ImagePadder:
             self.logger.error(f"{image_path.name}: Error during padding ({e})")
             return None
 
-    # ============================================================
-    # Public API
-    # ============================================================
     def run(self):
         """
-        Pads all images within each category folder and saves metadata.
-
-        - Iterates through all category subfolders (e.g., "repair", "replace").
-        - Pads smaller images to the target size.
-        - Saves both the padded images and a JSON file containing padding info.
-        - Logs skipped, copied, and processed files for transparency.
+        Pads all images under each category directory and saves metadata.
         """
         if not self.input_root.exists():
             raise FileNotFoundError(f"Input folder not found: {self.input_root}")
@@ -159,6 +163,7 @@ class ImagePadder:
 
                 input_path = in_dir / file
                 save_path = out_dir / file
+
                 info = self._pad_image(input_path, save_path)
                 if info:
                     metadata[file] = info

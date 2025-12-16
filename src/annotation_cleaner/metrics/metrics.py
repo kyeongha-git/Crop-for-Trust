@@ -80,11 +80,6 @@ def edge_iou(a: np.ndarray, b: np.ndarray) -> float:
     return float(inter) / union if union > 0 else 0.0
 
 
-# ============================================================
-# Wrapper
-# ============================================================
-
-
 def compute_all_metrics(img1: np.ndarray, img2: np.ndarray) -> dict:
     """
     Compute all supported quality metrics at once.

@@ -1,0 +1,38 @@
+{
+    "repair_01.png": {
+        "orig_size": [
+            562,
+            721
+        ],
+        "pad_info": {
+            "top": 231,
+            "left": 151,
+            "bottom": 231,
+            "right": 152
+        }
+    },
+    "repair_02.jpg": {
+        "orig_size": [
+            725,
+            966
+        ],
+        "pad_info": {
+            "top": 149,
+            "left": 29,
+            "bottom": 150,
+            "right": 29
+        }
+    },
+    "repair_03.png": {
+        "orig_size": [
+            295,
+            453
+        ],
+        "pad_info": {
+            "top": 364,
+            "left": 285,
+            "bottom": 365,
+            "right": 286
+        }
+    }
+}
