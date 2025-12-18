@@ -41,21 +41,28 @@ class CfgManager:
         self.logger = get_logger("yolo_cropper.CfgManager")
 
         self.cfg = config
+        global_main_cfg = self.cfg.get("main", {})
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
         self.darknet_cfg = self.yolo_cropper_cfg.get("darknet", {})
         self.cfg_overrides = self.darknet_cfg.get("cfg_overrides", {})
         self.model_name = self.main_cfg.get("model_name", "yolov2").lower().strip()
 
+        self.categories = global_main_cfg.get("categories", [])
+        if not self.categories:
+            raise ValueError("main.categories must be defined for Darknet cfg generation")
+
+        self.num_classes = len(self.categories)
+
         if self.model_name not in ("yolov2", "yolov4"):
             raise ValueError("model_name must be either 'yolov2' or 'yolov4'")
 
         darknet_root = Path(
             self.darknet_cfg.get("darknet_dir", "third_party/darknet")
-        ).resolve()
+        )
 
-        self.base_cfg = darknet_root / "cfg" / f"{self.model_name}.cfg"
-        self.target_cfg = darknet_root / "cfg" / f"{self.model_name}-obj.cfg"
+        self.base_cfg = (darknet_root / "cfg" / f"{self.model_name}.cfg").resolve()
+        self.target_cfg = (darknet_root / "cfg" / f"{self.model_name}-obj.cfg").resolve()
 
         if not self.base_cfg.exists():
             raise FileNotFoundError(f"Base cfg not found: {self.base_cfg}")
@@ -122,8 +129,7 @@ class CfgManager:
         The number of filters is computed automatically based on the number
         of classes and anchor boxes used by YOLOv2 or YOLOv4.
         """
-        overrides = self.cfg_overrides
-        num_classes = int(overrides.get("classes", 2))
+        num_classes = self.num_classes
 
         if self.model_name == "yolov2":
             filters = (num_classes + 5) * 5

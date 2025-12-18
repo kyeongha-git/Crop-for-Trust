@@ -49,17 +49,20 @@ class DarknetPipeline:
 
         # Paths
         self.model_name = self.main_cfg.get("model_name", "yolov4").lower()
-        self.saved_model_dir = Path(
-            self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
+        self.saved_model_dir = (
+            Path(self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper"))
+            .resolve()
+        )
+        self.input_dir = Path(
+            self.main_cfg.get("input_dir", "data/original")
         ).resolve()
-        self.train_dataset_dir = Path(
-            f"{self.dataset_cfg.get('train_data_dir', 'data/yolo_cropper')}/{self.model_name}"
-            ).resolve()
-        self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
-        self.detect_output_dir = Path(
-            self.dataset_cfg.get("detect_output_dir", "runs/detect")
+        self.detect_output_dir = (
+            Path(self.dataset_cfg.get("detect_output_dir", "runs/detect"))
+            / self.model_name
+        )
+        self.darknet_dir = Path(
+            self.darknet_cfg.get("darknet_dir", "third_party/darknet")
         ).resolve()
-        self.darknet_dir = Path(self.darknet_cfg.get("darknet_dir", "third_party/darknet")).resolve()
         
         # Derived paths
         self.weight_path = self.saved_model_dir / f"{self.model_name}.weights"
@@ -165,6 +168,6 @@ class DarknetPipeline:
         if save_image:
             self.step_cropper()
         else:
-            self.logger.info("[YOLO Crop: False] → Cropper Skip.")
+            self.logger.info("[save_image: False] → Cropper Skip.")
 
         self.logger.info("\nDarknet pipeline completed successfully!")

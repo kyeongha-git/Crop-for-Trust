@@ -44,9 +44,10 @@ class MakeManager:
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.darknet_cfg = self.yolo_cropper_cfg.get("darknet", {})
 
-        self.darknet_dir = Path(
+        darknet_root = Path(
             self.darknet_cfg.get("darknet_dir", "third_party/darknet")
-        ).resolve()
+        )
+        self.darknet_dir = darknet_root.resolve()
         self.makefile = self.darknet_dir / "Makefile"
 
         if not self.makefile.exists():

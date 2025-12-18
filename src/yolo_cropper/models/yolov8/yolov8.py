@@ -71,13 +71,11 @@ class YOLOv8Pipeline:
         self.saved_model_dir = Path(
             self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
         ).resolve()
-        self.train_dataset_dir = Path(
-            f"{self.yolov8_cfg.get('data_yaml', 'data/yolo_cropper/yolov8/data.yaml')}"
-        ).resolve()
         self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
-        self.detect_output_dir = Path(
-            self.dataset_cfg.get("detect_output_dir", "runs/detect")
-        ).resolve()
+        self.detect_output_dir = (
+            Path(self.dataset_cfg.get("detect_output_dir", "runs/detect"))
+            / self.model_name
+        )
 
         # Derived paths
         self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
@@ -172,5 +170,5 @@ class YOLOv8Pipeline:
         if save_image:
             self.step_cropper()
         else:
-            self.logger.info("[YOLO Crop: False] → Cropper Skip.")
+            self.logger.info("[save_image: False] → Cropper Skip.")
         self.logger.info("\nYOLOv8 pipeline completed successfully!")

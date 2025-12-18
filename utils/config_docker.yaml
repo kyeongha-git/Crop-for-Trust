@@ -6,8 +6,8 @@ main:
   demo: true
   annot_clean_test_mode: false
   annot_clean: true
-  yolo_crop: false
-  yolo_model: yolov4
+  yolo_crop: true
+  yolo_model: yolov5
   classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
@@ -29,17 +29,17 @@ sha256:
   yolov8x: 79d058f5165fd663192d6885b10e88956fe4c36dcc2cd340a9033bed14bd065d
 annotation_cleaner:
   main:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/original
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
+    input_dir: data/sample/original
+    output_dir: data/sample/generation
     metadata_name: padding_info.json
     keep_metadata: false
   image_padding:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: data/sample/annotation_cleaner/only_annotation_image
+    output_dir: data/sample/annotation_cleaner/only_annotation_image_padded
     target_size: 1024
   annotation_clean:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image_padded
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image_padded
+    input_dir: data/sample/annotation_cleaner/only_annotation_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image_padded
     test_mode: false
     test_limit: 3
     model: gemini-2.5-flash-image-preview
@@ -56,39 +56,41 @@ annotation_cleaner:
     max_retries: 3
     timeout: 60
   restore_crop:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image_padded
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image
-    metadata_root: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image_padded
+    input_dir: data/sample/annotation_cleaner/generated_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image
+    metadata_root: data/sample/annotation_cleaner/only_annotation_image_padded
   evaluate:
-    orig_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/only_annotation_image
-    gen_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/annotation_cleaner/generated_image
+    orig_dir: data/sample/annotation_cleaner/only_annotation_image
+    gen_dir: data/sample/annotation_cleaner/generated_image
     metric_dir: ./metrics/annotation_cleaner
     metrics:
     - ssim
     - edge_iou
     - l1
-    yolo_model: /home/stu_hwang_kh/crop_for_trust/saved_model/yolo_cropper/yolov4.pt
+    yolo_model: saved_model/yolo_cropper/yolov5.pt
     imgsz: 416
     debug: true
 yolo_cropper:
   main:
-    model_name: yolov4
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
+    model_name: yolov5
+    input_dir: data/sample/generation
+    output_dir: data/sample/generation_crop/yolov5
     mode: detect
   dataset:
     results_dir: outputs/json_results
     saved_model_dir: saved_model/yolo_cropper
     detect_output_dir: runs/detect
   train:
+    batch: 16
     conf_thresh: 0.25
+    epochs: 400
     iou_thresh: 0.45
     imgsz: 416
     device: cpu
     save_crop: true
     save_txt: true
   darknet:
-    model_name: yolov4
+    model_name: yolov5
     build_mode: cpu
     darknet_dir: third_party/darknet
     modes:
@@ -122,7 +124,6 @@ yolo_cropper:
       saturation: 1.5
       exposure: 1.5
       hue: 0.1
-      classes: 2
       iou_loss: ciou
       nms_kind: greedynms
       beta_nms: 0.6
@@ -136,8 +137,8 @@ yolo_cropper:
     yolov5_dir: third_party/yolov5
 data_augmentor:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation
-    output_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation/dataset
+    input_dir: data/sample/generation_crop/yolov5
+    output_dir: data/sample/generation_crop/yolov5/dataset
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -166,7 +167,7 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: /home/stu_hwang_kh/crop_for_trust/data/sample/generation/dataset
+    input_dir: data/sample/generation_crop/yolov5/dataset
   train:
     model_name: mobilenet_v2
     criterion: auto
@@ -174,9 +175,9 @@ classifier:
     epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/generation
-    metric_dir: metrics/classifier/sample/generation
-    check_dir: checkpoints/classifier/sample/generation
+    save_dir: saved_model/classifier/sample/generation_crop/yolov5
+    metric_dir: metrics/classifier/sample/generation_crop/yolov5
+    check_dir: checkpoints/classifier/sample/generation_crop/yolov5
   wandb:
     enabled: false
     project: Crop-for-Trust

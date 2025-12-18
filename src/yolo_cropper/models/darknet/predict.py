@@ -29,22 +29,19 @@ class DarknetPredictor:
         self.logger = get_logger("yolo_cropper.DarknetPredictor")
         self.cfg = config
 
-        # --------------------------------------------------------
-        # Config shortcuts
-        # --------------------------------------------------------
+        # Configuration
         self.global_main_cfg = self.cfg.get("main", {})
         self.demo_mode = self.global_main_cfg.get("demo", False)
 
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
+        self.train_cfg = self.yolo_cropper_cfg.get("train", {})
         self.darknet_cfg = self.yolo_cropper_cfg.get("darknet", {})
         self.dataset_cfg = self.yolo_cropper_cfg.get("dataset", {})
 
         self.model_name = self.main_cfg.get("model_name", "yolov2").lower()
 
-        # --------------------------------------------------------
         # Paths
-        # --------------------------------------------------------
         self.darknet_dir = Path(
             self.darknet_cfg.get("darknet_dir", "third_party/darknet")
         ).resolve()
@@ -71,6 +68,9 @@ class DarknetPredictor:
             self.saved_model_dir / f"{self.model_name}.weights"
         ).resolve()
 
+        # Data parameters
+        self.conf_thresh = self.train_cfg.get("conf_thresh", 0.25)
+
         self.logger.info(
             f"Initialized DarknetPredictor ({self.model_name.upper()})"
         )
@@ -79,7 +79,7 @@ class DarknetPredictor:
         self.logger.debug(f" - Input dir  : {self.input_dir}")
 
     # --------------------------------------------------------
-    def _list_images(self, input_dir: Path):
+    def _list_images(self, input_dir: Path) -> list[str]:
         exts = [".jpg", ".jpeg", ".png", ".bmp"]
         images = [
             str(p.resolve())
@@ -136,7 +136,7 @@ class DarknetPredictor:
 
         command = (
             f"./darknet detector test {obj_data} {cfg_path} {self.weights_path} "
-            f"-thresh 0.25 -dont_show -ext_output "
+            f"-thresh {self.conf_thresh} -dont_show -ext_output "
             f"-out {internal_result} < data/predict.txt"
         )
 
@@ -162,7 +162,7 @@ class DarknetPredictor:
 
         if internal_result.exists():
             shutil.copy2(internal_result, external_result)
-            self.logger.info(f"Copied result → {external_result.resolve()}")
+            self.logger.info(f"Copied result → {external_result}")
         else:
             self.logger.warning(
                 "result.json not found in darknet/data folder!"

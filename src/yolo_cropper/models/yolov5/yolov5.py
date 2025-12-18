@@ -65,24 +65,18 @@ class YOLOv5Pipeline:
         self.model_name = self.main_cfg.get("model_name", "yolov5").lower()
         self.saved_model_dir = Path(
             self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
-        ).resolve()
-        self.train_dataset_dir = Path(
-            f"{self.yolov5_cfg.get('data_yaml', 'data/yolo_cropper/yolov5/data.yaml')}"
-        ).resolve()        
-        self.input_dir = Path(self.main_cfg.get("input_dir", "data/original")).resolve()
-        self.detect_output_dir = Path(
-            self.dataset_cfg.get("detect_output_dir", "runs/detect")
-        ).resolve()
-
-        # Derived paths
-        self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
+        ).resolve()    
+        self.input_dir = Path(self.main_cfg.get("input_dir", "data/original"))
+        self.detect_output_dir = (
+            Path(self.dataset_cfg.get("detect_output_dir", "runs/detect"))
+            / self.model_name
+        )
         
         # Logging info
         self.logger.info(f"Initialized YOLOv5 Pipeline ({self.model_name.upper()})")
         self.logger.info(f" - Demo mode      : {self.demo_mode}")
         self.logger.info(f" - Config path    : {self.config_path}")
         self.logger.info(f" - Input dir      : {self.input_dir}")
-        self.logger.info(f" - Saved model dir: {self.weight_path}")
 
 
     # --------------------------------------------------------
@@ -168,6 +162,6 @@ class YOLOv5Pipeline:
         if save_image:
             self.step_cropper()
         else:
-            self.logger.info("[YOLO Crop: False] → Cropper Skip.")
+            self.logger.info("[save_image: False] → Cropper Skip.")
 
         self.logger.info("\nYOLOv5 pipeline completed successfully!")

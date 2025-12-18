@@ -25,6 +25,7 @@ from utils.load_config import load_yaml_config
 from utils.config_manager import ConfigManager
 
 
+# NOTE: metrics.box.* are class-wise vectors → macro-average is used
 def safe_mean(value):
     if hasattr(value, "mean"):
         return float(np.mean(value))
@@ -85,7 +86,6 @@ class YOLOv8Evaluator:
             "precision": safe_mean(metrics.box.p),
             "recall": safe_mean(metrics.box.r),
             "mAP@0.5": safe_mean(metrics.box.map50),
-            "mAP@0.5:0.95": safe_mean(metrics.box.map),
         }
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")

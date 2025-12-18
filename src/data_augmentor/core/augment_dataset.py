@@ -23,12 +23,10 @@ from PIL import Image, ImageEnhance
 
 from utils.logging import get_logger
 
-IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+IMG_EXTS = {".jpg", ".jpeg", ".png"}
 
 
-# ============================================================
 # Utility Functions
-# ============================================================
 def list_images(folder: Path):
     """Return a list of valid image files within the given folder."""
     return [
@@ -43,9 +41,7 @@ def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 
-# ============================================================
 # Augmentation Primitives
-# ============================================================
 def random_resized_crop(
     img: Image.Image, scale=(0.9, 1.0), ratio=(0.95, 1.05), trials=10
 ):
@@ -120,9 +116,7 @@ def color_jitter(
     return img
 
 
-# ============================================================
 # Augmentation Pipeline
-# ============================================================
 def augment_pipeline(img: Image.Image, aug_cfg: Dict) -> Image.Image:
     """
     Apply config-defined augmentation operations sequentially.
@@ -147,9 +141,7 @@ def augment_pipeline(img: Image.Image, aug_cfg: Dict) -> Image.Image:
     return img
 
 
-# ============================================================
 # Class Balancing by Augmentation
-# ============================================================
 def _augment_until_equal(
     src_dir: Path, target_count: int, aug_cfg: Dict, seed: int = 42, logger=None
 ):
@@ -189,36 +181,70 @@ def _augment_until_equal(
     logger.info(f"Completed! {src_dir.name} balanced to {cur} images.")
 
 
-def balance_augmentation(root_dir: Path, aug_cfg: Dict, seed: int = 42, logger=None):
+def balance_augmentation(
+    root_dir: Path,
+    aug_cfg: Dict,
+    seed: int = 42,
+    logger=None,
+):
     """
-    Detect class imbalance between `train/repair` and `train/replace`
-    and automatically augment the smaller class until both are balanced.
+    Automatically balance all classes under `train/` directory
+    by augmenting each class up to the maximum class count.
+
+    Directory structure assumption:
+        root_dir/
+            train/
+                class_1/
+                class_2/
+                ...
     """
     if logger is None:
         logger = get_logger("augment_dataset")
 
     train_dir = root_dir / "train"
-    train_repair = train_dir / "repair"
-    train_replace = train_dir / "replace"
+    if not train_dir.exists():
+        raise FileNotFoundError(f"Missing train directory: {train_dir}")
 
-    if not train_repair.exists() or not train_replace.exists():
-        raise FileNotFoundError(
-            f"Missing directories: {train_repair} or {train_replace}"
+    # Discover classes dynamically
+    class_dirs = [
+        d for d in train_dir.iterdir() if d.is_dir()
+    ]
+
+    if len(class_dirs) < 2:
+        logger.warning(
+            "Less than two classes detected. Augmentation skipped."
         )
-
-    repair_count = len(list_images(train_repair))
-    replace_count = len(list_images(train_replace))
-
-    logger.info(f"[Counts] train/repair={repair_count}, train/replace={replace_count}")
-
-    if repair_count == replace_count:
-        logger.info("Classes are already balanced.")
         return
 
-    smaller_dir = train_repair if repair_count < replace_count else train_replace
-    target_count = max(repair_count, replace_count)
+    # Count samples per class
+    class_counts = {
+        d.name: len(list_images(d)) for d in class_dirs
+    }
 
-    logger.info(
-        f"Class '{smaller_dir.name}' is smaller. ({len(list_images(smaller_dir))} → {target_count})"
-    )
-    _augment_until_equal(smaller_dir, target_count, aug_cfg, seed=seed, logger=logger)
+    for cls, cnt in class_counts.items():
+        logger.info(f"[Count] train/{cls} = {cnt}")
+
+    target_count = max(class_counts.values())
+
+    logger.info(f"Target count for balancing: {target_count}")
+
+    # Augment each class independently
+    for class_dir in class_dirs:
+        cur_count = class_counts[class_dir.name]
+
+        if cur_count >= target_count:
+            logger.info(f"Class '{class_dir.name}' already balanced.")
+            continue
+
+        logger.info(
+            f"Augmenting class '{class_dir.name}' "
+            f"({cur_count} → {target_count})"
+        )
+
+        _augment_until_equal(
+            src_dir=class_dir,
+            target_count=target_count,
+            aug_cfg=aug_cfg,
+            seed=seed,
+            logger=logger,
+        )

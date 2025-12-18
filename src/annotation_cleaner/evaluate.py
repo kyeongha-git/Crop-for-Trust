@@ -64,11 +64,10 @@ class Evaluator:
             Path(
                 yolo_cropper_cfg.get("dataset", {})
                 .get("results_dir", "outputs/json_results")
-                )
-                / self.yolo_model
-                / "result.json"
-                )
-
+            )
+            / self.yolo_model
+            / "result.json"
+        ).resolve()
         self.metrics: List[str] = self.eval_cfg.get(
             "metrics", ["ssim", "l1", "edge_iou"]
         )

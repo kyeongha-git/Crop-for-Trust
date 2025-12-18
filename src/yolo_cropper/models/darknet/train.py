@@ -123,7 +123,7 @@ class DarknetTrainer:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"train_{self.model_name}_{timestamp}.log"
 
-        init_weight = weights_init or os.path.basename(self.weights_file)
+        init_weight = weights_init or self.weights_file.name
         clear_flag = "-clear" if self.model_name == "yolov2" else ""
 
         cmd = [

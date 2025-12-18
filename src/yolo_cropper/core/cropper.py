@@ -4,15 +4,14 @@
 """
 cropper.py
 -----------
-This module extracts and saves object regions detected by YOLO models
-based on the bounding box information stored in `result.json`.
+Extracts and saves object regions detected by YOLO models
+based on bounding box information stored in `result.json`.
 
-It reads the YOLO detection results, crops the corresponding regions
-from the original images, and organizes them into class-specific folders
-(e.g., `repair`, `replace`). Images without detections are copied as-is.
-
-In short, this script turns YOLO detection outputs into a clean,
-cropped dataset ready for training or analysis.
+Design Principles:
+- Class semantics are defined exclusively in `config.yaml (main.categories)`
+- Crops are organized by YOLO-predicted class labels
+- No folder- or path-based class inference
+- Fully supports multi-class detection scenarios
 """
 
 import json
@@ -20,7 +19,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 import cv2
 
@@ -29,111 +28,120 @@ sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger
 
-
 class YOLOCropper:
     """
-    Crops detected regions from original images using YOLO detection results.
-
-    The cropper reads `result.json` and `predict.txt`, determines the
-    bounding boxes for each detection, and saves cropped regions (or
-    original images if no detection) into structured output directories.
+    Crop detected regions from images using YOLO detection results.
+    All outputs are stored under output_dir grouped by GT class.
     """
 
     def __init__(self, config: Dict[str, Any]):
-        """Initialize cropper with configuration and paths."""
         self.logger = get_logger("yolo_cropper.Cropper")
 
-        # Load configuration
+        # ---- Load configuration ----
         self.cfg = config
+        global_main_cfg = self.cfg.get("main", {})
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
         self.cropper_cfg = self.yolo_cropper_cfg.get("cropper", {})
         self.dataset_cfg = self.yolo_cropper_cfg.get("dataset", {})
 
-        input_dir = Path(self.main_cfg.get("input_dir", "data/original"))
-        self.dataset_name = input_dir.name
-        self.model_name = self.main_cfg.get("model_name", "yolov5")
+        self.categories = global_main_cfg.get("categories", [])
+        if not self.categories:
+            raise ValueError("main.categories must be defined in config.yaml")
+
         self.min_size = int(self.cropper_cfg.get("min_size", 8))
         self.pad = int(self.cropper_cfg.get("pad", 0))
+        self.model_name = self.main_cfg.get("model_name", "yolov5")
 
-        # Resolve paths
-        self.json_path = Path(
-            f"{self.dataset_cfg.get('results_dir', 'outputs/json_results')}/{self.model_name}/result.json"
-        ).resolve()
-        self.predict_list = Path(
-            f"{self.dataset_cfg.get('results_dir', 'outputs/json_results')}/predict.txt"
-        ).resolve()
-        self.output_dir = Path(self.main_cfg.get("output_dir", "data/generation_crop"))
+        # ---- Paths ----
+        results_root = Path(
+            self.dataset_cfg.get("results_dir", "outputs/json_results")
+        )
 
+        self.json_path = results_root / self.model_name / "result.json"
+        self.predict_list = results_root / self.model_name / "predict.txt"
+
+        self.output_dir = Path(
+            self.main_cfg.get("output_dir", "data/generation_crop")
+        )
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info(f"Initialized Cropper ({self.model_name.upper()})")
-        self.logger.debug(f" - Dataset : {self.dataset_name}")
-        self.logger.debug(f" - JSON    : {self.json_path}")
-        self.logger.debug(f" - Predict : {self.predict_list}")
-        self.logger.debug(f" - Output  : {self.output_dir}")
+        for cls in self.categories:
+            (self.output_dir / cls).mkdir(parents=True, exist_ok=True)
 
-    # --------------------------------------------------------
+    # --------------------------------------------------
+    def _infer_gt_class(self, img_path: Path) -> str | None:
+        """
+        Infer GT class from image path using main.categories.
+        """
+        for cls in self.categories:
+            if cls in img_path.parts:
+                return cls
+        return None
+
+    # --------------------------------------------------
     def run(self):
-        """
-        Crop detected regions from images according to YOLO `result.json`.
-
-        For each image listed in `predict.txt`:
-        - Crops regions based on bounding boxes in `result.json`
-        - Saves each cropped patch under its class directory
-        - Copies original images when no detection exists
-        """
         if not self.json_path.exists():
             raise FileNotFoundError(f"result.json not found → {self.json_path}")
         if not self.predict_list.exists():
             raise FileNotFoundError(f"predict.txt not found → {self.predict_list}")
 
-        pred_imgs = [
-            ln.strip()
+        # ---- Load predict list (input universe) ----
+        pred_imgs: Set[Path] = {
+            Path(ln.strip())
             for ln in self.predict_list.read_text(encoding="utf-8").splitlines()
             if ln.strip()
-        ]
-        pred_set = set(pred_imgs)
+        }
 
+        # ---- Load YOLO results ----
         with open(self.json_path, "r", encoding="utf-8") as f:
             results = json.load(f)
 
-        processed = set()
-        saved_crops, saved_originals = 0, 0
+        processed: Set[Path] = set()
+        images_with_detection: Set[Path] = set()
+        images_without_detection: Set[Path] = set()
 
+        total_crops = 0
+
+        # Process images appearing in result.json
         for item in results:
-            img_path = item.get("filename") or item.get("file", "")
-            if not img_path or not os.path.exists(img_path):
+            img_path = Path(item.get("filename", ""))
+            if not img_path.exists():
+                continue
+
+            gt_class = self._infer_gt_class(img_path)
+            if gt_class is None:
+                self.logger.warning(f"[SKIP] Cannot infer GT class: {img_path}")
                 continue
 
             processed.add(img_path)
-            img = cv2.imread(img_path)
+
+            img = cv2.imread(str(img_path))
             if img is None:
                 continue
 
             H, W = img.shape[:2]
-            base = os.path.splitext(os.path.basename(img_path))[0]
+            base = img_path.stem
+            suffix = img_path.suffix  # includes leading dot
+            dets = item.get("objects", [])
 
-            parts = os.path.normpath(img_path).split(os.sep)
-            class_name = next(
-                (c for c in ["repair", "replace"] if c in parts), "unknown"
-            )
+            crops_in_image = 0
+            out_dir = self.output_dir / gt_class
 
-            out_dir = self.output_dir / class_name
-            out_dir.mkdir(exist_ok=True, parents=True)
-
-            dets = item.get("objects", []) or item.get("detections", [])
-            crops_here = 0
-
-            for i, det in enumerate(dets, 1):
+            # ---- Crop loop ----
+            for idx, det in enumerate(dets, 1):
                 rc = det.get("relative_coordinates")
                 if not rc:
                     continue
 
                 cx, cy = rc["center_x"] * W, rc["center_y"] * H
                 bw, bh = rc["width"] * W, rc["height"] * H
-                x1, y1 = int(cx - bw / 2) - self.pad, int(cy - bh / 2) - self.pad
-                x2, y2 = int(cx + bw / 2) + self.pad, int(cy + bh / 2) + self.pad
+
+                x1 = int(cx - bw / 2) - self.pad
+                y1 = int(cy - bh / 2) - self.pad
+                x2 = int(cx + bw / 2) + self.pad
+                y2 = int(cy + bh / 2) + self.pad
+
                 x1, y1 = max(0, x1), max(0, y1)
                 x2, y2 = min(W, x2), min(H, y2)
 
@@ -141,32 +149,43 @@ class YOLOCropper:
                     continue
 
                 crop = img[y1:y2, x1:x2]
-                outname = f"{base}_{i}.jpg"
-                cv2.imwrite(str(out_dir / outname), crop)
-                crops_here += 1
-                saved_crops += 1
+                out_name = f"{base}_{idx}{suffix}"
 
-            # If no detections, copy original image
-            if crops_here == 0:
-                shutil.copy2(img_path, out_dir / os.path.basename(img_path))
-                saved_originals += 1
+                cv2.imwrite(str(out_dir / out_name), crop)
 
-        # Handle images missing in JSON
-        missing = pred_set - processed
-        for img_path in missing:
-            if not os.path.exists(img_path):
+                crops_in_image += 1
+                total_crops += 1
+
+            # ---- Image-level decision ----
+            if crops_in_image > 0:
+                images_with_detection.add(img_path)
+
+                # ensure original image does not coexist
+                orig_out = out_dir / img_path.name
+                if orig_out.exists():
+                    orig_out.unlink()
+            else:
+                images_without_detection.add(img_path)
+                shutil.copy2(img_path, out_dir / img_path.name)
+
+        # Images never appearing in result.json → no detection
+        for img_path in pred_imgs - processed:
+            if not img_path.exists():
                 continue
-            parts = os.path.normpath(img_path).split(os.sep)
-            class_name = next(
-                (c for c in ["repair", "replace"] if c in parts), "unknown"
-            )
-            out_dir = self.output_dir / class_name
-            out_dir.mkdir(exist_ok=True, parents=True)
-            shutil.copy2(img_path, out_dir / os.path.basename(img_path))
-            saved_originals += 1
 
+            gt_class = self._infer_gt_class(img_path)
+            if gt_class is None:
+                continue
+
+            images_without_detection.add(img_path)
+            shutil.copy2(
+                img_path,
+                self.output_dir / gt_class / img_path.name,
+            )
+
+        # Logging
+        self.logger.info(f"Cropping complete → {self.output_dir}")
+        self.logger.info(f" - Saved Crops        : {total_crops}")
         self.logger.info(
-            f"Cropping complete ({self.model_name.upper()}) → {self.output_dir}"
+            f" - No-detection imgs : {len(images_without_detection)}"
         )
-        self.logger.info(f"   - Saved Crops   : {saved_crops}")
-        self.logger.info(f"   - Saved Originals (No Detection) : {saved_originals}")

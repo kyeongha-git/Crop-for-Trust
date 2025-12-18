@@ -4,15 +4,11 @@
 """
 make_predict_list.py
 --------------------
-This module automatically generates a text file (`predict.txt`)
-that lists all image paths in the dataset.
+Generate predict.txt listing all image paths in the dataset.
 
-It scans the dataset folders (e.g., `repair` and `replace`)
-and records every image path in a single file, which is later
-used by YOLO detection scripts to know which images to process.
-
-In short, it creates a complete list of dataset images ready
-for YOLO inference or evaluation.
+- Fully multi-class aware
+- Model-aware output directory
+- Shared by YOLOv5 / YOLOv8 / Darknet
 """
 
 import sys
@@ -27,84 +23,85 @@ from utils.logging import get_logger
 
 class YOLOPredictListGenerator:
     """
-    Generates a `predict.txt` file that lists all image paths under the dataset root.
-
-    The file serves as an input reference for YOLO detection pipelines,
-    ensuring that every image in the dataset can be automatically processed.
+    Generates a model-specific `predict.txt` listing all dataset images.
     """
 
     def __init__(self, config: Dict[str, Any]):
-        """Initialize generator with paths and configuration."""
         self.logger = get_logger("yolo_cropper.YOLOvPredictListGenerator")
 
-        # Load configuration
+        # ---- Load config ----
         self.cfg = config
-        self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
-        self.main_cfg = self.yolo_cropper_cfg.get("main", {})
-        self.yolov5_cfg = self.yolo_cropper_cfg.get("yolov5", {})
-        self.dataset_cfg = self.yolo_cropper_cfg.get("dataset", {})
+        global_main_cfg = self.cfg.get("main", {})
+        yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
+        main_cfg = yolo_cropper_cfg.get("main", {})
+        dataset_cfg = yolo_cropper_cfg.get("dataset", {})
 
-        # Resolve directories
+        # ---- Required settings ----
+        self.categories = global_main_cfg.get("categories", [])
+        if not self.categories:
+            raise ValueError("main.categories must be defined in config.yaml")
+
+        self.model_name = main_cfg.get("model_name")
+        if not self.model_name:
+            raise ValueError("yolo_cropper.main.model_name must be defined")
+
+        # ---- Paths ----
         self.input_root = Path(
-            self.main_cfg.get("input_dir", "data/yolo_cropper/original")
+            main_cfg.get("input_dir", "data/original")
         ).resolve()
-        self.output_dir = Path(
-            self.dataset_cfg.get("results_dir", "outputs/json_results")
+
+        self.results_root = Path(
+            dataset_cfg.get("results_dir", "outputs/json_results")
         ).resolve()
+
+        # 👉 핵심: model_name 하위에 predict.txt 생성
+        self.output_dir = self.results_root / self.model_name
         self.output_path = self.output_dir / "predict.txt"
 
-        # Validate directories
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        # ---- Validate & prepare ----
         if not self.input_root.exists():
-            raise FileNotFoundError(f"Source root not found: {self.input_root}")
+            raise FileNotFoundError(f"Input root not found: {self.input_root}")
+
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.logger.info("YOLOPredictListGenerator initialized")
-        self.logger.debug(f"Source root : {self.input_root}")
-        self.logger.debug(f"Output path : {self.output_path}")
+        self.logger.debug(f"Input root : {self.input_root}")
+        self.logger.debug(f"Output txt : {self.output_path}")
 
-    # ==========================================================
-    # Collect image paths
-    # ==========================================================
+    # --------------------------------------------------
     def _collect_images(self) -> List[str]:
-        """
-        Collect all image paths under the dataset root.
+        exts = (".jpg", ".jpeg", ".png")
+        image_paths: List[str] = []
 
-        Searches within both `repair` and `replace` folders
-        and returns a sorted list of image file paths.
-        """
-        exts = [".jpg", ".jpeg", ".png"]
-        all_images = []
-
-        for cls in ["repair", "replace"]:
+        for cls in self.categories:
             class_dir = self.input_root / cls
             if not class_dir.exists():
-                self.logger.warning(f"[!] Missing class folder: {class_dir}")
+                self.logger.warning(f"[SKIP] Missing class dir: {class_dir}")
                 continue
 
-            for img_path in class_dir.rglob("*"):
-                if img_path.suffix.lower() in exts:
-                    all_images.append(str(img_path.resolve()))
+            for p in class_dir.rglob("*"):
+                if p.suffix.lower() in exts:
+                    image_paths.append(str(p.resolve()))
 
-        if not all_images:
-            raise FileNotFoundError(f"No images found under {self.input_root}")
+        if not image_paths:
+            raise FileNotFoundError(
+                f"No images found under {self.input_root} (categories={self.categories})"
+            )
 
-        all_images.sort()
-        return all_images
+        image_paths.sort()
+        return image_paths
 
-    # ==========================================================
-    # Write predict.txt
-    # ==========================================================
+    # --------------------------------------------------
     def _write_output(self, image_paths: List[str]):
-        """Write collected image paths to `predict.txt`."""
-        self.output_path.write_text("\n".join(image_paths), encoding="utf-8")
-        self.logger.info(f"Generated predict.txt → {self.output_path}")
-        self.logger.info(f"   - Dataset root : {self.input_root}")
-        self.logger.info(f"   - Total images : {len(image_paths)}")
+        self.output_path.write_text(
+            "\n".join(image_paths) + "\n",
+            encoding="utf-8",
+        )
 
-    # ==========================================================
-    # Run full process
-    # ==========================================================
+        self.logger.info(f"predict.txt generated → {self.output_path}")
+        self.logger.info(f"  - Total images : {len(image_paths)}")
+
+    # --------------------------------------------------
     def run(self):
-        """Generate the full image list and save to file."""
         images = self._collect_images()
         self._write_output(images)

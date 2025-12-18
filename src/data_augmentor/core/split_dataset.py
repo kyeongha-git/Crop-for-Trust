@@ -16,9 +16,7 @@ from typing import Dict, List
 from utils.logging import get_logger
 
 
-# ============================================================
 # Core Functions
-# ============================================================
 def get_images(class_path: Path) -> List[Path]:
     """Return a sorted list of image files from a given class folder."""
     valid_ext = (".jpg", ".jpeg", ".png")

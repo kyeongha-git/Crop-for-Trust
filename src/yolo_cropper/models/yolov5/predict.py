@@ -108,7 +108,7 @@ class YOLOv5Predictor:
         # Remove old results (avoid exp/exp2 duplication)
         if exp_dir.exists():
             shutil.rmtree(exp_dir)
-            self.logger.warning(f"Existing result folder deleted → {exp_dir}")
+            self.logger.info(f"Existing result folder deleted → {exp_dir}")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"detect_{folder_path.name}_{timestamp}.log"

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-predictor.py
+predict.py
 ------------
 YOLOv8 inference module (config-driven).
 
@@ -62,8 +62,7 @@ class YOLOv8Predictor:
             self.dataset_cfg.get("results_dir", "outputs/json_results")
         ).resolve()
 
-        self.output_dir = (self.results_root / self.model_name).resolve()
-        self.predict_txt = (self.results_root / "predict.txt").resolve()
+        self.predict_txt = (self.results_root / self.model_name / "predict.txt").resolve()
 
         # --------------------------------------------------------
         # Inference options
@@ -77,8 +76,8 @@ class YOLOv8Predictor:
         self.logger.info(f"Initialized YOLOv8Predictor ({self.model_name.upper()})")
         self.logger.debug(f" - Weights : {self.weights_path}")
         self.logger.debug(f" - Predict : {self.predict_txt}")
-        self.logger.debug(f" - Output  : {self.output_dir}")
-
+        
+        
     def run(self):
         """
         Run YOLOv8 detection using image paths listed in `predict.txt`.
@@ -99,6 +98,12 @@ class YOLOv8Predictor:
         model = YOLO(str(self.weights_path))
 
         self.logger.info(f"Starting YOLOv8 detection ({self.model_name.upper()})")
+
+        source=[
+            ln.strip()
+            for ln in self.predict_txt.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ],
 
         results = model.predict(
             source=str(self.predict_txt),
