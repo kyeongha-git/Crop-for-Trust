@@ -72,7 +72,7 @@ class Evaluator:
         self.metrics: List[str] = self.eval_cfg.get(
             "metrics", ["ssim", "l1", "edge_iou"]
         )
-        self.categories: List[str] = self.main_cfg.get(
+        self.categories: List[str] = global_main_cfg.get(
             "categories", ["repair", "replace"]
         )
         test_mode = "test" in self.gen_dir.name
@@ -113,9 +113,7 @@ class Evaluator:
                 self.logger.error(f"{metric_name} failed: {e}")
         return results
 
-    # ============================================================
-    # Full Image Evaluation
-    # ============================================================
+    # Evaluate Global Consistency
     def _evaluate_full_images(self, save_path: Path) -> Optional[Dict[str, float]]:
         self.logger.info("[1/2] Full Image Evaluation")
         results = []
@@ -159,8 +157,9 @@ class Evaluator:
         df.to_csv(save_path, index=False)
 
         return avg
-    
-    def _evaluate_with_metadata(self, save_path: Path) -> Optional[Dict[str, float]]:
+
+    # Evaluate Local Representation    
+    def _evaluate_crop_images(self, save_path: Path) -> Optional[Dict[str, float]]:
         self.logger.info("[2/2] Metadata-based Crop Evaluation")
 
         metadata_path = self.metadata_root
@@ -181,6 +180,7 @@ class Evaluator:
             split = record_path.parent.name
             fname = record_path.name
             stem = record_path.stem
+            ext = record_path.suffix.lower()
 
             orig_path = self.orig_dir / split / fname
             gen_path  = self.gen_dir  / split / fname
@@ -210,14 +210,19 @@ class Evaluator:
 
                 if c1.shape != c2.shape:
                     c2 = cv2.resize(c2, (c1.shape[1], c1.shape[0]))
+                
+                diff = cv2.absdiff(c1, c2)
 
                 if record_idx < 5:
                     cv2.imwrite(
-                        str(self.debug_dir / f"{stem}_{idx}_orig.png"), c1
+                        str(self.debug_dir / f"{stem}_{idx}_orig{ext}"), c1
                     )
                     cv2.imwrite(
-                        str(self.debug_dir / f"{stem}_{idx}_gen.png"), c2
+                        str(self.debug_dir / f"{stem}_{idx}_gen{ext}"), c2
                     )
+                    cv2.imwrite(
+                        str(self.debug_dir / f"{stem}_{idx}_diff{ext}"), diff
+                    )                    
 
                 results.append(
                     {
@@ -232,9 +237,8 @@ class Evaluator:
             self.logger.warning("No valid metadata-based crop results.")
             return None
 
-        # --------------------------------------------------
-        # 6. Aggregate & save results
-        # --------------------------------------------------
+        
+        # Aggregate & save results
         df = pd.DataFrame(results)
         avg = df.drop(columns=["split", "file", "crop_idx"]).mean().to_dict()
 
@@ -248,16 +252,13 @@ class Evaluator:
         return avg
 
 
-
     def run(self) -> Dict[str, Optional[Dict[str, float]]]:
         full_path = self.metric_dir / "metrics_full_image.csv"
         crop_path = self.metric_dir / "metrics_yolo_crop.csv"
 
         avg_full = self._evaluate_full_images(full_path)
-        avg_crop = self._evaluate_with_metadata(crop_path)
+        avg_crop = self._evaluate_crop_images(crop_path)
 
         self.logger.info("Evaluation complete")
         self.logger.info(f" - Global Evaluation: {avg_full}")
         self.logger.info(f" - Local Evaluation : {avg_crop}")
-
-        return {"full": avg_full, "crop": avg_crop}

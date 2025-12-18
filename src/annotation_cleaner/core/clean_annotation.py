@@ -57,6 +57,7 @@ class CleanAnnotation:
         self.logger = get_logger("annotation_cleaner.CleanAnnotation")
 
         self.cfg = config
+        global_main_cfg = self.cfg.get("main", {})
         cleaner_cfg = self.cfg.get("annotation_cleaner", {})
         self.main_cfg = cleaner_cfg.get("main", {})
         self.clean_cfg = cleaner_cfg.get("annotation_clean", {})
@@ -81,7 +82,7 @@ class CleanAnnotation:
         self.test_mode: bool = bool(self.clean_cfg.get("test_mode", False))
         self.test_limit: int = int(self.clean_cfg.get("test_limit", 3))
 
-        self.categories: List[str] = self.main_cfg.get(
+        self.categories: List[str] = global_main_cfg.get(
             "categories", ["repair", "replace"]
         )
 

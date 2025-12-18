@@ -49,6 +49,7 @@ class ImagePadder:
         self.logger = get_logger("annotation_cleaner.ImagePadder")
 
         self.cfg = config
+        global_main_cfg = self.cfg.get("main", {})
         cleaner_cfg = self.cfg.get("annotation_cleaner", {})
         self.main_cfg = cleaner_cfg.get("main", {})
         self.pad_cfg = cleaner_cfg.get("image_padding", {})
@@ -61,7 +62,7 @@ class ImagePadder:
             self.pad_cfg.get("output_dir", "data/annotation_cleaner/only_annotation_image_padded")
         ).resolve()
 
-        self.categories: List[str] = self.main_cfg.get(
+        self.categories: List[str] = global_main_cfg.get(
             "categories", ["repair", "replace"]
         )
 

@@ -162,8 +162,6 @@ class ConfigManager:
                 / f"{annot_output_dir.name}_crop"
                 / self.yolo_model
             )
-        elif self.annot_clean and not self.yolo_crop:
-            crop_output_dir = None
         else:
             crop_output_dir = annot_output_dir
 
@@ -209,17 +207,19 @@ class ConfigManager:
         # ======================================================
         classifier_cfg = self.cfg.get("classifier", {})
         classifier_cfg.setdefault("data", {})
+        classifier_cfg.setdefault("train", {})
 
         classifier_cfg["data"]["input_dir"] = str(aug_output_dir)
 
         dynamic_save_dir = self._build_classifier_save_dir(aug_output_dir)
-        classifier_cfg.setdefault("train", {})
+        relative_subpath = dynamic_save_dir.relative_to("saved_model/classifier")
         classifier_cfg["train"]["save_dir"] = str(dynamic_save_dir)
 
         metric_root = Path("metrics/classifier")
-        classifier_cfg["train"]["metric_dir"] = str(
-            metric_root / dynamic_save_dir.relative_to("saved_model/classifier")
-        )
+        classifier_cfg["train"]["metric_dir"] = str(metric_root / relative_subpath)
+
+        check_root = Path("checkpoints/classifier")
+        classifier_cfg["train"]["check_dir"] = str(check_root / relative_subpath)
 
         self.cfg["classifier"] = classifier_cfg
 

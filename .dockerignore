@@ -4,7 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Data (주의: 인라인 주석 금지)
+# Data
 backup/*
 data/*
 !data/sample

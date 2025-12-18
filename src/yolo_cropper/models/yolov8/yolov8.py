@@ -161,7 +161,7 @@ class YOLOv8Pipeline:
     # --------------------------------------------------------
     # Entrypoint
     # --------------------------------------------------------
-    def run(self):
+    def run(self, save_image):
         self.logger.info("Running YOLOv8 Pipeline")
         self.cleanup_previous_runs()
         self.step_train()
@@ -169,5 +169,8 @@ class YOLOv8Pipeline:
         self.step_make_predict()
         self.step_predict()
         self.step_converter()
-        self.step_cropper()
+        if save_image:
+            self.step_cropper()
+        else:
+            self.logger.info("[YOLO Crop: False] → Cropper Skip.")
         self.logger.info("\nYOLOv8 pipeline completed successfully!")

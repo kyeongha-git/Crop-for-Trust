@@ -11,12 +11,13 @@ Pipeline Steps:
 2. Annotation Cleaning (Gemini-based)
 3. Restore Cropped Images
 4. Merge Results & Cleanup
-5. Evaluation (Optional)
+5. Evaluation
 """
 
 import shutil
 import sys
 from pathlib import Path
+from typing import List
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
@@ -47,11 +48,16 @@ class AnnotationCleaner:
         self.config_path = Path(config_path)
         self.cfg = load_yaml_config(self.config_path)
 
+        global_main_cfg = self.cfg.get("main", {})
         cleaner_cfg = self.cfg.get("annotation_cleaner", {})
         self.main_cfg = cleaner_cfg.get("main", {})
         self.img_padd_cfg = cleaner_cfg.get("image_padding", {})
         self.annot_clean_cfg = cleaner_cfg.get("annotation_clean", {})
         self.restore_crop_cfg = cleaner_cfg.get("restore_crop", {})
+
+        self.categories: List[str] = global_main_cfg.get(
+            "categories", ["repair", "replace"]
+        )
 
         self.logger.info("Initialized Annotation Cleaner Pipeline")
         self.logger.info(f"Config file : {self.config_path}")
@@ -124,7 +130,7 @@ class AnnotationCleaner:
 
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        for category in self.main_cfg.get("categories", ["repair", "replace"]):
+        for category in self.categories:
             out_cat = output_dir / category
             out_cat.mkdir(parents=True, exist_ok=True)
 

@@ -72,54 +72,36 @@ class Classifier:
         self.wandb_cfg = self.cfg.get("wandb", {})
 
         # Extract values
-        self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
         self.model_name = self.global_main_cfg.get("classify_model", "mobilenet_v2").lower()
         self.use_wandb = self.wandb_cfg.get("enabled", True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.epochs = self.train_cfg.get("epochs", 80)
 
-        # Automatically resolve output paths
-        self._resolve_output_paths()
+        # paths
+        self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
+        self.save_dir = self.train_cfg["save_dir"]
+        self.metric_dir = self.train_cfg["metric_dir"]
+        self.check_dir = self.train_cfg["check_dir"]
+        self.weights_save_path = os.path.join(self.save_dir, f"{self.model_name}.pt")
+        self.check_path = os.path.join(self.check_dir, f"{self.model_name}_last.pt")
+
+        self.categories = self.global_main_cfg.get("categories", [])
+        self.num_classes = len(self.categories)
+
+        self.criterion_name = self.cfg.get("criterion", "auto")
+
+        if self.criterion_name == "auto":
+            self.criterion_name = "bce" if self.num_classes == 2 else "ce"
+
+        if self.criterion_name == "bce":
+            self.output_dim = 1
+        else:
+            self.output_dim = self.num_classes
 
         self.logger.info(f"Device: {self.device}")
         self.logger.info(f"Model: {self.model_name}")
         self.logger.info(f"Input Dir: {self.input_dir}")
 
-    # ==========================================================
-    # Path Resolution
-    # ==========================================================
-    def _resolve_output_paths(self):
-        """
-        Dynamically expand save, metric, and checkpoint directories
-        according to the input dataset path specified in config.
-        """
-        input_dir = str(self.input_dir).replace("\\", "/")
-        if input_dir.startswith("data/"):
-            data_subpath = input_dir[len("data/") :]  # e.g., "original_crop/yolov2"
-        else:
-            data_subpath = Path(input_dir).name  # e.g., "original_"
-
-        # Base directories
-        base_save = self.train_cfg.get("save_dir", "./saved_model/classifier")
-        base_metric = self.train_cfg.get("metric_dir", "./metrics/classifier")
-        base_check = self.train_cfg.get("check_dir", "./checkpoints/classifier")
-
-        # Resolved directories
-        resolved_save = os.path.join(base_save, data_subpath)
-        resolved_metric = os.path.join(base_metric, data_subpath)
-        resolved_check = os.path.join(base_check, data_subpath)
-
-        # Update config with resolved paths
-        self.train_cfg["save_dir"] = resolved_save
-        self.train_cfg["metric_dir"] = resolved_metric
-        self.train_cfg["check_dir"] = resolved_check
-
-        os.makedirs(resolved_save, exist_ok=True)
-        os.makedirs(resolved_metric, exist_ok=True)
-        os.makedirs(resolved_check, exist_ok=True)
-
-        self.logger.info(f"Resolved Save Dir: {resolved_save}")
-        self.logger.info(f"Resolved Metric Dir: {resolved_metric}")
-        self.logger.info(f"Resolved Check Dir: {resolved_check}")
 
     # ==========================================================
     # wandb Initialization
@@ -162,9 +144,7 @@ class Classifier:
         self.logger.info(f"wandb initialized: {run_name}")
         return wandb_run
 
-    # ==========================================================
     # Data Loading
-    # ==========================================================
     def _load_data(self):
         """Load train and validation datasets based on config paths."""
         dp = DataPreprocessor()
@@ -193,50 +173,52 @@ class Classifier:
         )
         return train_loader, valid_loader
 
-    # ==========================================================
     # Model & Optimizer Setup
-    # ==========================================================
     def _build_model(self):
-        """Initialize model, loss function, and optimizer."""
-        model = get_model(self.model_name, num_classes=1).to(self.device)
-        criterion = nn.BCEWithLogitsLoss()
+        # Model output dimension
+        if self.criterion_name == "bce":
+            model = get_model(self.model_name, num_classes=1).to(self.device)
+            criterion = nn.BCEWithLogitsLoss()
+        elif self.criterion_name == "ce":
+            model = get_model(self.model_name, num_classes=self.num_classes).to(self.device)
+            criterion = nn.CrossEntropyLoss()
+        else:
+            raise ValueError(f"Unsupported criterion: {self.criterion_name}")
+
         optimizer = AdamW(
             model.parameters(),
             lr=self.train_cfg.get("lr", 0.001),
             weight_decay=self.train_cfg.get("weight_decay", 1e-5),
         )
+
+        self.logger.info(
+            f"Classifier setup | num_classes={self.num_classes}, criterion={self.criterion_name.upper()}"
+        )
+
         return model, criterion, optimizer
 
     # ==========================================================
     # Step 1. Train
     # ==========================================================
     def step_train(
-        self, model, criterion, optimizer, train_loader, valid_loader, wandb_run
+        self, model, train_loader, valid_loader, criterion, optimizer, device, epochs, save_path, check_path, num_classes, wandb_run
     ):
         """
         Wrapper function for training loop.
 
         Saves checkpoints and returns best validation accuracy.
         """
-        save_dir = self.train_cfg["save_dir"]
-        check_dir = self.train_cfg["check_dir"]
-
-        save_path = os.path.join(save_dir, f"{self.model_name}.pt")
-        check_path = os.path.join(check_dir, f"{self.model_name}_last.pt")
-
-        self.logger.info(f"Save Path: {save_path}")
-        self.logger.info(f"Checkpoint Dir: {check_dir}")
-
         best_acc = train_model(
             model=model,
             train_loader=train_loader,
             valid_loader=valid_loader,
             criterion=criterion,
             optimizer=optimizer,
-            device=self.device,
-            epochs=self.train_cfg.get("epochs", 80),
+            device=device,
+            epochs=epochs,
             save_path=save_path,
             check_path=check_path,
+            num_classes = num_classes,
             wandb_run=wandb_run,
         )
         return best_acc
@@ -244,12 +226,13 @@ class Classifier:
     # ==========================================================
     # Step 2. Evaluate
     # ==========================================================
-    def step_evaluate(self, input_dir, model, save_dir, metric_dir, wandb_run):
+    def step_evaluate(self, model, input_dir, save_dir, metric_dir, num_classes, wandb_run):
         evaluator = Evaluator(
-        input_dir=self.input_dir,
-        model=self.model_name,
-        save_dir=self.train_cfg["save_dir"],
-        metric_dir=self.train_cfg["metric_dir"],
+        model=model,
+        input_dir=input_dir,
+        save_dir=save_dir,
+        metric_dir=metric_dir,
+        num_classes=num_classes,
         wandb_run=wandb_run,
         )
         acc, f1 = evaluator.run()
@@ -268,16 +251,27 @@ class Classifier:
 
         # Training phase
         best_acc = self.step_train(
-            model, criterion, optimizer, train_loader, valid_loader, wandb_run
+            model=model,
+            train_loader=train_loader,
+            valid_loader=valid_loader, 
+            criterion=criterion,
+            optimizer=optimizer,
+            device=self.device,
+            epochs=self.epochs,
+            save_path=self.weights_save_path,
+            check_path=self.check_path,
+            num_classes=self.output_dim,
+            wandb_run=wandb_run
         )
 
         # Evaluation phase
         acc, f1 = self.step_evaluate(
-        input_dir=self.input_dir,
         model=self.model_name,
-        save_dir=self.train_cfg["save_dir"],
-        metric_dir=self.train_cfg["metric_dir"],
-        wandb_run=wandb_run,
+        input_dir=self.input_dir,
+        save_dir=self.save_dir,
+        metric_dir=self.metric_dir,
+        num_classes=self.output_dim,
+        wandb_run=wandb_run
         )
 
         # Log and finalize

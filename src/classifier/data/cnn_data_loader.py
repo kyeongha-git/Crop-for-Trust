@@ -12,16 +12,6 @@ This module provides:
 - A DataLoader helper for efficient mini-batch creation.
 - Support for standard dataset splits (train / valid / test).
 - Easy integration with custom datasets following a class-folder structure.
-
-Example:
-    from src.classifier.data.cnn_data_loader import create_dataloader
-
-    train_loader = create_dataloader(
-        input_dir="data/original",
-        split="train",
-        batch_size=32,
-        shuffle=True
-    )
 """
 
 import os

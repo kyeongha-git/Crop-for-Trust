@@ -76,7 +76,7 @@ class YOLOv5Pipeline:
 
         # Derived paths
         self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
-
+        
         # Logging info
         self.logger.info(f"Initialized YOLOv5 Pipeline ({self.model_name.upper()})")
         self.logger.info(f" - Demo mode      : {self.demo_mode}")
@@ -157,7 +157,7 @@ class YOLOv5Pipeline:
     # --------------------------------------------------------
     # Entrypoint
     # --------------------------------------------------------
-    def run(self):
+    def run(self, save_image):
         self.logger.info("Running YOLOv5 Pipeline")
         self.cleanup_previous_runs()
         self.step_train()
@@ -165,5 +165,9 @@ class YOLOv5Pipeline:
         self.step_make_predict()
         self.step_predict()
         self.step_converter()
-        self.step_cropper()
+        if save_image:
+            self.step_cropper()
+        else:
+            self.logger.info("[YOLO Crop: False] → Cropper Skip.")
+
         self.logger.info("\nYOLOv5 pipeline completed successfully!")

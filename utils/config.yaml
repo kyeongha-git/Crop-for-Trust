@@ -1,9 +1,9 @@
 main:
   input_dir: data/sample/original
   demo: False
-  annot_clean_test_mode: True
-  annot_clean: True
-  yolo_crop: True
+  annot_clean_test_mode: false
+  annot_clean: false
+  yolo_crop: false
   yolo_model: yolov5
   classify_model: mobilenetv2
   saved_model: saved_model/

@@ -145,7 +145,7 @@ class DarknetPipeline:
     # --------------------------------------------------------
     # Step 7. Cropper
     # --------------------------------------------------------
-    def step_cropping(self):
+    def step_cropper(self):
         self.logger.info("[STEP 7] Running ROI cropping...")
         cropper = YOLOCropper(config=self.cfg)
         cropper.run()
@@ -153,7 +153,7 @@ class DarknetPipeline:
     # ------------------------------------------------------
     # Entrypoint
     # ------------------------------------------------------
-    def run(self):
+    def run(self, save_image):
         self.logger.info(f"Running Darknet Pipeline ({self.model_name.upper()})")
         self.cleanup_previous_runs()
         self.step_cfg_manager()
@@ -162,6 +162,9 @@ class DarknetPipeline:
         self.step_train()
         self.step_evaluate()
         self.step_predict()
-        self.step_cropping()
+        if save_image:
+            self.step_cropper()
+        else:
+            self.logger.info("[YOLO Crop: False] → Cropper Skip.")
 
         self.logger.info("\nDarknet pipeline completed successfully!")

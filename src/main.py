@@ -68,16 +68,7 @@ def main():
     yolo_model = main_cfg.get("yolo_model", "yolov8s")
     classify_model = main_cfg.get("classify_model", "vgg16")
     demo_mode = main_cfg.get("demo", False)
-    yolo_result = (
-    Path(
-        updated_cfg
-        .get("yolo_cropper", {})
-        .get("dataset", {})
-        .get("results_dir", "outputs/json_results")
-    )
-    / yolo_model
-    / "result.json"
-    )
+    yolo_result = Path(updated_cfg["yolo_cropper"]["dataset"]["results_dir"]) / yolo_model / "result.json"
     # --------------------------------------------------------
     # Logging
     # --------------------------------------------------------
@@ -113,7 +104,7 @@ def main():
         try:
             logger.info(f"[STEP 2] Starting YOLOCropper ({yolo_model})...")
             yolo_cropper = YOLOCropperController(config_path=args.config)
-            yolo_cropper.run()
+            yolo_cropper.run(save_image = True)
         except Exception as e:
             logger.error(f"[YOLOCropper] Failed: {e}")
             traceback.print_exc()
@@ -126,13 +117,13 @@ def main():
     if annot_clean:
         try:
             if yolo_result.exists():
-                logger.info("[STEP 3] Evaluating Annotation Cleaner (usi    ng existing YOLO results)...")
-                cleaner.step_evaluate()
+                logger.info("[STEP 3] Using existing YOLO metadata for evaluation.")
             else:
-                logger.info("[STEP 3] YOLO results not found. Running YOLO for evaluation only...")
+                logger.info("[STEP 3] YOLO metadata missing. Running YOLO (save_image=False) for evaluation only.")
                 yolo_cropper = YOLOCropperController(config_path=args.config)
-                yolo_cropper.run()
-                cleaner.step_evaluate()
+                yolo_cropper.run(save_image = False)
+
+            cleaner.step_evaluate()
         except Exception as e:
             logger.error(f"[AnnotationCleaner] Evaluation Failed: {e}")
             traceback.print_exc()
@@ -152,7 +143,7 @@ def main():
     # Step 5. Classifier
     # --------------------------------------------------------
     try:
-        logger.info("[STEP 4] Starting Classifier ({classify_model})...")
+        logger.info(f"[STEP 5] Starting Classifier ({classify_model})...")
         classifier = Classifier(config_path=args.config)
         classifier.run()
     except Exception as e:

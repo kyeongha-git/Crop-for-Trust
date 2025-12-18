@@ -58,7 +58,7 @@ class YOLOCropperController:
         )
 
     # --------------------------------------------------
-    def run(self):
+    def run(self, save_image):
         """
         Dispatch the appropriate YOLO pipeline based on model_name.
         """
@@ -90,10 +90,8 @@ class YOLOCropperController:
         pipeline = pipeline_class(config_path=str(self.config_path))
 
         self.logger.info(f"Running {self.model_name.upper()} pipeline...")
-        metrics = pipeline.run()
+        pipeline.run(save_image = save_image)
         self.logger.info(f"Pipeline complete ({self.model_name.upper()})")
-
-        return metrics
 
 
 # ======================================================
@@ -126,7 +124,7 @@ def main():
 
     try:
         controller = YOLOCropperController(config_path=args.config)
-        controller.run()
+        controller.run(save_image=True)
         logger.info("Standalone YOLO Cropper finished successfully")
     except Exception:
         logger.exception("YOLO Cropper execution failed")
