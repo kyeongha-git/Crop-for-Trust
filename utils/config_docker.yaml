@@ -5,9 +5,9 @@ main:
   - replace
   demo: true
   annot_clean_test_mode: false
-  annot_clean: true
+  annot_clean: false
   yolo_crop: true
-  yolo_model: yolov5
+  yolo_model: yolov2
   classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
@@ -72,9 +72,9 @@ annotation_cleaner:
     debug: true
 yolo_cropper:
   main:
-    model_name: yolov5
-    input_dir: data/sample/generation
-    output_dir: data/sample/generation_crop/yolov5
+    model_name: yolov2
+    input_dir: data/sample/original
+    output_dir: data/sample/original_crop/yolov2
     mode: detect
   dataset:
     results_dir: outputs/json_results
@@ -90,7 +90,7 @@ yolo_cropper:
     save_crop: true
     save_txt: true
   darknet:
-    model_name: yolov5
+    model_name: yolov2
     build_mode: cpu
     darknet_dir: third_party/darknet
     modes:
@@ -98,7 +98,7 @@ yolo_cropper:
         GPU: 0
         CUDNN: 0
         CUDNN_HALF: 0
-        OPENCV: 1
+        OPENCV: 0
         MAKE_JOBS: 4
       gpu:
         GPU: 1
@@ -137,8 +137,8 @@ yolo_cropper:
     yolov5_dir: third_party/yolov5
 data_augmentor:
   data:
-    input_dir: data/sample/generation_crop/yolov5
-    output_dir: data/sample/generation_crop/yolov5/dataset
+    input_dir: data/sample/original_crop/yolov2
+    output_dir: data/sample/original_crop/yolov2/dataset
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -167,7 +167,7 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: data/sample/generation_crop/yolov5/dataset
+    input_dir: data/sample/original_crop/yolov2/dataset
   train:
     model_name: mobilenet_v2
     criterion: auto
@@ -175,9 +175,9 @@ classifier:
     epochs: 1
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/generation_crop/yolov5
-    metric_dir: metrics/classifier/sample/generation_crop/yolov5
-    check_dir: checkpoints/classifier/sample/generation_crop/yolov5
+    save_dir: saved_model/classifier/sample/original_crop/yolov2
+    metric_dir: metrics/classifier/sample/original_crop/yolov2
+    check_dir: checkpoints/classifier/sample/original_crop/yolov2
   wandb:
     enabled: false
     project: Crop-for-Trust

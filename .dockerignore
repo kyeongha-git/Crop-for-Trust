@@ -9,10 +9,6 @@ backup/*
 data/*
 !data/sample
 
-# YOLO-Crop
-src/yolo_cropper/models/darknet
-src/yolo_cropper/models/yolov8
-
 # Logs / temporary outputs
 logs/
 *.log

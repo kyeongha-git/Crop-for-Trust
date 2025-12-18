@@ -84,7 +84,7 @@ def main():
         "--yolo_model",
         type=str,
         default=None,
-        choices=["yolov2", "yolov4", "yolov5", "yolov8"],
+        choices=["yolov2", "yolov4", "yolov5", "yolov8s", "yolov8m", 'yolov8l', "yolov8x"],
         help="YOLO backbone used for region-aware cropping",
     )
 
