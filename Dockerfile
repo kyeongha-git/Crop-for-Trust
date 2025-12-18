@@ -21,14 +21,14 @@ WORKDIR /app
 RUN mkdir -p third_party && \
     git clone https://github.com/ultralytics/yolov5.git third_party/yolov5
 
-# # 3. Prepare Darknet Engine (YOLOv2, YOLOv4) - Compile Only
-# WORKDIR /app/third_party
-# RUN git clone https://github.com/AlexeyAB/darknet.git && \
-#     cd darknet && \
-#     sed -i 's/GPU=1/GPU=0/' Makefile && \
-#     sed -i 's/CUDNN=1/CUDNN=0/' Makefile && \
-#     sed -i 's/OPENCV=1/OPENCV=0/' Makefile && \
-#     make
+# 3. Prepare Darknet Engine (YOLOv2, YOLOv4) - Compile Only
+WORKDIR /app/third_party
+RUN git clone https://github.com/AlexeyAB/darknet.git && \
+    cd darknet && \
+    sed -i 's/GPU=1/GPU=0/' Makefile && \
+    sed -i 's/CUDNN=1/CUDNN=0/' Makefile && \
+    sed -i 's/OPENCV=1/OPENCV=0/' Makefile && \
+    make
 
 # Restore workdir
 WORKDIR /app

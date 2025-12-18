@@ -24,7 +24,15 @@ def main():
     # --------------------------------------------------------
     # CLI Arguments
     # --------------------------------------------------------
-    parser = argparse.ArgumentParser(description="Full AI Pipeline Controller")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Crop for Trust: Reliability-Aware Visual Debiasing Pipeline\n\n"
+            "A unified pipeline for annotation cleaning, YOLO-based region cropping, "
+            "data augmentation, and classification, designed for reproducible "
+            "and trustworthy visual learning."
+        ),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     parser.add_argument(
         "--config",
@@ -33,19 +41,52 @@ def main():
         help="Path to configuration YAML file",
     )
 
-    parser.add_argument("--annot_clean", action="store_true")
-    parser.add_argument("--no_annot_clean", action="store_false", dest="annot_clean")
+    parser.add_argument(
+        "--annot_clean",
+        action="store_true",
+        help="Enable annotation cleaning stage",
+    )
+    parser.add_argument(
+        "--no_annot_clean",
+        action="store_false",
+        dest="annot_clean",
+        help="Disable annotation cleaning stage",
+    )
     parser.set_defaults(annot_clean=None)
 
-    parser.add_argument("--annot_clean_test_mode", action="store_true")
-    parser.add_argument("--no_annot_clean_test_mode", action="store_false", dest="annot_clean_test_mode")
+    parser.add_argument(
+        "--annot_clean_test_mode",
+        action="store_true",
+        help="Run annotation cleaner in test (evaluation-only) mode",
+    )
+    parser.add_argument(
+        "--no_annot_clean_test_mode",
+        action="store_false",
+        dest="annot_clean_test_mode",
+        help="Disable annotation cleaner test mode",
+    )
     parser.set_defaults(annot_clean_test_mode=None)
 
-    parser.add_argument("--yolo_crop", action="store_true")
-    parser.add_argument("--no_yolo_crop", action="store_false", dest="yolo_crop")
+    parser.add_argument(
+        "--yolo_crop",
+        action="store_true",
+        help="Enable YOLO-based region cropping",
+    )
+    parser.add_argument(
+        "--no_yolo_crop",
+        action="store_false",
+        dest="yolo_crop",
+        help="Disable YOLO-based region cropping",
+    )
     parser.set_defaults(yolo_crop=None)
 
-    parser.add_argument("--yolo_model", type=str, default=None)
+    parser.add_argument(
+        "--yolo_model",
+        type=str,
+        default=None,
+        choices=["yolov2", "yolov4", "yolov5", "yolov8"],
+        help="YOLO backbone used for region-aware cropping",
+    )
 
     args = parser.parse_args()
 
@@ -65,7 +106,7 @@ def main():
     annot_clean_test_mode = main_cfg.get("annot_clean_test_mode", True)
     annot_clean = main_cfg.get("annot_clean", True)
     yolo_crop = main_cfg.get("yolo_crop", True)
-    yolo_model = main_cfg.get("yolo_model", "yolov8s")
+    yolo_model = main_cfg.get("yolo_model", "yolov5")
     classify_model = main_cfg.get("classify_model", "vgg16")
     demo_mode = main_cfg.get("demo", False)
     yolo_result = Path(updated_cfg["yolo_cropper"]["dataset"]["results_dir"]) / yolo_model / "result.json"

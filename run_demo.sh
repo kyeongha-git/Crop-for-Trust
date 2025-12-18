@@ -3,40 +3,36 @@ set -e
 
 echo "========================================================"
 echo "   Crop for Trust: Reliability-Aware Pipeline Demo      "
-echo "          (Docker Environment - YOLOv5)                 "
+echo "          (Docker Environment)                          "
 echo "========================================================"
+
 
 # 1. API Key Check
 if [ -z "$GEMINI_API_KEY" ]; then
-    echo "Error: GEMINI_API_KEY is missing!"
+    echo "[ERROR] GEMINI_API_KEY is missing!"
+    echo "        Please run with: -e GEMINI_API_KEY=YOUR_KEY"
     exit 1
 fi
 
-# 2. Check YOLOv5 Existence (Sanity Check)
-if [ ! -d "third_party/yolov5" ]; then
-    echo "Error: YOLOv5 source code is missing in /app/third_party/yolov5"
+echo "[INFO] GEMINI_API_KEY detected."
+
+
+# 2. Basic Sanity Check (Framework-level only)
+if [ ! -d "src" ]; then
+    echo "[ERROR] src/ directory not found!"
     exit 1
-else
-    echo "YOLOv5 Source Code detected."
 fi
 
-# 3. Run Pipeline
-echo -e "\n[Pipeline] Starting src/main.py..."
-python src/main.py --config utils/config_docker.yaml
+if [ ! -f "utils/config_docker.yaml" ]; then
+    echo "[ERROR] utils/config_docker.yaml not found!"
+    exit 1
+fi
 
-echo -e "\n--------------------------------------------------------"
-echo "[DEBUG] Post-Run Verification"
+echo "[INFO] Project structure sanity check passed."
 
-echo "1. Saved Model Check:"
-ls -lh /app/saved_model/yolo_cropper/yolov5.pt || echo "Model file (yolov5.pt) not found!"
-
-echo "2. Input Images Check:"
-ls -1 /app/data/sample/original | head -n 3 || echo "Input dir empty!"
-
-echo "3. Output Crops Check:"
-ls -1 /app/data/sample/original_crop/yolov5 | head -n 3 || echo "No crops found in yolov5 folder!"
+# 3. Run Pipeline (CLI arguments are forwarded as-is)
+echo -e "\n[Pipeline] Launching src/main.py ..."
+echo "[INFO] Forwarded CLI arguments: $@"
 echo "--------------------------------------------------------"
 
-echo "========================================================"
-echo "   🎉 Demo Pipeline Completed Successfully!             "
-echo "========================================================"
+exec python src/main.py --config utils/config_docker.yaml "$@"
