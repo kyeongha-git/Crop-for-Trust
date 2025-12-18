@@ -94,12 +94,45 @@ class DarknetPredictor:
 
         self.logger.info(f"Found {len(images)} images under {input_dir}")
         return sorted(images)
+    
+    # --------------------------------------------------------
+    def _ensure_obj_data(self):
+        obj_data_path = self.data_dir / "obj.data"
+        obj_names_path = self.data_dir / "obj.names"
+
+        categories = self.global_main_cfg.get("categories", [])
+        if not categories:
+            raise ValueError("main.categories is empty in config.yaml")
+
+        # Ensure backup directory exists
+        backup_dir = self.darknet_dir / "backup"
+        backup_dir.mkdir(exist_ok=True)
+
+        # obj.names
+        obj_names_path.write_text(
+            "\n".join(categories) + "\n", encoding="utf-8"
+        )
+
+        # obj.data (minimal, inference-only)
+        content = [
+            f"classes = {len(categories)}",
+            "names = data/obj.names",
+            "backup = backup/",
+        ]
+        obj_data_path.write_text("\n".join(content) + "\n", encoding="utf-8")
+
+        self.logger.info(
+            "Generated minimal data/obj.data, obj.names, and ensured backup/ for inference"
+        )
+
 
     # --------------------------------------------------------
     def run(self):
         """
         Run Darknet-based YOLO inference.
         """
+        self._ensure_obj_data()
+
         if self.demo_mode:
             self.logger.info(
                 "Demo mode → Download fine-tuned Darknet YOLO weights"
@@ -111,9 +144,6 @@ class DarknetPredictor:
                 logger=self.logger,
             )
 
-        # ----------------------------------------------------
-        # Generate predict.txt for Darknet
-        # ----------------------------------------------------
         images = self._list_images(self.input_dir)
         predict_path = self.data_dir / "predict.txt"
         predict_path.write_text("\n".join(images) + "\n", encoding="utf-8")
@@ -122,9 +152,7 @@ class DarknetPredictor:
             f"Generated predict.txt ({len(images)} images) → {predict_path}"
         )
 
-        # ----------------------------------------------------
         # Darknet command setup
-        # ----------------------------------------------------
         cfg_path = f"cfg/{self.model_name}-obj.cfg"
         obj_data = "data/obj.data"
 
@@ -168,7 +196,6 @@ class DarknetPredictor:
                 "result.json not found in darknet/data folder!"
             )
 
-        # Save predict.txt for recordkeeping
         predict_copy = self.output_dir / "predict.txt"
         shutil.copy2(predict_path, predict_copy)
         self.logger.info(
