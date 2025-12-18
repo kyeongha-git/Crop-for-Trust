@@ -6,9 +6,9 @@ main:
   demo: true
   annot_clean_test_mode: false
   annot_clean: false
-  yolo_crop: true
+  yolo_crop: false
   yolo_model: yolov2
-  classify_model: mobilenet_v2
+  classify_model: mobilenet_v1
   saved_model: saved_model/
   metrics_dir: metrics/
 weights:
@@ -74,7 +74,7 @@ yolo_cropper:
   main:
     model_name: yolov2
     input_dir: data/sample/original
-    output_dir: data/sample/original_crop/yolov2
+    output_dir: data/sample/original
     mode: detect
   dataset:
     results_dir: outputs/json_results
@@ -137,8 +137,8 @@ yolo_cropper:
     yolov5_dir: third_party/yolov5
 data_augmentor:
   data:
-    input_dir: data/sample/original_crop/yolov2
-    output_dir: data/sample/original_crop/yolov2/dataset
+    input_dir: data/sample/original
+    output_dir: data/sample/original/dataset
   split:
     train_ratio: 0.8
     valid_ratio: 0.1
@@ -167,17 +167,17 @@ data_augmentor:
     hue_delta: 0.03
 classifier:
   data:
-    input_dir: data/sample/original_crop/yolov2/dataset
+    input_dir: data/sample/original/dataset
   train:
     model_name: mobilenet_v2
     criterion: auto
     batch_size: 2
-    epochs: 1
+    epochs: 80
     lr: 0.001
     weight_decay: 1.0e-05
-    save_dir: saved_model/classifier/sample/original_crop/yolov2
-    metric_dir: metrics/classifier/sample/original_crop/yolov2
-    check_dir: checkpoints/classifier/sample/original_crop/yolov2
+    save_dir: saved_model/classifier/sample/original
+    metric_dir: metrics/classifier/sample/original
+    check_dir: checkpoints/classifier/sample/original
   wandb:
     enabled: false
     project: Crop-for-Trust
