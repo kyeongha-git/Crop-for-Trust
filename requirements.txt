@@ -34,6 +34,7 @@ google-auth==2.40.3
 wandb==0.22.2
 tensorboard==2.18.0
 protobuf==4.25.8
+gradio>=3.0
 
 # --- Testing ---
 pytest==8.4.2
