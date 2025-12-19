@@ -2,14 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-image_padding.py
-----------------
-Pads input images to a fixed square size (default: 1024×1024).
+Module for image padding operations.
 
-This module is fully configuration-driven:
-- Receives only `config` at initialization
-- Reads required paths and parameters internally
-- Exposes a single public API: `run()`
+Resizes images to a fixed square resolution (default: 1024x1024) by adding
+borders (padding) while preserving the original aspect ratio. Metadata regarding
+the padding offsets is saved to allow for precise restoration later.
 """
 
 import json
@@ -17,7 +14,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 
@@ -29,31 +26,27 @@ from utils.logging import get_logger, setup_logging
 
 class ImagePadder:
     """
-    Pads images to a target square size and records padding metadata.
-
-    Configuration section used:
-        annotation_cleaner:
-            main:
-                categories
-                metadata_name
-            image_padding:
-                input_dir
-                output_dir
-                target_size
+    Handles image padding to a target square size and records padding metadata.
     """
 
-    DEFAULT_PADDING_COLOR = (0, 0, 0)
+    DEFAULT_PADDING_COLOR: Tuple[int, int, int] = (0, 0, 0)
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict) -> None:
+        """
+        Args:
+            config (Dict): Configuration dictionary containing paths and parameters.
+        """
         setup_logging("logs/annotation_cleaner")
         self.logger = get_logger("annotation_cleaner.ImagePadder")
 
+        # Configuration setup
         self.cfg = config
         global_main_cfg = self.cfg.get("main", {})
         cleaner_cfg = self.cfg.get("annotation_cleaner", {})
         self.main_cfg = cleaner_cfg.get("main", {})
         self.pad_cfg = cleaner_cfg.get("image_padding", {})
 
+        # Path setup
         self.input_root = Path(
             self.pad_cfg.get("input_dir", self.main_cfg.get("input_dir", "data/original"))
         ).resolve()
@@ -66,38 +59,51 @@ class ImagePadder:
             "categories", ["repair", "replace"]
         )
 
+        # Padding parameters
         self.target_size: int = int(self.pad_cfg.get("target_size", 1024))
         self.metadata_name: str = self.main_cfg.get(
             "metadata_name", "padding_info.json"
         )
-
         self.padding_color = self.DEFAULT_PADDING_COLOR
 
-        # Logging
         self.logger.info("Initialized ImagePadder")
-        self.logger.info(f" - Input dir  : {self.input_root}")
-        self.logger.info(f" - Output dir : {self.output_root}")
-        self.logger.info(f" - Target size: {self.target_size}")
+        self.logger.info(f" - Input dir   : {self.input_root}")
+        self.logger.info(f" - Output dir  : {self.output_root}")
+        self.logger.info(f" - Target size : {self.target_size}")
 
-    def _pad_image(self, image_path: Path, save_path: Path) -> Optional[dict]:
+    def _pad_image(self, image_path: Path, save_path: Path) -> Optional[Dict[str, Any]]:
+        """
+        Pads a single image to the target square size.
+        
+        If the image is already larger than the target size, it is copied as-is.
+        Otherwise, symmetric padding is applied to center the image.
+
+        Args:
+            image_path (Path): Path to the source image.
+            save_path (Path): Path where the processed image will be saved.
+
+        Returns:
+            Optional[Dict[str, Any]]: Metadata dict with original size and padding offsets,
+                                      or None if processing failed.
+        """
         img = cv2.imread(str(image_path))
         if img is None:
-            self.logger.error(f"{image_path.name}: Failed to load image.")
+            self.logger.error(f"Failed to load image: {image_path.name}")
             return None
 
         h, w = img.shape[:2]
 
-        # Skip padding if already large enough
+        # Case 1: Image dimensions meet or exceed target size
         if h >= self.target_size and w >= self.target_size:
-            self.logger.info(f"{image_path.name}: Already large enough → copy only.")
+            self.logger.debug(f"Skipping padding (size sufficient): {image_path.name}")
             save_path.parent.mkdir(parents=True, exist_ok=True)
             try:
                 shutil.copy(str(image_path), str(save_path))
             except Exception as e:
-                self.logger.error(f"{image_path.name}: Copy failed ({e})")
+                self.logger.error(f"Copy failed for {image_path.name}: {e}")
             return None
 
-        # Calculate padding
+        # Case 2: Apply padding (Center the image)
         top = max(0, (self.target_size - h) // 2)
         bottom = max(0, self.target_size - h - top)
         left = max(0, (self.target_size - w) // 2)
@@ -118,7 +124,7 @@ class ImagePadder:
             success = cv2.imwrite(str(save_path), padded)
 
             if not success:
-                self.logger.error(f"{image_path.name}: Failed to save padded image.")
+                self.logger.error(f"Failed to save padded image: {image_path.name}")
                 return None
 
             return {
@@ -132,12 +138,13 @@ class ImagePadder:
             }
 
         except Exception as e:
-            self.logger.error(f"{image_path.name}: Error during padding ({e})")
+            self.logger.error(f"Error padding {image_path.name}: {e}")
             return None
 
-    def run(self):
+    def run(self) -> None:
         """
-        Pads all images under each category directory and saves metadata.
+        Executes the padding process for all configured categories.
+        Aggregates and saves metadata for restoration.
         """
         if not self.input_root.exists():
             raise FileNotFoundError(f"Input folder not found: {self.input_root}")
@@ -156,6 +163,7 @@ class ImagePadder:
             self.logger.info(f"Processing category: {category}")
             metadata = {}
 
+            # Iterate and process images
             for file in sorted(os.listdir(in_dir)):
                 if not file.lower().endswith((".jpg", ".jpeg", ".png")):
                     continue
@@ -167,14 +175,13 @@ class ImagePadder:
                 if info:
                     metadata[file] = info
 
-            # Save metadata
+            # Save aggregation metadata
             if metadata:
                 try:
                     with open(meta_path, "w", encoding="utf-8") as f:
                         json.dump(metadata, f, indent=4, ensure_ascii=False)
-                    self.logger.info(f"Padding complete → {out_dir}")
-                    self.logger.info(f"Metadata saved → {meta_path}")
+                    self.logger.info(f"Padding complete for {category}. Metadata saved.")
                 except Exception as e:
-                    self.logger.error(f"Failed to save metadata ({meta_path}): {e}")
+                    self.logger.error(f"Failed to save metadata at {meta_path}: {e}")
             else:
-                self.logger.info(f"{category}: No new padded images created.")
+                self.logger.info(f"No padded images generated for {category}.")

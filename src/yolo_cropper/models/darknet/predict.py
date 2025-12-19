@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 
 """
-predict.py
-----------
-Darknet-based YOLOv2 / YOLOv4 inference module.
+Darknet Inference Module.
+
+Manages batch object detection using Darknet (YOLOv2/v4), handling
+input list generation, configuration file creation, and result parsing.
 """
 
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
@@ -22,10 +23,10 @@ from utils.model_hub import download_fine_tuned_weights
 
 class DarknetPredictor:
     """
-    Runs object detection inference using Darknet (YOLOv2 / YOLOv4).
+    Orchestrates Darknet execution for batch image inference.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.DarknetPredictor")
         self.cfg = config
 
@@ -41,7 +42,7 @@ class DarknetPredictor:
 
         self.model_name = self.main_cfg.get("model_name", "yolov2").lower()
 
-        # Paths
+        # Path setup
         self.darknet_dir = Path(
             self.darknet_cfg.get("darknet_dir", "third_party/darknet")
         ).resolve()
@@ -68,18 +69,17 @@ class DarknetPredictor:
             self.saved_model_dir / f"{self.model_name}.weights"
         ).resolve()
 
-        # Data parameters
         self.conf_thresh = self.train_cfg.get("conf_thresh", 0.25)
 
-        self.logger.info(
-            f"Initialized DarknetPredictor ({self.model_name.upper()})"
-        )
-        self.logger.debug(f" - Darknet dir : {self.darknet_dir}")
-        self.logger.debug(f" - Weights    : {self.weights_path}")
-        self.logger.debug(f" - Input dir  : {self.input_dir}")
+        self.logger.info(f"Initialized Predictor (Model: {self.model_name.upper()})")
 
-    # --------------------------------------------------------
-    def _list_images(self, input_dir: Path) -> list[str]:
+    def _list_images(self, input_dir: Path) -> List[str]:
+        """
+        Recursively retrieves image paths from the input directory.
+
+        Returns:
+            List[str]: A sorted list of absolute image paths.
+        """
         exts = [".jpg", ".jpeg", ".png", ".bmp"]
         images = [
             str(p.resolve())
@@ -88,32 +88,32 @@ class DarknetPredictor:
         ]
 
         if not images:
-            raise FileNotFoundError(
-                f"No images found recursively under {input_dir}"
-            )
+            raise FileNotFoundError(f"No images found in {input_dir}")
 
-        self.logger.info(f"Found {len(images)} images under {input_dir}")
+        self.logger.info(f"Found {len(images)} images")
         return sorted(images)
-    
-    # --------------------------------------------------------
-    def _ensure_obj_data(self):
+
+    def _ensure_obj_data(self) -> None:
+        """
+        Generates temporary configuration files (`obj.data`, `obj.names`) required by Darknet.
+        """
         obj_data_path = self.data_dir / "obj.data"
         obj_names_path = self.data_dir / "obj.names"
 
         categories = self.global_main_cfg.get("categories", [])
         if not categories:
-            raise ValueError("main.categories is empty in config.yaml")
+            raise ValueError("Categories not defined in configuration.")
 
         # Ensure backup directory exists
         backup_dir = self.darknet_dir / "backup"
         backup_dir.mkdir(exist_ok=True)
 
-        # obj.names
+        # Generate obj.names
         obj_names_path.write_text(
             "\n".join(categories) + "\n", encoding="utf-8"
         )
 
-        # obj.data (minimal, inference-only)
+        # Generate obj.data
         content = [
             f"classes = {len(categories)}",
             "names = data/obj.names",
@@ -121,22 +121,19 @@ class DarknetPredictor:
         ]
         obj_data_path.write_text("\n".join(content) + "\n", encoding="utf-8")
 
-        self.logger.info(
-            "Generated minimal data/obj.data, obj.names, and ensured backup/ for inference"
-        )
+        self.logger.info("Generated Darknet config files (obj.data, obj.names)")
 
-
-    # --------------------------------------------------------
-    def run(self):
+    def run(self) -> Tuple[str, str]:
         """
-        Run Darknet-based YOLO inference.
+        Executes the inference pipeline via Darknet subprocess.
+
+        Returns:
+            Tuple[str, str]: Paths to the result JSON and the prediction image list.
         """
         self._ensure_obj_data()
 
         if self.demo_mode:
-            self.logger.info(
-                "Demo mode → Download fine-tuned Darknet YOLO weights"
-            )
+            self.logger.info("Demo mode: Downloading fine-tuned weights")
             download_fine_tuned_weights(
                 cfg=self.cfg,
                 model_name=self.model_name,
@@ -148,11 +145,9 @@ class DarknetPredictor:
         predict_path = self.data_dir / "predict.txt"
         predict_path.write_text("\n".join(images) + "\n", encoding="utf-8")
 
-        self.logger.info(
-            f"Generated predict.txt ({len(images)} images) → {predict_path}"
-        )
+        self.logger.info(f"Generated prediction list: {predict_path}")
 
-        # Darknet command setup
+        # Darknet CLI setup
         cfg_path = f"cfg/{self.model_name}-obj.cfg"
         obj_data = "data/obj.data"
 
@@ -162,16 +157,14 @@ class DarknetPredictor:
 
         external_result = self.output_dir / "result.json"
 
+        # Construct command
         command = (
             f"./darknet detector test {obj_data} {cfg_path} {self.weights_path} "
             f"-thresh {self.conf_thresh} -dont_show -ext_output "
             f"-out {internal_result} < data/predict.txt"
         )
 
-        self.logger.info(
-            f"Starting Darknet detection ({self.model_name.upper()})"
-        )
-        self.logger.debug(f"[CMD] {command}")
+        self.logger.info(f"Starting Inference ({self.model_name.upper()})")
 
         process = subprocess.run(
             ["bash", "-lc", command],
@@ -179,27 +172,19 @@ class DarknetPredictor:
             shell=False,
         )
 
+        # Darknet often returns 1 even on success if image window can't open
         if process.returncode not in (0, 1):
-            raise RuntimeError(
-                f"Darknet detection failed (code: {process.returncode})"
-            )
+            raise RuntimeError(f"Darknet detection failed (Code: {process.returncode})")
         elif process.returncode == 1:
-            self.logger.warning(
-                "Darknet exited with code 1 (non-fatal). Detection likely succeeded."
-            )
+            self.logger.warning("Darknet exited with code 1 (Non-fatal)")
 
         if internal_result.exists():
             shutil.copy2(internal_result, external_result)
-            self.logger.info(f"Copied result → {external_result}")
+            self.logger.info(f"Result saved to {external_result}")
         else:
-            self.logger.warning(
-                "result.json not found in darknet/data folder!"
-            )
+            self.logger.warning("Result JSON not generated by Darknet.")
 
         predict_copy = self.output_dir / "predict.txt"
         shutil.copy2(predict_path, predict_copy)
-        self.logger.info(
-            f"Copied predict.txt → {predict_copy.resolve()}"
-        )
 
         return str(external_result), str(predict_path)

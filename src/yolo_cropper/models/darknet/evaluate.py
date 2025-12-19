@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-evaluate.py
------------
-This module evaluates trained YOLOv2 or YOLOv4 models using Darknet.
+Darknet Evaluation Module.
 
-It runs Darknet’s built-in mAP computation, parses the output logs,
-and saves precision, recall, and mAP results to a structured CSV file.
-All configuration parameters are provided externally (config-driven).
+Executes the Darknet `detector map` command to evaluate trained YOLOv2 or YOLOv4 models,
+parses the output logs for performance metrics, and archives results.
 """
 
 import csv
@@ -30,10 +27,10 @@ from utils.config_manager import ConfigManager
 
 class DarknetEvaluator:
     """
-    Performs model evaluation using Darknet for YOLOv2 or YOLOv4.
+    Manages the evaluation of YOLOv2 and YOLOv4 models via Darknet.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.DarknetEvaluator")
 
         self.cfg = config
@@ -56,12 +53,15 @@ class DarknetEvaluator:
 
         self.model_name = self.main_cfg.get("model_name", "yolov2").lower()
 
-        self.logger.info(f"Initialized DarknetEvaluator for {self.model_name.upper()}")
-        self.logger.debug(f"Darknet dir : {self.darknet_dir}")
-        self.logger.debug(f"Log dir     : {self.log_dir}")
+        self.logger.info(f"Initialized Evaluator (Model: {self.model_name.upper()})")
 
-    # --------------------------------------------------
-    def run(self):
+    def run(self) -> Dict[str, Any]:
+        """
+        Executes the evaluation subprocess and parses metrics.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing Precision, Recall, and mAP metrics.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_filename = f"eval_{self.model_name}_{timestamp}.log"
         log_path = self.log_dir / log_filename
@@ -73,15 +73,13 @@ class DarknetEvaluator:
             f"{self.saved_model_dir}/{self.model_name}.weights"
         ).resolve()
 
+        # Construct Darknet map command
         command = (
             f"./darknet detector map {obj_data} {cfg_path} {weights_path} "
             f"-dont_show -iou_thresh 0.5 -points 101 | tee {relative_log_path}"
         )
 
-        self.logger.info(
-            f"Starting Darknet evaluation ({self.model_name.upper()})..."
-        )
-        self.logger.debug(f"[CMD] {command}")
+        self.logger.info(f"Starting Evaluation ({self.model_name.upper()})")
 
         process = subprocess.run(
             ["bash", "-lc", command],
@@ -89,16 +87,13 @@ class DarknetEvaluator:
             shell=False,
         )
 
+        # Darknet exit codes: 0 (success), 1 (error, sometimes non-fatal)
         if process.returncode not in (0, 1):
-            raise RuntimeError(
-                f"Darknet evaluation failed (code: {process.returncode})"
-            )
+            raise RuntimeError(f"Evaluation failed (Code: {process.returncode})")
         elif process.returncode == 1:
-            self.logger.warning(
-                "Darknet exited with code 1 (non-fatal). Evaluation likely succeeded."
-            )
+            self.logger.warning("Darknet exited with code 1 (Non-fatal)")
 
-        self.logger.info(f"Evaluation complete! Log saved → {log_path}")
+        self.logger.info(f"Evaluation complete. Log: {log_path}")
 
         parser = get_metrics_parser(self.model_name)
         metrics = parser(str(log_path))
@@ -106,8 +101,10 @@ class DarknetEvaluator:
         self._save_metrics_to_csv(metrics)
         return metrics
 
-    # --------------------------------------------------
-    def _save_metrics_to_csv(self, metrics: dict):
+    def _save_metrics_to_csv(self, metrics: Dict[str, Any]) -> None:
+        """
+        Appends the calculated metrics to a CSV file.
+        """
         save_dir = self.metrics_dir
         save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -129,39 +126,26 @@ class DarknetEvaluator:
                 writer.writeheader()
             writer.writerow(row)
 
-        self.logger.info(f"Metrics saved → {csv_path}")
+        self.logger.info(f"Metrics saved to {csv_path}")
 
 
-# ======================================================
-# Standalone Entrypoint
-# ======================================================
-def main():
+def main() -> None:
     """
-    Standalone entrypoint for DarknetEvaluator.
-
-    Example:
-        python src/yolo_cropper/models/darknet/evaluate.py --config utils/config.yaml
+    CLI entrypoint for standalone evaluation.
     """
-    parser = argparse.ArgumentParser(
-        description="Standalone Darknet Evaluator"
-    )
+    parser = argparse.ArgumentParser(description="Standalone Darknet Evaluator")
     parser.add_argument(
         "--config",
         type=str,
         default="utils/config.yaml",
-        help="Path to config.yaml",
+        help="Path to configuration file",
     )
-
     args = parser.parse_args()
 
     setup_logging("logs/yolo_cropper")
     logger = get_logger("yolo_cropper.darknet_eval")
 
-    logger.info("Starting standalone Darknet evaluation")
-    logger.info(f"Using config: {args.config}")
-
     try:
-        logger.info("Running ConfigManager to synchronize config.yaml")
         cfg_manager = ConfigManager(args.config)
         cfg_manager.update_paths()
         cfg_manager.save()
@@ -171,10 +155,10 @@ def main():
         evaluator = DarknetEvaluator(cfg)
         metrics = evaluator.run()
 
-        logger.info(f"Evaluation finished successfully → {metrics}")
+        logger.info(f"Evaluation completed: {metrics}")
 
     except Exception:
-        logger.exception("Darknet evaluation failed")
+        logger.exception("Evaluation failed")
         raise
 
 

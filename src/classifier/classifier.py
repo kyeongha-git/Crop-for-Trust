@@ -3,19 +3,17 @@
 
 """
 classifier.py
--------------
-Main entry point for training and evaluating classification models.
 
-This script builds an end-to-end training–evaluation pipeline driven by
-`config.yaml`. It automatically configures data loading, model setup,
-optimizer initialization, checkpoint management, and optional Weights & Biases (wandb)
-logging for experiment tracking.
+Main entry point for the training and evaluation pipeline.
+This module orchestrates data loading, model initialization, training loops,
+and evaluation procedures based on the YAML configuration.
 """
 
 import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Any, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -40,44 +38,46 @@ class Classifier:
     """
     Unified pipeline manager for training and evaluating classification models.
 
-    Features:
-        - Auto configuration via `config.yaml`
-        - Model and data directory resolution
-        - wandb integration for tracking
-        - Full train → validation → test flow
+    Handles:
+        - Configuration loading and path resolution
+        - Data loading and preprocessing
+        - Model construction and optimization setup
+        - Execution of training and evaluation loops
+        - Experiment tracking via Weights & Biases (wandb)
     """
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str) -> None:
         """
-        Initialize classifier with configuration and logging setup.
+        Initializes the classifier pipeline.
 
         Args:
-            config_path (str): Path to YAML configuration file.
+            config_path (str): Path to the YAML configuration file.
         """
         setup_logging("logs/classifier")
         self.logger = get_logger("classifier")
 
-        # Load configuration file
+        # Load configuration
         self.config_path = Path(config_path)
         self.cfg_all = load_yaml_config(self.config_path)
 
         if "classifier" not in self.cfg_all:
             raise KeyError("Missing 'Classifier' section in config.yaml.")
+        
         self.global_main_cfg = self.cfg_all.get("main", {})
         self.cfg = self.cfg_all["classifier"]
 
-        # Split sub-sections
+        # Config Sub-sections
         self.data_cfg = self.cfg.get("data", {})
         self.train_cfg = self.cfg.get("train", {})
         self.wandb_cfg = self.cfg.get("wandb", {})
 
-        # Extract values
+        # Training Parameters
         self.model_name = self.global_main_cfg.get("classify_model", "mobilenet_v2").lower()
         self.use_wandb = self.wandb_cfg.get("enabled", True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.epochs = self.train_cfg.get("epochs", 80)
 
-        # paths
+        # Paths
         self.input_dir = Path(self.data_cfg.get("input_dir", "data/original"))
         self.save_dir = self.train_cfg["save_dir"]
         self.metric_dir = self.train_cfg["metric_dir"]
@@ -85,9 +85,11 @@ class Classifier:
         self.weights_save_path = os.path.join(self.save_dir, f"{self.model_name}.pt")
         self.check_path = os.path.join(self.check_dir, f"{self.model_name}_last.pt")
 
+        # Dataset Metadata
         self.categories = self.global_main_cfg.get("categories", [])
         self.num_classes = len(self.categories)
 
+        # Loss Criterion Setup
         self.criterion_name = self.cfg.get("criterion", "auto")
 
         if self.criterion_name == "auto":
@@ -98,18 +100,20 @@ class Classifier:
         else:
             self.output_dim = self.num_classes
 
-        self.logger.info(f"Device: {self.device}")
-        self.logger.info(f"Model: {self.model_name}")
-        self.logger.info(f"Input Dir: {self.input_dir}")
-
+        self.logger.info(f"Device    : {self.device}")
+        self.logger.info(f"Model     : {self.model_name}")
+        self.logger.info(f"Input Dir : {self.input_dir}")
 
     # ==========================================================
-    # wandb Initialization
+    # System & Tool Initialization
     # ==========================================================
-    def _init_wandb(self):
+
+    def _init_wandb(self) -> Optional[Any]:
         """
-        Initialize a wandb run session for experiment tracking.
-        Returns None if disabled.
+        Initializes a wandb run session for experiment tracking.
+
+        Returns:
+            Optional[Any]: The wandb run object if enabled, else None.
         """
         if not self.use_wandb:
             self.logger.warning("wandb logging disabled.")
@@ -119,6 +123,7 @@ class Classifier:
         wandb_dir = project_root / "wandb"
         wandb_dir.mkdir(parents=True, exist_ok=True)
 
+        # Generate a distinct run name based on input data path
         input_dir_rel = str(Path(self.input_dir).as_posix())
         data_subpath = (
             "/".join(Path(input_dir_rel).parts[-2:])
@@ -144,9 +149,13 @@ class Classifier:
         self.logger.info(f"wandb initialized: {run_name}")
         return wandb_run
 
-    # Data Loading
-    def _load_data(self):
-        """Load train and validation datasets based on config paths."""
+    def _load_data(self) -> Tuple[DataLoader, DataLoader]:
+        """
+        Loads train and validation datasets.
+
+        Returns:
+            Tuple[DataLoader, DataLoader]: (train_loader, valid_loader)
+        """
         dp = DataPreprocessor()
         train_tf = dp.get_transform(self.model_name, "train")
         eval_tf = dp.get_transform(self.model_name, "eval")
@@ -173,9 +182,14 @@ class Classifier:
         )
         return train_loader, valid_loader
 
-    # Model & Optimizer Setup
-    def _build_model(self):
-        # Model output dimension
+    def _build_model(self) -> Tuple[nn.Module, nn.Module, Any]:
+        """
+        Builds the model, loss function, and optimizer.
+
+        Returns:
+            Tuple[nn.Module, nn.Module, Any]: (model, criterion, optimizer)
+        """
+        # Configure model output dimension
         if self.criterion_name == "bce":
             model = get_model(self.model_name, num_classes=1).to(self.device)
             criterion = nn.BCEWithLogitsLoss()
@@ -200,13 +214,26 @@ class Classifier:
     # ==========================================================
     # Step 1. Train
     # ==========================================================
-    def step_train(
-        self, model, train_loader, valid_loader, criterion, optimizer, device, epochs, save_path, check_path, num_classes, wandb_run
-    ):
-        """
-        Wrapper function for training loop.
 
-        Saves checkpoints and returns best validation accuracy.
+    def step_train(
+        self,
+        model: nn.Module,
+        train_loader: DataLoader,
+        valid_loader: DataLoader,
+        criterion: nn.Module,
+        optimizer: Any,
+        device: torch.device,
+        epochs: int,
+        save_path: str,
+        check_path: str,
+        num_classes: int,
+        wandb_run: Optional[Any],
+    ) -> float:
+        """
+        Executes the training loop.
+
+        Returns:
+            float: Best validation accuracy achieved during training.
         """
         best_acc = train_model(
             model=model,
@@ -218,30 +245,52 @@ class Classifier:
             epochs=epochs,
             save_path=save_path,
             check_path=check_path,
-            num_classes = num_classes,
+            num_classes=num_classes,
             wandb_run=wandb_run,
         )
         return best_acc
-    
+
     # ==========================================================
     # Step 2. Evaluate
     # ==========================================================
-    def step_evaluate(self, model, input_dir, save_dir, metric_dir, num_classes, wandb_run):
+
+    def step_evaluate(
+        self,
+        model: Union[str, nn.Module],
+        input_dir: Path,
+        save_dir: str,
+        metric_dir: str,
+        num_classes: int,
+        wandb_run: Optional[Any],
+    ) -> Tuple[float, float]:
+        """
+        Runs the evaluation protocol.
+
+        Returns:
+            Tuple[float, float]: (test_accuracy, test_f1_score)
+        """
         evaluator = Evaluator(
-        model=model,
-        input_dir=input_dir,
-        save_dir=save_dir,
-        metric_dir=metric_dir,
-        num_classes=num_classes,
-        wandb_run=wandb_run,
+            model=model,
+            input_dir=input_dir,
+            save_dir=save_dir,
+            metric_dir=metric_dir,
+            num_classes=num_classes,
+            wandb_run=wandb_run,
         )
         acc, f1 = evaluator.run()
         return acc, f1
 
     # ==========================================================
-    # Entrypoint
+    # Main Execution Entrypoint
     # ==========================================================
-    def run(self):
+
+    def run(self) -> Tuple[float, float, float]:
+        """
+        Runs the complete classifier pipeline (Train -> Evaluate).
+
+        Returns:
+            Tuple[float, float, float]: (best_val_acc, test_acc, test_f1)
+        """
         self.logger.info(
             f"Start Training {self.model_name.upper()} on {self.input_dir}"
         )
@@ -249,11 +298,11 @@ class Classifier:
         model, criterion, optimizer = self._build_model()
         wandb_run = self._init_wandb()
 
-        # Training phase
+        # Phase 1: Training
         best_acc = self.step_train(
             model=model,
             train_loader=train_loader,
-            valid_loader=valid_loader, 
+            valid_loader=valid_loader,
             criterion=criterion,
             optimizer=optimizer,
             device=self.device,
@@ -261,20 +310,20 @@ class Classifier:
             save_path=self.weights_save_path,
             check_path=self.check_path,
             num_classes=self.output_dim,
-            wandb_run=wandb_run
+            wandb_run=wandb_run,
         )
 
-        # Evaluation phase
+        # Phase 2: Evaluation
         acc, f1 = self.step_evaluate(
-        model=self.model_name,
-        input_dir=self.input_dir,
-        save_dir=self.save_dir,
-        metric_dir=self.metric_dir,
-        num_classes=self.output_dim,
-        wandb_run=wandb_run
+            model=self.model_name,
+            input_dir=self.input_dir,
+            save_dir=self.save_dir,
+            metric_dir=self.metric_dir,
+            num_classes=self.output_dim,
+            wandb_run=wandb_run,
         )
 
-        # Log and finalize
+        # Finalize
         if wandb_run:
             wandb_run.log(
                 {
@@ -290,14 +339,12 @@ class Classifier:
 
 
 # ======================================================
-# Standalone Entrypoint
+# CLI Entry Point
 # ======================================================
-def main():
-    """
-    Standalone entrypoint for Classifier pipeline.
 
-    Example:
-        python src/classifier/classifier.py --config utils/config.yaml
+def main() -> None:
+    """
+    Parses arguments and runs the standalone classifier pipeline.
     """
     parser = argparse.ArgumentParser(
         description="Standalone Classifier Runner"

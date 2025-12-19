@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+factory.py
+
+Model factory module for instantiating classification architectures.
+Supports dynamic creation of VGG, ResNet, and MobileNet variants with
+configurable hyperparameters.
+"""
+
 import torch.nn as nn
 
 from src.classifier.models.mobilenet import MobileNetClassifier
@@ -12,21 +23,26 @@ def get_model(
     freeze_backbone: bool = True,
 ) -> nn.Module:
     """
-    Return a classification model instance based on the given name.
+    Factory function to instantiate classification models.
 
-    Supports: VGG16, ResNet152, MobileNetV2, MobileNetV3.
+    Matches the provided model name string to the corresponding class and
+    initializes it with the specified hyperparameters.
 
     Args:
-        model_name (str): Model identifier.
+        model_name (str): Identifier for the model architecture (case-insensitive).
         num_classes (int): Number of output classes.
-        dropout_p (float): Dropout probability (if applicable).
-        freeze_backbone (bool): Freeze pretrained weights.
+        dropout_p (float): Dropout probability (used in VGG/MobileNet heads).
+        freeze_backbone (bool): If True, freezes pretrained backbone weights.
 
     Returns:
-        nn.Module: Initialized model.
+        nn.Module: The initialized PyTorch model.
+
+    Raises:
+        ValueError: If 'model_name' is not found in the supported registry.
     """
     model_key = model_name.strip().lower()
 
+    # Registry mapping: key -> (Display Name, Model Class, Model-specific Args)
     MODEL_MAP = {
         "vgg": ("VGG16", VGGClassifier, {"dropout_p": dropout_p}),
         "vgg16": ("VGG16", VGGClassifier, {"dropout_p": dropout_p}),
@@ -114,6 +130,7 @@ def get_model(
     model_label, model_class, extra_kwargs = MODEL_MAP[model_key]
     print(f"Using {model_label} backbone")
 
+    # Clean up arguments not supported by specific architectures (e.g., ResNet)
     if "resnet" in model_key and "dropout_p" in extra_kwargs:
         extra_kwargs.pop("dropout_p", None)
 

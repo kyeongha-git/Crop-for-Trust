@@ -3,72 +3,66 @@
 
 """
 metrics.py
------------
-A collection of image quality evaluation metrics for comparing
-restored or generated images against their reference originals.
 
-Available metrics:
-- L1 Distance: Mean absolute pixel difference
-- SSIM: Structural Similarity Index
-- Edge IoU: Edge overlap ratio using Canny detection
+Provides a suite of image quality evaluation metrics to quantitatively comparison
+restored or generated images against their reference originals.
 """
+
+from typing import Dict
 
 import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
-# ============================================================
-# Metric Functions
-# ============================================================
-
 
 def l1_distance(a: np.ndarray, b: np.ndarray) -> float:
     """
-    Compute the mean absolute pixel difference (L1 distance) between two images.
+    Computes the mean absolute pixel difference (L1 distance) between two images.
+    Lower values indicate higher similarity.
 
     Args:
-        a (np.ndarray): First image.
-        b (np.ndarray): Second image.
+        a (np.ndarray): First image array.
+        b (np.ndarray): Second image array.
 
     Returns:
         float: Average absolute pixel difference.
     """
     if a.shape != b.shape:
         raise ValueError(f"L1 Error: Image size mismatch {a.shape} vs {b.shape}")
-    return np.mean(np.abs(a.astype(np.float32) - b.astype(np.float32)))
+    return float(np.mean(np.abs(a.astype(np.float32) - b.astype(np.float32))))
 
 
 def ssim_score(a: np.ndarray, b: np.ndarray) -> float:
     """
-    Compute the Structural Similarity Index (SSIM) between two images.
+    Computes the Structural Similarity Index (SSIM) between two images.
+    Values range from 0.0 (dissimilar) to 1.0 (identical).
 
     Args:
-        a (np.ndarray): First image.
-        b (np.ndarray): Second image.
+        a (np.ndarray): First image array.
+        b (np.ndarray): Second image array.
 
     Returns:
-        float: SSIM score (1.0 = identical, 0.0 = dissimilar).
+        float: SSIM score.
     """
     if a.shape != b.shape:
         raise ValueError(f"SSIM Error: Image size mismatch {a.shape} vs {b.shape}")
     g1 = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY)
     g2 = cv2.cvtColor(b, cv2.COLOR_BGR2GRAY)
     data_range = float(g1.max() - g1.min()) or 255.0
-    return ssim(g1, g2, data_range=data_range)
+    return float(ssim(g1, g2, data_range=data_range))
 
 
 def edge_iou(a: np.ndarray, b: np.ndarray) -> float:
     """
-    Compute the Edge IoU (Intersection over Union) using Canny edge detection.
-
-    This metric measures how well the edge structures of two images overlap.
+    Computes the Edge IoU (Intersection over Union) using Canny edge detection.
+    Measures the structural overlap of edges between two images.
 
     Args:
-        a (np.ndarray): First image.
-        b (np.ndarray): Second image.
+        a (np.ndarray): First image array.
+        b (np.ndarray): Second image array.
 
     Returns:
-        float: Edge IoU ratio between 0.0 and 1.0.
+        float: Edge IoU ratio (0.0 to 1.0).
     """
     if a.shape != b.shape:
         raise ValueError(f"Edge IoU Error: Image size mismatch {a.shape} vs {b.shape}")
@@ -80,16 +74,16 @@ def edge_iou(a: np.ndarray, b: np.ndarray) -> float:
     return float(inter) / union if union > 0 else 0.0
 
 
-def compute_all_metrics(img1: np.ndarray, img2: np.ndarray) -> dict:
+def compute_all_metrics(img1: np.ndarray, img2: np.ndarray) -> Dict[str, float]:
     """
-    Compute all supported quality metrics at once.
+    Computes all supported quality metrics for a pair of images.
 
     Args:
         img1 (np.ndarray): Reference or original image.
         img2 (np.ndarray): Generated or restored image.
 
     Returns:
-        dict: Dictionary containing all metric results.
+        Dict[str, float]: A dictionary containing results for "L1", "SSIM", and "Edge_IoU".
     """
     return {
         "L1": l1_distance(img1, img2),

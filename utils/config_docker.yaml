@@ -5,10 +5,10 @@ main:
   - replace
   demo: true
   annot_clean_test_mode: false
-  annot_clean: true
+  annot_clean: false
   yolo_crop: true
-  yolo_model: yolov5
-  classify_model: mobilenet_v1
+  yolo_model: yolov8s
+  classify_model: mobilenet_v2
   saved_model: saved_model/
   metrics_dir: metrics/
 weights:
@@ -67,7 +67,7 @@ annotation_cleaner:
     - ssim
     - edge_iou
     - l1
-    yolo_model: saved_model/yolo_cropper/yolov8s.pt
+    yolo_model: saved_model/yolo_cropper/yolov5.pt
     imgsz: 416
     debug: true
 yolo_cropper:

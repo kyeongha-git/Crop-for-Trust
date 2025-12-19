@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-train.py
---------
-This module manages the YOLOv5 training process using a configuration-driven approach.
+YOLOv5 Training Module.
 
-It provides automated handling of dataset path resolution (data.yaml), structured logging,
-and checkpoint saving. The class encapsulates the entire training process without requiring
-manual CLI calls to the YOLOv5 repository.
+Wraps the YOLOv5 repository's training script, handling path resolution
+and checkpoint management via a configuration-driven approach.
 """
 
 import shutil
@@ -17,7 +14,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import yaml
 
@@ -29,22 +26,11 @@ from utils.logging import get_logger
 
 class YOLOv5Trainer:
     """
-    Handles YOLOv5 training via a configuration-driven execution pipeline.
-
-    This class automates training by resolving dataset paths, executing
-    YOLOv5's training script, managing logs, and saving the best model
-    checkpoint for later use.
+    Manages configuration-driven training for YOLOv5.
+    Resolves dataset paths and executes the training subprocess.
     """
 
-    def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the YOLOv5 trainer using a provided configuration dictionary.
-
-        Args:
-            config (Dict[str, Any]): Configuration dictionary containing main,
-                YOLOv5, training, and dataset parameters.
-
-        """
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.YOLOv5Trainer")
 
         self.cfg = config
@@ -82,22 +68,15 @@ class YOLOv5Trainer:
 
         self.final_model_path = self.saved_model_dir / f"{self.model_name}.pt"
 
-        self.logger.info("YOLOv5Trainer initialized")
-        self.logger.debug(f"Repo Dir : {self.yolov5_dir}")
-        self.logger.debug(f"Data YAML: {self.data_yaml_path}")
-
+        self.logger.info("Initialized Trainer")
         self.data_yaml = self._resolve_data_yaml(self.data_yaml_path)
 
     def _resolve_data_yaml(self, data_yaml_path: Path) -> Path:
         """
-        Convert relative paths in data.yaml to absolute paths.
-
-        This ensures YOLOv5 correctly locates training, validation,
-        and test image directories regardless of the working directory.
+        Converts relative paths in data.yaml to absolute paths for YOLOv5 compatibility.
 
         Returns:
-            Path: Path to the temporary resolved data.yaml file with absolute paths.
-
+            Path: Path to the temporary resolved YAML file.
         """
         if not data_yaml_path.exists():
             raise FileNotFoundError(f"data.yaml not found: {data_yaml_path}")
@@ -112,51 +91,39 @@ class YOLOv5Trainer:
                 if not abs_path.exists() and (abs_path / "images").exists():
                     abs_path = abs_path / "images"
                 data[key] = str(abs_path)
-                self.logger.info(f"Resolved {key}: {abs_path}")
 
         tmp_dir = Path(tempfile.mkdtemp(prefix="yolov5_datayaml_"))
         resolved_yaml = tmp_dir / "data_resolved.yaml"
         with open(resolved_yaml, "w", encoding="utf-8") as f:
             yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True)
 
-        self.logger.info(f"Temporary data.yaml created → {resolved_yaml}")
+        self.logger.debug(f"Resolved data.yaml created at {resolved_yaml}")
         return resolved_yaml
-    
 
-    def _save_best_weight(self):
+    def _save_best_weight(self) -> None:
         """
-        Copy the best YOLOv5 model checkpoint to the saved model directory.
-
-        The best checkpoint is located under the checkpoints directory and saved
-        as `best.pt`. This method copies it to `saved_model/yolo_cropper/yolov5.pt`
-        for downstream tasks or inference.
-
+        Copies the best model checkpoint to the saved model directory.
         """
         best_weight_src = next(self.checkpoints_dir.rglob("best.pt"), None)
         target_path = self.saved_model_dir / "yolov5.pt"
 
         if best_weight_src and best_weight_src.exists():
             shutil.copy2(best_weight_src, target_path)
-            self.logger.info(f"Copied best weight → {target_path}")
+            self.logger.info(f"Best model exported to {target_path}")
         else:
-            self.logger.warning("No best.pt found in checkpoints directory.")
+            self.logger.warning("No best.pt found in checkpoints.")
 
-    def run(self):
+    def run(self) -> Optional[Path]:
         """
-        Run the YOLOv5 training process.
-
-        This method executes the official YOLOv5 `train.py` script with
-        parameters from the configuration file. Logs are saved to a timestamped
-        file, and the best model checkpoint is automatically stored after training.
+        Executes the YOLOv5 training subprocess.
 
         Returns:
-            Path: Path to the generated training log file.
-
+            Optional[Path]: Path to the training log file, or None if skipped.
         """
         if self.final_model_path.exists():
-            self.logger.info(f"[SKIP] Found existing model → {self.final_model_path}")
-            return
-        
+            self.logger.info(f"Model exists, skipping training: {self.final_model_path}")
+            return None
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"train_{timestamp}.log"
         exp_name = f"{self.name_prefix}_{timestamp}"
@@ -164,29 +131,18 @@ class YOLOv5Trainer:
         cmd = [
             "python",
             "train.py",
-            "--data",
-            str(self.data_yaml),
-            "--epochs",
-            str(self.epochs),
-            "--batch-size",
-            str(self.batch_size),
-            "--imgsz",
-            str(self.imgsz),
-            "--device",
-            str(self.device),
-            "--project",
-            str(self.checkpoints_dir),
-            "--name",
-            exp_name,
+            "--data", str(self.data_yaml),
+            "--epochs", str(self.epochs),
+            "--batch-size", str(self.batch_size),
+            "--imgsz", str(self.imgsz),
+            "--device", str(self.device),
+            "--project", str(self.checkpoints_dir),
+            "--name", exp_name,
         ]
 
-        for key, val in {
-            "Epochs": self.epochs,
-            "Batch": self.batch_size,
-            "Image Size": self.imgsz,
-            "Device": self.device,
-        }.items():
-            self.logger.info(f"   - {key:<12}: {val}")
+        self.logger.info(
+            f"Starting Training (Epochs: {self.epochs}, Batch: {self.batch_size}, Device: {self.device})"
+        )
 
         with open(log_path, "w", encoding="utf-8") as log_f:
             process = subprocess.run(
@@ -194,11 +150,9 @@ class YOLOv5Trainer:
             )
 
         if process.returncode != 0:
-            self.logger.error(
-                f"Training failed (code: {process.returncode}). See log: {log_path}"
-            )
-            raise RuntimeError(f"YOLOv5 training failed — check log: {log_path}")
+            self.logger.error(f"Training failed. Check log: {log_path}")
+            raise RuntimeError("YOLOv5 training subprocess failed.")
 
-        self.logger.info(f"Training complete → {log_path}")
+        self.logger.info(f"Training completed. Logs: {log_path}")
         self._save_best_weight()
         return log_path

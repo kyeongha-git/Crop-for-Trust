@@ -11,6 +11,7 @@ Design Principles:
 - YOLO-predicted class_id is trusted as-is
 - No folder-name-based class inference (fully class-agnostic)
 - Supports YOLOv5 / YOLOv8 unified parsing
+- Model-scoped detection directory resolution (prevents cross-model contamination)
 """
 
 import json
@@ -68,7 +69,7 @@ class YOLOConverter:
         self.logger.debug(f" - Output JSON : {self.output_json}")
         self.logger.debug(f" - Data Root   : {self.data_root}")
 
-
+    # --------------------------------------------------------
     def _index_original_images(self) -> Dict[str, Path]:
         """Index original images by stem for fast lookup."""
         image_map = {}
@@ -77,7 +78,40 @@ class YOLOConverter:
                 image_map[p.stem] = p
         return image_map
 
+    # --------------------------------------------------------
+    def _resolve_detect_dirs(self) -> List[Path]:
+        """
+        Resolve detection directories corresponding to the current YOLO model.
 
+        Rules:
+        - YOLOv2 / YOLOv4 : exact directory match
+        - YOLOv5          : multiple outputs (prefix match: yolov5_*)
+        - YOLOv8{s,m,l,x}: exact variant match
+        """
+
+        if not self.detect_root.exists():
+            return []
+
+        all_dirs = [
+            d
+            for d in self.detect_root.iterdir()
+            if d.is_dir() and (d / "labels").exists()
+        ]
+
+        model = self.model_name.lower()
+
+        # YOLOv5: class-split outputs (e.g., yolov5_repair, yolov5_replace)
+        if model.startswith("yolov5"):
+            return [d for d in all_dirs if d.name.startswith("yolov5")]
+
+        # YOLOv8 variants: exact match
+        if model.startswith("yolov8"):
+            return [d for d in all_dirs if d.name == model]
+
+        # YOLOv2 / YOLOv4: exact match
+        return [d for d in all_dirs if d.name == model]
+
+    # --------------------------------------------------------
     def _parse_detect_folder(
         self, detect_dir: Path, frame_start: int
     ) -> Tuple[List[Dict[str, Any]], int]:
@@ -152,26 +186,18 @@ class YOLOConverter:
     # --------------------------------------------------------
     def run(self):
         """
-        Collect YOLO detection outputs from detect directories.
-        Any folder containing `labels/` is treated as a valid detection result.
+        Collect YOLO detection outputs corresponding to the current model only.
         """
 
-        if not self.detect_root.exists():
-            raise FileNotFoundError(f"Detect root not found: {self.detect_root}")
-
-        detect_dirs = [
-            d
-            for d in sorted(self.detect_root.iterdir())
-            if d.is_dir() and (d / "labels").exists()
-        ]
+        detect_dirs = self._resolve_detect_dirs()
 
         if not detect_dirs:
             raise FileNotFoundError(
-                f"No detection folders with labels/ found in {self.detect_root}"
+                f"No detection folders found for model: {self.model_name}"
             )
 
         self.logger.info(
-            f"[YOLOConverter] Found {len(detect_dirs)} detection folders:"
+            f"[YOLOConverter] Found {len(detect_dirs)} detection folders for {self.model_name}:"
         )
         for d in detect_dirs:
             self.logger.info(f" - {d.name}")

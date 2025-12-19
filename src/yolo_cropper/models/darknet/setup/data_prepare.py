@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-data_prepare.py
----------------
-This module prepares dataset splits and metadata files for Darknet-based YOLO models.
-It generates train/valid/test file lists, class label files, and configuration files
-(obj.data and obj.names) based on the provided configuration object.
+Darknet Data Preparation Module.
+
+Generates dataset manifests (train/val/test lists) and configuration files
+(obj.data, obj.names) required for Darknet training.
 """
 
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 ROOT_DIR = Path(__file__).resolve().parents[5]
 sys.path.append(str(ROOT_DIR))
@@ -21,22 +20,10 @@ from utils.logging import get_logger
 
 class DarknetDataPreparer:
     """
-    Handles dataset preparation for YOLOv2 or YOLOv4 training with Darknet.
-
-    This class automates the creation of data split lists and configuration
-    files, making the dataset compatible with the expected Darknet directory
-    structure. It supports both flat and Roboflow-style folder layouts.
+    Manages the creation of Darknet-compatible dataset files and directory structures.
     """
 
-    def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the dataset preparer using a configuration dictionary.
-
-        Args:
-            config (Dict[str, Any]): The full configuration object injected
-                from the main controller, containing dataset and Darknet settings.
-
-        """
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.DarknetDataPreparer")
 
         self.cfg = config
@@ -48,7 +35,7 @@ class DarknetDataPreparer:
 
         self.categories = global_main_cfg.get("categories", [])
         if not self.categories:
-            raise ValueError("main.categories must be defined for Darknet cfg generation")        
+            raise ValueError("Categories must be defined in configuration.")
 
         self.base_dir = Path(
             self.dataset_cfg.get("train_data_dir", "data/yolo_cropper")
@@ -63,17 +50,11 @@ class DarknetDataPreparer:
         if not self.base_dir.exists():
             raise FileNotFoundError(f"Dataset directory not found: {self.base_dir}")
 
-        self.logger.info(
-            f"Initialized DarknetDataPreparer for {self.model_name.upper()} "
-            f"→ base_dir={self.base_dir}/{self.model_name}, darknet_data_dir={self.darknet_data_dir}"
-        )
+        self.logger.info(f"Initialized DataPreparer (Model: {self.model_name.upper()})")
 
-    def _generate_split_lists(self):
+    def _generate_split_lists(self) -> None:
         """
-        Generate image list files (train.txt, valid.txt, test.txt).
-
-        The method scans dataset subfolders and writes full image paths
-        for each split, ensuring compatibility with Darknet’s expected structure.
+        Generates text files listing absolute image paths for train, valid, and test splits.
         """
         exts = (".jpg", ".jpeg", ".png")
 
@@ -83,6 +64,7 @@ class DarknetDataPreparer:
                 self.logger.warning(f"Split folder missing: {base_dir}")
                 continue
 
+            # Support both flat structure and images/ labels/ structure
             img_dir = (
                 base_dir / "images" if (base_dir / "images").exists() else base_dir
             )
@@ -93,19 +75,16 @@ class DarknetDataPreparer:
                 for p in sorted(img_dir.glob("*"))
                 if p.suffix.lower() in exts
             ]
+
             if not images:
                 raise ValueError(f"No images found in {img_dir}")
 
             output_file.write_text("\n".join(images) + "\n", encoding="utf-8")
-            self.logger.info(
-                f"  └─ [{split}] {len(images)} images listed → {output_file.name}"
-            )
+            self.logger.info(f"Generated {split}.txt ({len(images)} images)")
 
-
-    def _generate_obj_files(self, class_names):
+    def _generate_obj_files(self, class_names: List[str]) -> None:
         """
-        Create obj.data and obj.names files for Darknet training.
-
+        Creates 'obj.data' and 'obj.names' configuration files.
         """
         obj_data = self.darknet_data_dir / "obj.data"
         obj_names = self.darknet_data_dir / "obj.names"
@@ -125,27 +104,21 @@ class DarknetDataPreparer:
         obj_data.write_text(obj_data_content, encoding="utf-8")
         obj_names.write_text("\n".join(class_names) + "\n", encoding="utf-8")
 
-        self.logger.info(f"obj.data / obj.names created ({num_classes} classes)")
-        self.logger.info(f"Backup path set to: {backup_dir.resolve()}")
+        self.logger.info(f"Generated obj.data and obj.names ({num_classes} classes)")
 
-    def run(self):
+    def run(self) -> Dict[str, str]:
         """
-        Prepare all Darknet-compatible dataset files.
-
-        This method generates:
-            - train.txt / valid.txt / test.txt (image paths)
-            - obj.data and obj.names (Darknet configuration files)
+        Executes the dataset preparation process.
 
         Returns:
-            dict: A dictionary containing paths to all generated files.
+            Dict[str, str]: A dictionary of generated file paths.
         """
-        self.logger.info(
-            f"Preparing Darknet dataset for {self.model_name.upper()} → {self.darknet_data_dir}"
-        )
+        self.logger.info("Starting dataset preparation")
+
         self._generate_split_lists()
-        class_names = self.categories
-        self._generate_obj_files(class_names)
-        self.logger.info("Darknet dataset preparation complete.")
+        self._generate_obj_files(self.categories)
+
+        self.logger.info("Dataset preparation complete")
         return {
             "train_txt": str(self.darknet_data_dir / "train.txt"),
             "valid_txt": str(self.darknet_data_dir / "valid.txt"),

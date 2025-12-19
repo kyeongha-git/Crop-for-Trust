@@ -2,17 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-yolov8.py
-----------
-This module defines the unified YOLOv8 pipeline.
+Unified YOLOv8 Pipeline.
 
-Steps:
-1. Train model
-2. Evaluate performance
-3. Generate `predict.txt`
-4. Run prediction
-5. Convert detections to JSON
-6. Perform ROI cropping
+Orchestrates the end-to-end workflow for YOLOv8:
+Training, Evaluation, Prediction, Conversion, and Cropping.
 """
 
 import sys
@@ -27,7 +20,6 @@ from src.yolo_cropper.core.cropper import YOLOCropper
 from src.yolo_cropper.core.make_predict import YOLOPredictListGenerator
 from src.yolo_cropper.models.yolov8.evaluate import YOLOv8Evaluator
 from src.yolo_cropper.models.yolov8.predict import YOLOv8Predictor
-# === YOLO Submodules ===
 from src.yolo_cropper.models.yolov8.train import YOLOv8Trainer
 from utils.load_config import load_yaml_config
 from utils.logging import get_logger, setup_logging
@@ -35,38 +27,28 @@ from utils.logging import get_logger, setup_logging
 
 class YOLOv8Pipeline:
     """
-    Unified YOLOv8 pipeline orchestrator.
-
+    Manages the execution flow for the YOLOv8-based detection and cropping pipeline.
     """
 
-    def __init__(self, config_path: str = "utils/config.yaml"):
-        """
-        Initialize the YOLOv8 pipeline.
-
-        Args:
-            config_path (str): Path to the YAML configuration file defining
-                model, dataset, and runtime parameters.
-        """
+    def __init__(self, config_path: str = "utils/config.yaml") -> None:
         setup_logging("logs/yolo_cropper")
         self.logger = get_logger("yolo_cropper.YOLOv8Pipeline")
 
-        # --------------------------------------------------------
         # Load Configuration
-        # --------------------------------------------------------
         self.config_path = Path(config_path)
         self.cfg = load_yaml_config(self.config_path)
 
         self.global_main_cfg = self.cfg.get("main", {})
         self.demo_mode = self.global_main_cfg.get("demo", False)
 
-        # Shortcut configs
+        # Component configurations
         yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = yolo_cropper_cfg.get("main", {})
         self.yolov8_cfg = yolo_cropper_cfg.get("yolov8", {})
         self.train_cfg = yolo_cropper_cfg.get("train", {})
         self.dataset_cfg = yolo_cropper_cfg.get("dataset", {})
 
-        # Paths
+        # Path setup
         self.model_name = self.main_cfg.get("model_name", "yolov8s").lower()
         self.saved_model_dir = Path(
             self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
@@ -77,98 +59,96 @@ class YOLOv8Pipeline:
             / self.model_name
         )
 
-        # Derived paths
         self.weight_path = self.saved_model_dir / f"{self.model_name}.pt"
 
-        # Logging info
-        self.logger.info(f"Initialized YOLOv8 Pipeline ({self.model_name.upper()})")
-        self.logger.info(f" - Demo Mode      : {self.demo_mode}")
-        self.logger.info(f" - Config path    : {self.config_path}")
-        self.logger.info(f" - Input dir      : {self.input_dir}")
-        self.logger.info(f" - Saved model dir: {self.weight_path}")
+        self.logger.info(f"Initialized YOLOv8 Pipeline (Model: {self.model_name.upper()})")
 
-
-    # --------------------------------------------------------
-    # Step 0. Cleanup Previous Results
-    # --------------------------------------------------------
-    def cleanup_previous_runs(self):
+    def cleanup_previous_runs(self) -> None:
+        """
+        Removes output directories from previous runs to ensure a clean state.
+        """
         if self.detect_output_dir.exists():
-            self.logger.warning(f"[CleanUp] Removing previous run results: {self.detect_output_dir}")
             try:
                 shutil.rmtree(self.detect_output_dir)
+                self.logger.info(f"Cleaned up previous results: {self.detect_output_dir}")
             except Exception as e:
-                self.logger.warning(f"[CleanUp] Failed to remove {self.detect_output_dir}: {e}")
+                self.logger.warning(f"Failed to remove {self.detect_output_dir}: {e}")
 
-    # --------------------------------------------------------
-    # Step 1. Train
-    # --------------------------------------------------------
-    def step_train(self):
+    def step_train(self) -> None:
+        """
+        Executes the training module if not in demo mode.
+        """
         if self.demo_mode:
-            self.logger.info("[STEP 1] Demo mode → Skipping training")
+            self.logger.info("Demo mode enabled: Skipping training.")
             return
 
-        self.logger.info("[STEP 1] Starting YOLO v8 training...")
-
+        self.logger.info("[Step 1] Starting Training")
         trainer = YOLOv8Trainer(config=self.cfg)
         trainer.run()
 
-    # --------------------------------------------------------
-    # Step 2. Evaluate
-    # --------------------------------------------------------
-    def step_evaluate(self):
+    def step_evaluate(self) -> None:
+        """
+        Executes the evaluation module to assess model performance.
+        """
         if self.demo_mode:
-            self.logger.info("[STEP 2] Demo mode → Skipping evaluation.")
-            return None
+            self.logger.info("Demo mode enabled: Skipping evaluation.")
+            return
 
-        self.logger.info("[STEP 2] Evaluating YOLOv8 model...")
+        self.logger.info("[Step 2] Starting Evaluation")
         evaluator = YOLOv8Evaluator(config=self.cfg)
         evaluator.run()
-        
-    # --------------------------------------------------------
-    # Step 3. Make predict.txt
-    # --------------------------------------------------------
-    def step_make_predict(self):
-        self.logger.info("[STEP 3] Generating predict.txt")
+
+    def step_make_predict(self) -> None:
+        """
+        Generates the list of images to be used for prediction.
+        """
+        self.logger.info("[Step 3] Generating prediction list")
         maker = YOLOPredictListGenerator(config=self.cfg)
         maker.run()
 
-    # --------------------------------------------------------
-    # Step 4. Predict
-    # --------------------------------------------------------
-    def step_predict(self):
-        self.logger.info("[STEP 4] Running YOLOv8 prediction...")
+    def step_predict(self) -> None:
+        """
+        Runs inference on the target images.
+        """
+        self.logger.info("[Step 4] Running Inference")
         predictor = YOLOv8Predictor(config=self.cfg)
         predictor.run()
 
-    # --------------------------------------------------------
-    # Step 5. Converter
-    # --------------------------------------------------------
-    def step_converter(self):
-        self.logger.info("[STEP 5] Converting YOLOv8 detects → result.json")
+    def step_converter(self) -> None:
+        """
+        Converts raw YOLO detection results into standardized JSON format.
+        """
+        self.logger.info("[Step 5] Converting detections to JSON")
         conv = YOLOConverter(config=self.cfg)
         conv.run()
 
-    # -------------------------------------------------
-    # Step 6. Cropper
-    # -------------------------------------------------
-    def step_cropper(self):
-        self.logger.info("[STEP 6] Cropping from result.json")
+    def step_cropper(self) -> None:
+        """
+        Crops images based on the detection coordinates in the JSON results.
+        """
+        self.logger.info("[Step 6] Cropping images")
         cropper = YOLOCropper(config=self.cfg)
         cropper.run()
 
-    # --------------------------------------------------------
-    # Entrypoint
-    # --------------------------------------------------------
-    def run(self, save_image):
-        self.logger.info("Running YOLOv8 Pipeline")
+    def run(self, save_image: bool) -> None:
+        """
+        Executes the full pipeline sequence.
+
+        Args:
+            save_image (bool): If True, proceeds to crop images after detection.
+        """
+        self.logger.info("===== Starting YOLOv8 Pipeline =====")
+        
         self.cleanup_previous_runs()
         self.step_train()
         self.step_evaluate()
         self.step_make_predict()
         self.step_predict()
         self.step_converter()
+
         if save_image:
             self.step_cropper()
         else:
-            self.logger.info("[save_image: False] → Cropper Skip.")
-        self.logger.info("\nYOLOv8 pipeline completed successfully!")
+            self.logger.info("Skipping crop step (save_image=False)")
+
+        self.logger.info("YOLOv8 pipeline completed successfully.")

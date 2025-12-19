@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-evaluate.py
------------
-This module runs YOLOv5 evaluation using Ultralytics' `val.py` script.
+YOLOv5 Evaluation Module.
 
-It automatically resolves dataset paths in `data.yaml`, executes the validation
-process, parses resulting metrics through a unified metrics parser, and stores
-results as CSV files for easy tracking and comparison across experiments.
+Wraps the YOLOv5 `val.py` script to evaluate model performance,
+parse metrics, and record results to CSV.
 """
 
 import csv
@@ -33,10 +30,10 @@ from utils.config_manager import ConfigManager
 
 class YOLOv5Evaluator:
     """
-    Handles YOLOv5 model evaluation and metric parsing.
+    Manages the execution of YOLOv5 validation and metric aggregation.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.YOLOv5Evaluator")
 
         self.cfg = config
@@ -53,8 +50,6 @@ class YOLOv5Evaluator:
             self.yolov5_cfg.get("data_yaml", "data/yolo_cropper/yolov5/data.yaml")
         ).resolve()
 
-        self.data_yaml = self._resolve_data_yaml(self.data_yaml_path)
-
         self.saved_model_dir = Path(
             self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
         ).resolve()
@@ -69,12 +64,16 @@ class YOLOv5Evaluator:
         self.model_name = self.main_cfg.get("model_name", "yolov5").lower()
         self.weights_path = self.saved_model_dir / f"{self.model_name}.pt"
 
-        self.logger.info(f"Initialized YOLOv5Evaluator for {self.model_name.upper()}")
-        self.logger.debug(f"Weights   : {self.weights_path}")
-        self.logger.debug(f"Data YAML : {self.data_yaml}")
+        self.logger.info(f"Initialized Evaluator (Model: {self.model_name.upper()})")
+        self.data_yaml = self._resolve_data_yaml(self.data_yaml_path)
 
-    # --------------------------------------------------
     def _resolve_data_yaml(self, data_yaml_path: Path) -> Path:
+        """
+        Converts relative paths in data.yaml to absolute paths for compatibility.
+
+        Returns:
+            Path: Path to the temporary resolved YAML file.
+        """
         if not data_yaml_path.exists():
             raise FileNotFoundError(f"data.yaml not found: {data_yaml_path}")
 
@@ -88,7 +87,6 @@ class YOLOv5Evaluator:
                 if not abs_path.exists() and (abs_path / "images").exists():
                     abs_path = abs_path / "images"
                 data[key] = str(abs_path)
-                self.logger.info(f"Resolved {key}: {abs_path}")
 
         tmp_dir = Path(tempfile.mkdtemp(prefix="yolov5_datayaml_"))
         resolved_yaml = tmp_dir / "data_resolved.yaml"
@@ -98,24 +96,26 @@ class YOLOv5Evaluator:
 
         return resolved_yaml
 
-    # --------------------------------------------------
-    def run(self):
+    def run(self) -> Dict[str, Any]:
+        """
+        Executes the validation subprocess and returns parsed metrics.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing evaluation metrics.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.log_dir / f"val_{timestamp}.log"
 
         cmd = [
             "python",
             "val.py",
-            "--data",
-            str(self.data_yaml),
-            "--weights",
-            str(self.weights_path),
-            "--task",
-            "val",
+            "--data", str(self.data_yaml),
+            "--weights", str(self.weights_path),
+            "--task", "val",
             "--save-json",
         ]
 
-        self.logger.debug(f"[CMD] {' '.join(cmd)}")
+        self.logger.info(f"Starting validation for {self.model_name}")
 
         with open(log_path, "w", encoding="utf-8") as log_f:
             process = subprocess.run(
@@ -123,7 +123,7 @@ class YOLOv5Evaluator:
             )
 
         if process.returncode != 0:
-            raise RuntimeError(f"YOLOv5 evaluation failed → {log_path}")
+            raise RuntimeError(f"YOLOv5 evaluation failed. Check log: {log_path}")
 
         parser = get_metrics_parser(self.model_name)
         metrics = parser(str(log_path))
@@ -131,8 +131,10 @@ class YOLOv5Evaluator:
         self._save_metrics_to_csv(metrics)
         return metrics
 
-    # --------------------------------------------------
-    def _save_metrics_to_csv(self, metrics: dict):
+    def _save_metrics_to_csv(self, metrics: Dict[str, Any]) -> None:
+        """
+        Appends the calculated metrics to a CSV file.
+        """
         self.metrics_dir.mkdir(parents=True, exist_ok=True)
 
         csv_path = self.metrics_dir / f"{self.model_name}_metrics.csv"
@@ -153,34 +155,24 @@ class YOLOv5Evaluator:
                 writer.writeheader()
             writer.writerow(row)
 
-        self.logger.info(f"Metrics saved → {csv_path}")
+        self.logger.info(f"Metrics saved to {csv_path}")
 
 
-# ======================================================
-# Standalone Entrypoint
-# ======================================================
-def main():
+def main() -> None:
     """
-    Standalone entrypoint for YOLOv5Evaluator.
-
-    Example:
-        python src/yolo_cropper/models/yolov5/evaluate.py --config utils/config.yaml
+    CLI entrypoint for standalone evaluation.
     """
-
     parser = argparse.ArgumentParser(description="Standalone YOLOv5 Evaluator")
     parser.add_argument(
         "--config",
         type=str,
         default="utils/config.yaml",
-        help="Path to config.yaml",
+        help="Path to configuration file",
     )
     args = parser.parse_args()
 
     setup_logging("logs/yolo_cropper")
     logger = get_logger("yolo_cropper.yolov5_eval")
-
-    logger.info("Starting standalone YOLOv5 evaluation")
-    logger.info(f"Using config: {args.config}")
 
     try:
         cfg_manager = ConfigManager(args.config)
@@ -192,10 +184,10 @@ def main():
         evaluator = YOLOv5Evaluator(cfg)
         metrics = evaluator.run()
 
-        logger.info(f"Evaluation finished successfully → {metrics}")
+        logger.info(f"Evaluation completed: {metrics}")
 
     except Exception:
-        logger.exception("YOLOv5 evaluation failed")
+        logger.exception("Evaluation failed")
         raise
 
 

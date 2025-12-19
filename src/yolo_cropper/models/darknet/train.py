@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-train.py
---------
-This module handles the Darknet training process for YOLOv2 and YOLOv4 models.
+Darknet Training Module.
 
-It is fully configuration-driven and uses structured logging instead of print
-statements. The class verifies required files, runs the Darknet training command,
-and automatically saves the best model weights after training.
+Manages the training lifecycle for YOLOv2 and YOLOv4 models using the
+Darknet framework. Handles file verification, process execution, and
+checkpoint management.
 """
 
 import os
@@ -17,7 +15,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(ROOT_DIR))
@@ -27,23 +25,10 @@ from utils.logging import get_logger
 
 class DarknetTrainer:
     """
-    Manages YOLOv2/YOLOv4 training in Darknet.
-
-    This class automates the training process, verifying all required files,
-    executing the Darknet command, logging outputs, and copying the best
-    checkpoint to the designated saved model directory.
+    Manages Darknet-based training execution and artifact retrieval.
     """
 
-    def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the Darknet trainer with configuration data.
-
-        Args:
-            config (Dict[str, Any]): Full configuration dictionary passed from the main controller.
-
-        Raises:
-            ValueError: If the specified model_name is unsupported.
-        """
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.DarknetTrainer")
 
         self.cfg = config
@@ -57,12 +42,12 @@ class DarknetTrainer:
         ).resolve()
         self.model_name = self.main_cfg.get("model_name", "yolov2")
 
-        # Paths inside Darknet
+        # Darknet internal paths
         self.binary = self.darknet_dir / "darknet"
         self.data_file = "data/obj.data"
         self.cfg_file = f"cfg/{self.model_name}-obj.cfg"
 
-        # Select pretrained weights
+        # Pretrained weights selection
         if self.model_name == "yolov2":
             self.weights_file = self.darknet_dir / "yolov2.weights"
         elif self.model_name == "yolov4":
@@ -70,21 +55,17 @@ class DarknetTrainer:
         else:
             raise ValueError(f"Unsupported model_name: {self.model_name}")
 
-        # Log directory setup
         self.logs_dir = self.darknet_dir / "logs"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info(f"Initialized DarknetTrainer for {self.model_name.upper()}")
-        self.logger.debug(f"  - Darknet dir : {self.darknet_dir}")
-        self.logger.debug(f"  - Weight file : {self.weights_file}")
-        self.logger.debug(f"  - Config file : {self.cfg_file}")
+        self.logger.info(f"Initialized Trainer (Model: {self.model_name.upper()})")
 
     def verify_files(self) -> bool:
         """
-        Check that all required files exist before training begins.
+        Verifies existence of required Darknet binaries and configuration files.
 
         Returns:
-            bool: True if all files exist, False otherwise.
+            bool: True if all required files exist, False otherwise.
         """
         required = [
             self.binary,
@@ -95,30 +76,20 @@ class DarknetTrainer:
         missing = [str(f) for f in required if not f.exists()]
 
         if missing:
-            self.logger.error("Missing required files:")
-            for m in missing:
-                self.logger.error(f"   - {m}")
+            self.logger.error(f"Missing required files: {missing}")
             return False
 
-        self.logger.info("All required files are present for training.")
         return True
 
-    def run(self, weights_init: str = None):
+    def run(self, weights_init: Optional[str] = None) -> str:
         """
-        Start the Darknet training process.
-
-        The method runs Darknet’s `detector train` command using the provided
-        configuration and pretrained weights. It logs the full output and
-        copies the best-performing checkpoint to the saved model directory.
+        Executes the Darknet training subprocess.
 
         Args:
-            weights_init (str, optional): Custom initial weights file path. Defaults to the model’s standard pretrained weights.
+            weights_init (Optional[str]): Path to custom initial weights.
 
         Returns:
-            str: Path to the final saved weights file.
-
-        Raises:
-            RuntimeError: If the Darknet training process fails.
+            str: Path to the saved best model weights.
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"train_{self.model_name}_{timestamp}.log"
@@ -135,18 +106,17 @@ class DarknetTrainer:
             ),
         ]
 
-        self.logger.debug(f"[CMD] {' '.join(cmd[2:])}")
+        self.logger.info(f"Starting Training ({self.model_name.upper()})")
 
         process = subprocess.run(cmd, cwd=self.darknet_dir, shell=False)
 
         if process.returncode != 0:
-            raise RuntimeError(
-                f"Training failed (code: {process.returncode}). See log: {log_path}"
-            )
+            self.logger.error(f"Training failed. Check log: {log_path}")
+            raise RuntimeError(f"Darknet training failed (Code: {process.returncode})")
 
-        self.logger.info(f"Training complete! Log saved → {log_path}")
+        self.logger.info(f"Training complete. Log: {log_path}")
 
-        # Copy best checkpoint
+        # Artifact retrieval
         ckpt_dir = (
             Path(self.dataset_cfg.get("checkpoints_dir", "checkpoints/yolo_cropper"))
             / self.model_name
@@ -164,10 +134,8 @@ class DarknetTrainer:
 
         if best_weight:
             shutil.copy2(best_weight, target_weight)
-            self.logger.info(f"Copied best weight → {target_weight}")
+            self.logger.info(f"Best weights exported to {target_weight}")
         else:
-            self.logger.warning(
-                "No '_best.weights' file found in checkpoints directory."
-            )
+            self.logger.warning("No best weights found in checkpoints.")
 
         return str(target_weight)

@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-evaluator.py
-------------
-This module evaluates a YOLOv8 model in a config-driven pipeline.
+YOLOv8 Evaluation Module.
+
+Computes performance metrics (Precision, Recall, mAP) for the YOLOv8 model
+and records the results to a CSV file.
 """
 
 import csv
@@ -25,8 +26,8 @@ from utils.load_config import load_yaml_config
 from utils.config_manager import ConfigManager
 
 
-# NOTE: metrics.box.* are class-wise vectors → macro-average is used
-def safe_mean(value):
+def safe_mean(value: Any) -> float:
+    """Computes the mean of a value safely, handling numpy arrays."""
     if hasattr(value, "mean"):
         return float(np.mean(value))
     return float(value)
@@ -34,10 +35,10 @@ def safe_mean(value):
 
 class YOLOv8Evaluator:
     """
-    Handles YOLOv8 model evaluation and metric computation.
+    Manages the evaluation of YOLOv8 models against a specified dataset.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.YOLOv8Evaluator")
         self.cfg = config
 
@@ -65,22 +66,26 @@ class YOLOv8Evaluator:
 
         self.csv_path = self.metrics_dir / f"{self.model_name}_metrics.csv"
 
-        self.logger.info(f"Initialized YOLOv8Evaluator ({self.model_name.upper()})")
+        self.logger.info(f"Initialized Evaluator (Model: {self.model_name.upper()})")
 
-    # --------------------------------------------------
-    def run(self):
+    def run(self) -> Dict[str, Any]:
+        """
+        Executes the evaluation process.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing evaluation metrics.
+        """
         if not self.weights_path.exists():
-            raise FileNotFoundError(f"Model weights not found → {self.weights_path}")
+            raise FileNotFoundError(f"Weights not found: {self.weights_path}")
         if not self.data_yaml.exists():
-            raise FileNotFoundError(f"Dataset YAML not found → {self.data_yaml}")
+            raise FileNotFoundError(f"Dataset YAML not found: {self.data_yaml}")
 
-        self.logger.info(
-            f"Evaluating {self.model_name.upper()} on dataset: {self.data_yaml}"
-        )
+        self.logger.info(f"Starting evaluation on {self.data_yaml}")
 
         model = YOLO(self.weights_path)
         metrics = model.val(data=str(self.data_yaml), imgsz=self.imgsz, verbose=False)
 
+        # Calculate macro-average for class-wise metrics
         result_dict = {
             "model": self.model_name,
             "precision": safe_mean(metrics.box.p),
@@ -99,27 +104,20 @@ class YOLOv8Evaluator:
                 writer.writeheader()
             writer.writerow({**result_dict, "timestamp": timestamp})
 
-        self.logger.info(f"Metrics saved → {self.csv_path}")
+        self.logger.info(f"Metrics saved to {self.csv_path}")
         return result_dict
 
 
-# ======================================================
-# Standalone Entrypoint
-# ======================================================
-def main():
+def main() -> None:
     """
-    Standalone entrypoint for YOLOv8Evaluator.
-
-    Example:
-        python src/yolo_cropper/models/yolov8/evaluator.py --config utils/config.yaml
+    CLI entrypoint for standalone evaluation.
     """
-
     parser = argparse.ArgumentParser(description="Standalone YOLOv8 Evaluator")
     parser.add_argument(
         "--config",
         type=str,
         default="utils/config.yaml",
-        help="Path to config.yaml",
+        help="Path to configuration file",
     )
     args = parser.parse_args()
 
@@ -127,22 +125,20 @@ def main():
     logger = get_logger("yolo_cropper.yolov8_eval")
 
     try:
-        # 1. Sync config (overwrite)
+        # Sync and reload config
         cfg_manager = ConfigManager(args.config)
         cfg_manager.update_paths()
         cfg_manager.save()
 
-        # 2. Reload updated config
         cfg = load_yaml_config(args.config)
 
-        # 3. Run evaluation
         evaluator = YOLOv8Evaluator(cfg)
         metrics = evaluator.run()
 
-        logger.info(f"YOLOv8 evaluation finished successfully → {metrics}")
+        logger.info(f"Evaluation completed: {metrics}")
 
     except Exception:
-        logger.exception("YOLOv8 evaluation failed")
+        logger.exception("Evaluation failed")
         raise
 
 

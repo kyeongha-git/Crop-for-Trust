@@ -2,18 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-yolov8_trainer.py
------------------
-This module defines a configuration-driven training pipeline for YOLOv8 models.
+YOLOv8 Training Module.
 
-It provides a fully automated workflow for training YOLOv8 using Ultralytics’ API,
-saving both intermediate checkpoints and the final best-performing model.
-
-Steps:
-1. Load configuration and initialize YOLOv8 model
-2. Train model using provided parameters
-3. Save best and last checkpoints
-4. Export final best model to `saved_model/yolo_cropper/{model_name}.pt`
+Wraps the Ultralytics API to execute configuration-driven training
+and manages checkpoint artifacts.
 """
 
 import shutil
@@ -31,24 +23,15 @@ from utils.logging import get_logger
 
 class YOLOv8Trainer:
     """
-    Handles YOLOv8 model training in a configuration-driven pipeline.
-
-    This class automates dataset loading, model initialization,
-    training execution, checkpoint management, and saving of the
-    best-performing model. It is designed for reproducible, clean,
-    and easily configurable training workflows.
+    Manages the training lifecycle for YOLOv8 models, including configuration parsing
+    and checkpoint management.
     """
 
-    def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the YOLOv8 trainer from a configuration dictionary.
-
-        Args:
-            config (Dict[str, Any]): Configuration object containing YOLOv8,
-                training, and dataset parameters.
-        """
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.YOLOv8Trainer")
         self.cfg = config
+        
+        # specific configs
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
         self.yolov8_cfg = self.yolo_cropper_cfg.get("yolov8", {})
@@ -81,38 +64,24 @@ class YOLOv8Trainer:
 
         self.final_model_path = self.saved_model_dir / f"{self.model_name}.pt"
 
-        self.logger.info(f"Initialized YOLOv8Trainer ({self.model_name})")
-        self.logger.debug(f" - Data YAML : {self.data_yaml}")
-        self.logger.debug(f" - Runs dir  : {self.runs_dir}")
-        self.logger.debug(f" - Checkpoints: {self.checkpoint_dir}")
-        self.logger.debug(f" - Saved model: {self.final_model_path}")
+        self.logger.info(f"Initialized Trainer (Model: {self.model_name})")
 
-    def run(self):
+    def run(self) -> Any:
         """
-        Train the YOLOv8 model using Ultralytics’ API.
-
-        This method automatically handles:
-            - Model loading or initialization
-            - Training execution based on configuration parameters
-            - Saving best and last model checkpoints
-            - Copying the best-performing model to the `saved_model` directory
+        Executes the training loop using Ultralytics API.
 
         Returns:
-            ultralytics.engine.results.Results | Path:
-                The training results object returned by Ultralytics,
-                or the saved model path if training was skipped.
-
+            Any: The training results object from Ultralytics, or None if skipped.
         """
         if self.final_model_path.exists():
-            self.logger.info(f"[SKIP] Found existing model → {self.final_model_path}")
-            return
+            self.logger.info(f"Model exists, skipping training: {self.final_model_path}")
+            return None
 
-        self.logger.info(f"Starting YOLOv8 training for {self.epochs} epochs")
-        self.logger.info(f"   Model : {self.model_name}")
-        self.logger.info(f"   Batch : {self.batch}, ImgSize : {self.imgsz}")
-        self.logger.info(f"   Data  : {self.data_yaml}")
+        self.logger.info(
+            f"Starting Training (Epochs: {self.epochs}, Batch: {self.batch}, ImgSz: {self.imgsz})"
+        )
 
-        # Load pretrained weights or create a new model
+        # Load pretrained weights or create new model
         weight_file = f"{self.model_name}.pt"
         model = YOLO(weight_file)
 
@@ -138,11 +107,9 @@ class YOLOv8Trainer:
                 last_model_src, self.checkpoint_dir / f"{self.model_name}_last.pt"
             )
 
-        # Save best model
+        # Save final best model
         if best_model_src.exists():
             shutil.copy2(best_model_src, self.final_model_path)
-            self.logger.info(f"Best model saved → {self.final_model_path}")
+            self.logger.info(f"Best model exported to: {self.final_model_path}")
 
-        self.logger.info(f"Checkpoints saved → {self.checkpoint_dir}")
-        self.logger.info(f"Training logs saved → {results.save_dir}")
         return results

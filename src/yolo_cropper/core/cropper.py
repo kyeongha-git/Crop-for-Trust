@@ -3,23 +3,19 @@
 
 """
 cropper.py
------------
-Extracts and saves object regions detected by YOLO models
-based on bounding box information stored in `result.json`.
 
-Design Principles:
-- Class semantics are defined exclusively in `config.yaml (main.categories)`
-- Crops are organized by YOLO-predicted class labels
-- No folder- or path-based class inference
-- Fully supports multi-class detection scenarios
+Extracts and saves object regions detected by YOLO models.
+
+This module parses detection results from `result.json`, converts relative
+coordinates to absolute pixel values, and saves the cropped regions.
+If no objects are detected, the original image is preserved to maintain dataset integrity.
 """
 
 import json
-import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 import cv2
 
@@ -28,16 +24,24 @@ sys.path.append(str(ROOT_DIR))
 
 from utils.logging import get_logger
 
+
 class YOLOCropper:
     """
-    Crop detected regions from images using YOLO detection results.
-    All outputs are stored under output_dir grouped by GT class.
+    Controller for cropping detected objects from images.
+
+    Organizes outputs by Ground Truth (GT) class folders defined in the configuration.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
+        """
+        Initializes the cropper with configuration settings.
+
+        Args:
+            config (Dict[str, Any]): The loaded configuration dictionary.
+        """
         self.logger = get_logger("yolo_cropper.Cropper")
 
-        # ---- Load configuration ----
+        # Configuration setup
         self.cfg = config
         global_main_cfg = self.cfg.get("main", {})
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
@@ -53,7 +57,7 @@ class YOLOCropper:
         self.pad = int(self.cropper_cfg.get("pad", 0))
         self.model_name = self.main_cfg.get("model_name", "yolov5")
 
-        # ---- Paths ----
+        # Path setup
         results_root = Path(
             self.dataset_cfg.get("results_dir", "outputs/json_results")
         )
@@ -66,34 +70,46 @@ class YOLOCropper:
         )
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create output directories for each class
         for cls in self.categories:
             (self.output_dir / cls).mkdir(parents=True, exist_ok=True)
 
-    # --------------------------------------------------
-    def _infer_gt_class(self, img_path: Path) -> str | None:
+    def _infer_gt_class(self, img_path: Path) -> Optional[str]:
         """
-        Infer GT class from image path using main.categories.
+        Infers the Ground Truth class from the image file path.
+
+        Args:
+            img_path (Path): Path to the image file.
+
+        Returns:
+            Optional[str]: Class name if found, else None.
         """
         for cls in self.categories:
             if cls in img_path.parts:
                 return cls
         return None
 
-    # --------------------------------------------------
-    def run(self):
+    def run(self) -> None:
+        """
+        Executes the cropping pipeline.
+
+        Iterates through detection results, calculates bounding box coordinates,
+        crops the objects, and saves them. Handles cases with no detections by
+        copying the original image.
+        """
         if not self.json_path.exists():
             raise FileNotFoundError(f"result.json not found → {self.json_path}")
         if not self.predict_list.exists():
             raise FileNotFoundError(f"predict.txt not found → {self.predict_list}")
 
-        # ---- Load predict list (input universe) ----
+        # Load the universe of input images (from prediction list)
         pred_imgs: Set[Path] = {
             Path(ln.strip())
             for ln in self.predict_list.read_text(encoding="utf-8").splitlines()
             if ln.strip()
         }
 
-        # ---- Load YOLO results ----
+        # Load detection results
         with open(self.json_path, "r", encoding="utf-8") as f:
             results = json.load(f)
 
@@ -103,7 +119,7 @@ class YOLOCropper:
 
         total_crops = 0
 
-        # Process images appearing in result.json
+        # Process detected images
         for item in results:
             img_path = Path(item.get("filename", ""))
             if not img_path.exists():
@@ -128,12 +144,13 @@ class YOLOCropper:
             crops_in_image = 0
             out_dir = self.output_dir / gt_class
 
-            # ---- Crop loop ----
+            # Crop detected objects
             for idx, det in enumerate(dets, 1):
                 rc = det.get("relative_coordinates")
                 if not rc:
                     continue
 
+                # Convert relative coordinates (center_x, center_y, w, h) to absolute (x1, y1, x2, y2)
                 cx, cy = rc["center_x"] * W, rc["center_y"] * H
                 bw, bh = rc["width"] * W, rc["height"] * H
 
@@ -142,6 +159,7 @@ class YOLOCropper:
                 x2 = int(cx + bw / 2) + self.pad
                 y2 = int(cy + bh / 2) + self.pad
 
+                # Clip to image boundaries
                 x1, y1 = max(0, x1), max(0, y1)
                 x2, y2 = min(W, x2), min(H, y2)
 
@@ -156,11 +174,11 @@ class YOLOCropper:
                 crops_in_image += 1
                 total_crops += 1
 
-            # ---- Image-level decision ----
+            # Handling Empty Detections
             if crops_in_image > 0:
                 images_with_detection.add(img_path)
-
-                # ensure original image does not coexist
+                
+                # Cleanup: Ensure original image copy is removed if crops exist
                 orig_out = out_dir / img_path.name
                 if orig_out.exists():
                     orig_out.unlink()
@@ -168,7 +186,7 @@ class YOLOCropper:
                 images_without_detection.add(img_path)
                 shutil.copy2(img_path, out_dir / img_path.name)
 
-        # Images never appearing in result.json → no detection
+        # Process images with zero detections (missing from result.json)
         for img_path in pred_imgs - processed:
             if not img_path.exists():
                 continue
@@ -183,9 +201,8 @@ class YOLOCropper:
                 self.output_dir / gt_class / img_path.name,
             )
 
-        # Logging
         self.logger.info(f"Cropping complete → {self.output_dir}")
-        self.logger.info(f" - Saved Crops        : {total_crops}")
+        self.logger.info(f" - Saved Crops       : {total_crops}")
         self.logger.info(
             f" - No-detection imgs : {len(images_without_detection)}"
         )

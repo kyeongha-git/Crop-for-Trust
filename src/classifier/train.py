@@ -1,23 +1,50 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+train.py
+
+Implements the core training and validation loops for the classification model.
+Handles epoch iteration, metric calculation, checkpoint management, and wandb logging.
+"""
+
 import os
 import shutil
+from typing import Any, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 
-# Utility
-def _compute_accuracy(outputs, labels, num_classes: int):
+# ----------------------------------------------------------
+# Utility Functions
+# ----------------------------------------------------------
+
+def _compute_accuracy(
+    outputs: torch.Tensor, 
+    labels: torch.Tensor, 
+    num_classes: int
+) -> Tuple[int, int]:
     """
-    Compute accuracy for binary or multi-class classification.
+    Computes the number of correct predictions.
+
+    Args:
+        outputs (torch.Tensor): Model logits or raw outputs.
+        labels (torch.Tensor): Ground truth labels.
+        num_classes (int): Number of target classes.
+
+    Returns:
+        Tuple[int, int]: (number_correct, total_samples)
     """
     if num_classes == 1:
-        # Binary classification
+        # Binary: Threshold at 0.5
         preds = (torch.sigmoid(outputs) > 0.5).float()
         correct = (preds == labels).sum().item()
         total = labels.numel()
     else:
-        # Multi-class classification
+        # Multi-class: Argmax
         preds = torch.argmax(outputs, dim=1)
         correct = (preds == labels).sum().item()
         total = labels.size(0)
@@ -25,16 +52,24 @@ def _compute_accuracy(outputs, labels, num_classes: int):
     return correct, total
 
 
-# Training Loop
+# ----------------------------------------------------------
+# Training & Validation Steps
+# ----------------------------------------------------------
+
 def train_one_epoch(
     model: nn.Module,
-    dataloader,
-    criterion,
-    optimizer,
+    dataloader: DataLoader,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
     device: torch.device,
     num_classes: int,
-):
-    """Run one training epoch and return average loss and accuracy."""
+) -> Tuple[float, float]:
+    """
+    Executes a single training epoch.
+
+    Returns:
+        Tuple[float, float]: (average_loss, average_accuracy)
+    """
     model.train()
     total_loss, total_correct, total_samples = 0.0, 0, 0
 
@@ -44,6 +79,7 @@ def train_one_epoch(
         optimizer.zero_grad()
         outputs = model(images)
 
+        # Target formatting
         if num_classes == 1:
             if labels.ndim == 1:
                 labels = labels.unsqueeze(1)
@@ -65,15 +101,19 @@ def train_one_epoch(
     return avg_loss, avg_acc
 
 
-# Validation Loop
 def validate(
     model: nn.Module,
-    dataloader,
-    criterion,
+    dataloader: DataLoader,
+    criterion: nn.Module,
     device: torch.device,
     num_classes: int,
-):
-    """Evaluate the model on validation data."""
+) -> Tuple[float, float]:
+    """
+    Evaluates the model on the validation set.
+
+    Returns:
+        Tuple[float, float]: (average_loss, average_accuracy)
+    """
     model.eval()
     total_loss, total_correct, total_samples = 0.0, 0, 0
 
@@ -86,6 +126,7 @@ def validate(
 
             outputs = model(images)
 
+            # Target formatting
             if num_classes == 1:
                 if labels.ndim == 1:
                     labels = labels.unsqueeze(1)
@@ -105,25 +146,41 @@ def validate(
     return avg_loss, avg_acc
 
 
-# Full Training Pipeline
+# ----------------------------------------------------------
+# Main Pipeline
+# ----------------------------------------------------------
+
 def train_model(
     model: nn.Module,
-    train_loader,
-    valid_loader,
-    criterion,
-    optimizer,
+    train_loader: DataLoader,
+    valid_loader: DataLoader,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
     device: torch.device,
     epochs: int,
     save_path: str,
     check_path: str,
     num_classes: int,
-    wandb_run=None,
-):
+    wandb_run: Optional[Any] = None,
+) -> float:
     """
-    Execute the full training + validation loop.
+    Orchestrates the full training process including validation and checkpointing.
 
-    - Supports binary and multi-class classification
-    - Saves last & best checkpoints
+    Args:
+        model (nn.Module): The neural network model.
+        train_loader (DataLoader): Training data iterator.
+        valid_loader (DataLoader): Validation data iterator.
+        criterion (nn.Module): Loss function.
+        optimizer (Optimizer): Optimization algorithm.
+        device (torch.device): Compute device (CPU/GPU).
+        epochs (int): Total number of training epochs.
+        save_path (str): Final path to save the best model weights.
+        check_path (str): Path to save the latest/best checkpoint.
+        num_classes (int): Number of target classes.
+        wandb_run (Optional[Any]): Active wandb run for logging.
+
+    Returns:
+        float: Best validation accuracy achieved.
     """
     best_acc = 0.0
 
@@ -168,17 +225,21 @@ def train_model(
                 }
             )
 
+        # Save latest checkpoint
         torch.save(model.state_dict(), last_ckpt)
 
+        # Update best model
         if val_acc > best_acc or epoch == 0:
             best_acc = max(best_acc, val_acc)
             torch.save(model.state_dict(), best_ckpt)
             print(f"Best checkpoint updated: {best_ckpt}")
 
+    # Fallback: Use last checkpoint if best is missing
     if not os.path.exists(best_ckpt) and os.path.exists(last_ckpt):
         print("[WARN] No best checkpoint found. Using last checkpoint instead.")
         shutil.copy2(last_ckpt, best_ckpt)
 
+    # Finalize: Export best model to save_path
     if os.path.exists(best_ckpt):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         shutil.copy2(best_ckpt, save_path)

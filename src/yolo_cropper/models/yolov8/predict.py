@@ -2,17 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-predict.py
-------------
-YOLOv8 inference module (config-driven).
+YOLOv8 Inference Module.
 
-Runs YOLOv8 detection on image paths listed in `predict.txt`
-and saves results to a structured output directory.
+Executes object detection using the Ultralytics API based on
+file paths defined in `predict.txt`.
 """
 
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from ultralytics import YOLO
 
@@ -25,16 +23,15 @@ from utils.model_hub import download_fine_tuned_weights
 
 class YOLOv8Predictor:
     """
-    Handles YOLOv8 inference using the Ultralytics YOLO API.
+    Manages the inference workflow for YOLOv8, including model loading
+    and result serialization.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.YOLOv8Predictor")
         self.cfg = config
 
-        # --------------------------------------------------------
-        # Config shortcuts
-        # --------------------------------------------------------
+        # Configuration shortcuts
         self.global_main_cfg = self.cfg.get("main", {})
         self.demo_mode = self.global_main_cfg.get("demo", False)
 
@@ -46,9 +43,7 @@ class YOLOv8Predictor:
 
         self.model_name = self.main_cfg.get("model_name", "yolov8s")
 
-        # --------------------------------------------------------
         # Paths
-        # --------------------------------------------------------
         saved_model_dir = Path(
             self.dataset_cfg.get("saved_model_dir", "saved_model/yolo_cropper")
         ).resolve()
@@ -64,26 +59,24 @@ class YOLOv8Predictor:
 
         self.predict_txt = (self.results_root / self.model_name / "predict.txt").resolve()
 
-        # --------------------------------------------------------
-        # Inference options
-        # --------------------------------------------------------
+        # Inference parameters
         self.imgsz = self.train_cfg.get("imgsz", 416)
         self.save_crop = bool(self.train_cfg.get("save_crop", False))
         self.save_txt = bool(self.train_cfg.get("save_txt", True))
         self.save_conf = bool(self.train_cfg.get("save_conf", True))
         self.quiet = bool(self.yolov8_cfg.get("quiet", True))
 
-        self.logger.info(f"Initialized YOLOv8Predictor ({self.model_name.upper()})")
-        self.logger.debug(f" - Weights : {self.weights_path}")
-        self.logger.debug(f" - Predict : {self.predict_txt}")
-        
-        
-    def run(self):
+        self.logger.info(f"Initialized Predictor (Model: {self.model_name.upper()})")
+
+    def run(self) -> Tuple[str, str]:
         """
-        Run YOLOv8 detection using image paths listed in `predict.txt`.
+        Executes YOLOv8 detection.
+
+        Returns:
+            Tuple[str, str]: A tuple containing the results directory path and the prediction list file path.
         """
         if self.demo_mode:
-            self.logger.info("Demo mode → Download fine-tuned YOLO weights")
+            self.logger.info("Demo mode: Downloading fine-tuned weights")
             download_fine_tuned_weights(
                 cfg=self.cfg,
                 model_name=self.model_name,
@@ -92,14 +85,15 @@ class YOLOv8Predictor:
             )
 
         if not self.predict_txt.exists():
-            raise FileNotFoundError(f"predict.txt not found: {self.predict_txt}")
+            raise FileNotFoundError(f"Prediction list not found: {self.predict_txt}")
 
-        self.logger.info(f"Loading YOLOv8 model from: {self.weights_path}")
+        self.logger.info(f"Loading model: {self.weights_path}")
         model = YOLO(str(self.weights_path))
 
-        self.logger.info(f"Starting YOLOv8 detection ({self.model_name.upper()})")
+        self.logger.info(f"Starting Inference ({self.model_name.upper()})")
 
-        source=[
+        # Read source paths
+        source = [
             ln.strip()
             for ln in self.predict_txt.read_text(encoding="utf-8").splitlines()
             if ln.strip()
@@ -119,6 +113,6 @@ class YOLOv8Predictor:
         )
 
         result_dir = Path(results[0].save_dir).resolve()
-        self.logger.info(f"Detection complete → {result_dir}")
+        self.logger.info(f"Inference completed. Results: {result_dir}")
 
         return str(result_dir), str(self.predict_txt)

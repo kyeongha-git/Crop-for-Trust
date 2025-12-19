@@ -2,22 +2,17 @@
 # -*- coding: utf-8 -*-
 
 """
-annotation_cleaner.py
--------------------
-Configuration-driven Annotation Cleaner pipeline.
+Orchestrates the annotation cleaning pipeline.
 
-Pipeline Steps:
-1. Image Padding
-2. Annotation Cleaning (Gemini-based)
-3. Restore Cropped Images
-4. Merge Results & Cleanup
-5. Evaluation
+This module manages the sequential execution of image padding, generative
+annotation removal, restoration, and result merging.
 """
 
+import argparse
 import shutil
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
@@ -33,21 +28,29 @@ from utils.logging import get_logger, setup_logging
 
 class AnnotationCleaner:
     """
-    Full Annotation Cleaner pipeline controller.
+    Controller for the Annotation Cleaner pipeline.
 
-    Each stage is:
-    - Config-driven
-    - Executed via `.run()`
-    - Isolated for readability and reproducibility
+    Orchestrates the following stages:
+    1. Image Padding: Pads images to square dimensions.
+    2. Annotation Cleaning: Removes visual annotations using a generative model.
+    3. Restoration: Restores images to their original dimensions.
+    4. Merging: Combines processed images with the original dataset.
     """
 
-    def __init__(self, config_path: str = "./utils/config.yaml"):
+    def __init__(self, config_path: str = "./utils/config.yaml") -> None:
+        """
+        Initializes the pipeline controller.
+
+        Args:
+            config_path (str): Path to the configuration YAML file.
+        """
         setup_logging("logs/annotation_cleaner")
         self.logger = get_logger("annotation_cleaner.Pipeline")
 
         self.config_path = Path(config_path)
         self.cfg = load_yaml_config(self.config_path)
 
+        # Configuration setup
         global_main_cfg = self.cfg.get("main", {})
         cleaner_cfg = self.cfg.get("annotation_cleaner", {})
         self.main_cfg = cleaner_cfg.get("main", {})
@@ -60,14 +63,16 @@ class AnnotationCleaner:
         )
 
         self.logger.info("Initialized Annotation Cleaner Pipeline")
-        self.logger.info(f"Config file : {self.config_path}")
+        self.logger.info(f"Config file: {self.config_path}")
 
     # --------------------------------------------------------
-    # Cleanup Temporary Directories
+    # Pipeline Steps
     # --------------------------------------------------------
-    def cleanup_temp_dirs(self):
+
+    def cleanup_temp_dirs(self) -> None:
         """
-        Remove intermediate folders unless keep_metadata is enabled.
+        Removes intermediate directories to save disk space.
+        Skips cleanup if 'keep_metadata' is enabled in configuration.
         """
         keep_metadata = self.restore_crop_cfg.get("keep_metadata", False)
 
@@ -82,46 +87,49 @@ class AnnotationCleaner:
             path = Path(path_str)
             if not path.exists():
                 continue
+            
+            # Preserve metadata if configured
             if keep_metadata and path == Path(self.img_padd_cfg.get("output_dir")):
                 self.logger.info("Preserving padding metadata directory")
                 continue
+            
             try:
                 shutil.rmtree(path)
                 self.logger.info(f"Removed temp directory: {path}")
             except Exception as e:
                 self.logger.warning(f"Failed to remove {path}: {e}")
 
-    # --------------------------------------------------------
-    # Evaluation (Global & Crop Evaluation)
-    # --------------------------------------------------------
-    def step_evaluate(self):
+    def step_evaluate(self) -> None:
+        """
+        Runs the evaluation module to compare generated results against ground truth.
+        """
         Evaluator(config=self.cfg).run()
 
-    # --------------------------------------------------------
-    # Step 1. Image Padding
-    # --------------------------------------------------------
-    def step_padding(self):
+    def step_padding(self) -> None:
+        """
+        Step 1: Pads images to a fixed square size.
+        """
         self.logger.info("[STEP 1] Starting Image Padding...")
         ImagePadder(config=self.cfg).run()
 
-    # --------------------------------------------------------
-    # Step 2. Annotation Cleaning
-    # --------------------------------------------------------
-    def step_annotation_clean(self):
+    def step_annotation_clean(self) -> None:
+        """
+        Step 2: Removes annotations using the generative model.
+        """
         self.logger.info("[STEP 2] Starting Annotation Cleaning...")
         CleanAnnotation(config=self.cfg).run()
 
-    # --------------------------------------------------------
-    # Step 3. Restore Cropped Images
-    # --------------------------------------------------------
-    def step_restore_crop(self):
+    def step_restore_crop(self) -> None:
+        """
+        Step 3: Restores images to original dimensions using padding metadata.
+        """
         self.logger.info("[STEP 3] Starting Restore Cropped Images...")
         RestoreCropper(config=self.cfg).run()
 
-    # --------------------------------------------------------
-    # Step 4. Merge & Cleanup
-    # --------------------------------------------------------
-    def step_merge_and_cleanup(self):
+    def step_merge_and_cleanup(self) -> None:
+        """
+        Step 4: Merges final outputs into the destination directory and cleans up temp files.
+        """
         self.logger.info("[STEP 4] Starting Merge Results & Cleanup...")
 
         input_dir = Path(self.main_cfg.get("input_dir"))
@@ -134,23 +142,22 @@ class AnnotationCleaner:
             out_cat = output_dir / category
             out_cat.mkdir(parents=True, exist_ok=True)
 
+            # Copy original input files first
             for src in (input_dir / category).glob("*"):
                 shutil.copy2(src, out_cat / src.name)
 
+            # Overwrite with restored (cleaned) files
             for gen in (restored_dir / category).glob("*"):
                 shutil.copy2(gen, out_cat / gen.name)
 
         self.cleanup_temp_dirs()
 
-    # --------------------------------------------------------
-    # Entrypoint
-    # --------------------------------------------------------
-    def run(self):
+    def run(self, test_mode: bool = False) -> None:
         """
-        Run full annotation cleaner pipeline.
+        Executes the full annotation cleaning pipeline.
 
         Args:
-            test_mode (bool): Enables limited processing for debugging.
+            test_mode (bool): If True, enables limited processing for debugging/testing.
         """
         self.logger.info("===== Starting Annotation Cleaner Pipeline =====")
 
@@ -159,15 +166,10 @@ class AnnotationCleaner:
         self.step_restore_crop()
         self.step_merge_and_cleanup()
 
-        self.logger.info("Annotation Cleaner pipeline completed successfully!")
+        self.logger.info("Annotation Cleaner pipeline completed successfully.")
 
 
-# ------------------------------------------------------------
-# CLI Entry
-# ------------------------------------------------------------
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Annotation Cleaner Pipeline")
     parser.add_argument("--config", default="./utils/config.yaml")
     parser.add_argument("--test", action="store_true")

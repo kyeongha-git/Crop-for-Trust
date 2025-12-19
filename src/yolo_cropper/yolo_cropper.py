@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-yolo_cropper.py
----------------
-Unified YOLO Pipeline Controller
+Unified YOLO Pipeline Controller.
 
-This module synchronizes config.yaml via ConfigManager
-and dispatches the appropriate YOLO pipeline.
+Synchronizes configuration via ConfigManager and dynamically dispatches
+the appropriate YOLO pipeline (v2/v4, v5, or v8).
 """
 
 import importlib
@@ -25,42 +23,36 @@ from utils.config_manager import ConfigManager
 
 class YOLOCropperController:
     """
-    Unified YOLO Cropper Controller.
+    Manages configuration synchronization and dispatches the specific YOLO pipeline.
     """
 
-    def __init__(self, config_path: str = "utils/config.yaml"):
+    def __init__(self, config_path: str = "utils/config.yaml") -> None:
         setup_logging("logs/yolo_cropper")
         self.logger = get_logger("yolo_cropper.Controller")
 
         self.config_path = Path(config_path)
 
-        # ======================================================
-        # 1. Synchronize & overwrite config.yaml
-        # ======================================================
-        self.logger.info("Synchronizing config.yaml via ConfigManager")
-
+        # Synchronize and overwrite config.yaml
+        self.logger.info("Synchronizing configuration via ConfigManager")
         cfg_manager = ConfigManager(str(self.config_path))
-        updated_cfg = cfg_manager.update_paths()
-        cfg_manager.save()  # overwrite config.yaml
+        cfg_manager.update_paths()
+        cfg_manager.save()
 
-        # ======================================================
-        # 2. Reload synchronized config
-        # ======================================================
+        # Reload synchronized configuration
         self.cfg = load_yaml_config(self.config_path)
         self.yolo_cropper_cfg = self.cfg.get("yolo_cropper", {})
         self.main_cfg = self.yolo_cropper_cfg.get("main", {})
 
-        # Single source of truth
         self.model_name = self.main_cfg.get("model_name", "yolov5").lower()
 
-        self.logger.info(
-            f"Initialized YOLO Cropper Controller ({self.model_name.upper()})"
-        )
+        self.logger.info(f"Initialized Controller (Model: {self.model_name.upper()})")
 
-    # --------------------------------------------------
-    def run(self, save_image):
+    def run(self, save_image: bool) -> None:
         """
-        Dispatch the appropriate YOLO pipeline based on model_name.
+        Dispatches execution to the appropriate YOLO pipeline.
+
+        Args:
+            save_image (bool): If True, saves the cropped images to disk.
         """
         if self.model_name.startswith("yolov8"):
             module_path = "src.yolo_cropper.models.yolov8.yolov8"
@@ -74,7 +66,7 @@ class YOLOCropperController:
         else:
             raise ValueError(f"Unsupported model_name: {self.model_name}")
 
-        self.logger.info(f"Loading pipeline → {module_path}.{class_name}")
+        self.logger.info(f"Loading pipeline: {module_path}.{class_name}")
 
         try:
             module = importlib.import_module(module_path)
@@ -82,36 +74,26 @@ class YOLOCropperController:
             raise ImportError(f"Failed to import module {module_path}: {e}")
 
         if not hasattr(module, class_name):
-            raise AttributeError(
-                f"{module_path} does not define class '{class_name}'."
-            )
+            raise AttributeError(f"{module_path} does not define class '{class_name}'.")
 
         pipeline_class = getattr(module, class_name)
         pipeline = pipeline_class(config_path=str(self.config_path))
 
-        self.logger.info(f"Running {self.model_name.upper()} pipeline...")
-        pipeline.run(save_image = save_image)
-        self.logger.info(f"Pipeline complete ({self.model_name.upper()})")
+        self.logger.info(f"Running pipeline for {self.model_name.upper()}")
+        pipeline.run(save_image=save_image)
+        self.logger.info("Pipeline execution completed")
 
 
-# ======================================================
-# Standalone Entrypoint
-# ======================================================
-def main():
+def main() -> None:
     """
-    Standalone entrypoint for YOLO Cropper Controller.
-
-    Example:
-        python src/yolo_cropper/yolo_cropper.py --config utils/config.yaml
+    CLI entrypoint for the YOLO Cropper Controller.
     """
-    parser = argparse.ArgumentParser(
-        description="Standalone YOLO Cropper Runner"
-    )
+    parser = argparse.ArgumentParser(description="Standalone YOLO Cropper Runner")
     parser.add_argument(
         "--config",
         type=str,
         default="utils/config.yaml",
-        help="Path to config.yaml",
+        help="Path to configuration file",
     )
 
     args = parser.parse_args()
@@ -119,15 +101,13 @@ def main():
     setup_logging("logs/yolo_cropper")
     logger = get_logger("yolo_cropper.main")
 
-    logger.info("Starting standalone YOLO Cropper execution")
-    logger.info(f"Using config: {args.config}")
+    logger.info(f"Starting execution with config: {args.config}")
 
     try:
         controller = YOLOCropperController(config_path=args.config)
         controller.run(save_image=True)
-        logger.info("Standalone YOLO Cropper finished successfully")
     except Exception:
-        logger.exception("YOLO Cropper execution failed")
+        logger.exception("Execution failed")
         raise
 
 

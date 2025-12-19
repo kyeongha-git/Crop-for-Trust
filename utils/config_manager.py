@@ -2,14 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-config_manager.py
------------------
-Dynamic Config Manager (with CLI Overrides)
+Dynamic Configuration Manager.
 
-Design Principles (IMPORTANT):
-- Config files MUST remain environment-agnostic
-- All paths written to config are RELATIVE paths only
-- Absolute paths are resolved ONLY inside consumer modules at runtime
+Handles the loading, updating, and saving of YAML configurations.
+Resolves relative paths dynamically based on pipeline stages and CLI overrides.
 """
 
 from pathlib import Path
@@ -19,46 +15,44 @@ import yaml
 
 class ConfigManager:
     """
-    Dynamic Config Manager that updates configuration paths
-    while preserving relative-path semantics.
+    Manages configuration state, applying CLI overrides and resolving
+    inter-module path dependencies.
     """
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str) -> None:
         self.config_path = Path(config_path)
         self.cfg = self._load_yaml()
 
         main_cfg = self.cfg.get("main", {})
 
-        # ---- Base paths (RELATIVE, never resolved here) ----
+        # Base paths (kept relative)
         self.base_dir = Path(main_cfg.get("input_dir", "data/original"))
         self.saved_model_path = Path(main_cfg.get("saved_model", "saved_model"))
 
-        # ---- Mode flags ----
+        # Pipeline flags
         self.demo_mode = main_cfg.get("demo", False)
         self.annot_clean = main_cfg.get("annot_clean", True)
         self.yolo_crop = main_cfg.get("yolo_crop", True)
 
-        # ---- Single source of truth ----
         self.yolo_model = main_cfg.get("yolo_model", "yolov8s").lower()
-
-        self.annot_clean_test_mode = main_cfg.get(
-            "annot_clean_test_mode", False
-        )
+        self.annot_clean_test_mode = main_cfg.get("annot_clean_test_mode", False)
+        
         assert isinstance(self.annot_clean_test_mode, bool)
 
-    # --------------------------------------------------------
     def _load_yaml(self) -> Dict[str, Any]:
+        """Loads YAML configuration from disk."""
         with open(self.config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
 
-    # --------------------------------------------------------
     def _build_classifier_save_dir(self, classifier_input: Path) -> Path:
         """
-        Build hierarchical classifier save directory (relative).
+        Constructs the hierarchical save directory for the classifier.
 
-        Example:
-        data/sample/original_crop/yolov8/dataset
-        → saved_model/classifier/sample/original_crop/yolov8
+        Args:
+            classifier_input (Path): Input directory path for the classifier.
+
+        Returns:
+            Path: Resolved relative path for saving classifier models.
         """
         if classifier_input.name == "dataset":
             classifier_input = classifier_input.parent
@@ -72,7 +66,6 @@ class ConfigManager:
 
         return Path("saved_model/classifier") / subpath
 
-    # --------------------------------------------------------
     def update_paths(
         self,
         annot_clean: Optional[bool] = None,
@@ -80,10 +73,19 @@ class ConfigManager:
         yolo_model: Optional[str] = None,
         annot_clean_test_mode: Optional[bool] = None,
     ) -> Dict[str, Any]:
+        """
+        Updates configuration paths based on active flags and CLI overrides.
 
-        # ---------------------------
+        Args:
+            annot_clean (Optional[bool]): Override for annotation cleaning flag.
+            yolo_crop (Optional[bool]): Override for YOLO cropping flag.
+            yolo_model (Optional[str]): Override for YOLO model name.
+            annot_clean_test_mode (Optional[bool]): Override for annotation test mode.
+
+        Returns:
+            Dict[str, Any]: The updated configuration dictionary.
+        """
         # Apply CLI overrides
-        # ---------------------------
         if annot_clean is not None:
             self.annot_clean = annot_clean
         if yolo_crop is not None:
@@ -93,16 +95,13 @@ class ConfigManager:
         if annot_clean_test_mode is not None:
             self.annot_clean_test_mode = annot_clean_test_mode
 
-        # Refresh base input dir (RELATIVE)
+        # Refresh base input directory
         self.base_dir = Path(
             self.cfg.get("main", {}).get("input_dir", "data/original")
         )
-
         base_root = self.base_dir.parent
 
-        # ======================================================
-        # Annotation Cleaner
-        # ======================================================
+        # 1. Annotation Cleaner Configuration
         annot_root = base_root / "annotation_cleaner"
         annot_only = annot_root / "only_annotation_image"
         annot_only_padded = annot_root / "only_annotation_image_padded"
@@ -151,9 +150,7 @@ class ConfigManager:
 
             self.cfg["annotation_cleaner"] = annotation_cfg
 
-        # ======================================================
-        # YOLO Cropper
-        # ======================================================
+        # 2. YOLO Cropper Configuration
         if self.yolo_crop:
             crop_output_dir = (
                 annot_output_dir.parent
@@ -183,9 +180,7 @@ class ConfigManager:
 
         self.cfg["yolo_cropper"] = yolo_cropper_cfg
 
-        # ======================================================
-        # Data Augmentor
-        # ======================================================
+        # 3. Data Augmentor Configuration
         data_aug_cfg = self.cfg.get("data_augmentor", {})
         data_aug_cfg.setdefault("data", {})
         data_aug_cfg["data"]["input_dir"] = crop_output_dir.as_posix()
@@ -198,9 +193,7 @@ class ConfigManager:
         data_aug_cfg["data"]["output_dir"] = aug_output_dir.as_posix()
         self.cfg["data_augmentor"] = data_aug_cfg
 
-        # ======================================================
-        # Classifier
-        # ======================================================
+        # 4. Classifier Configuration
         classifier_cfg = self.cfg.get("classifier", {})
         classifier_cfg.setdefault("data", {})
         classifier_cfg.setdefault("train", {})
@@ -220,18 +213,21 @@ class ConfigManager:
 
         self.cfg["classifier"] = classifier_cfg
 
-        # ======================================================
-        # Persist main flags (NO paths resolved)
-        # ======================================================
+        # Update main flags in config
         self.cfg["main"]["annot_clean"] = self.annot_clean
         self.cfg["main"]["yolo_crop"] = self.yolo_crop
         self.cfg["main"]["yolo_model"] = self.yolo_model
 
         return self.cfg
 
-    # --------------------------------------------------------
-    def save(self, output_path: Optional[str] = None):
+    def save(self, output_path: Optional[str] = None) -> None:
+        """
+        Saves the current configuration state to a YAML file.
+
+        Args:
+            output_path (Optional[str]): Target path. Defaults to initial config path.
+        """
         target = Path(output_path or self.config_path)
         with open(target, "w", encoding="utf-8") as f:
             yaml.safe_dump(self.cfg, f, sort_keys=False, allow_unicode=True)
-        print(f"Updated config saved → {target}")
+        print(f"Configuration saved to: {target}")

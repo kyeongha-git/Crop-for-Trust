@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-predict.py
-----------
-This module manages YOLOv5 inference using a configuration-driven setup.
+YOLOv5 Inference Module.
 
-It automatically iterates through all subfolders under the input root directory,
-executes YOLOv5 detection for each one, and organizes the results in structured
-output folders. Existing results are removed before each run to prevent duplicates.
+Iterates through input directories, executes YOLOv5 detection via subprocess,
+and organizes results in structured output folders.
 """
 
 import shutil
@@ -29,21 +26,10 @@ from utils.model_hub import download_fine_tuned_weights
 
 class YOLOv5Predictor:
     """
-    Runs YOLOv5 detection across multiple folders based on configuration input.
-
-    The predictor automatically detects all subdirectories within the given
-    input root, executes YOLOv5 detection for each, and manages log files
-    and output directories in a clean, reproducible manner.
+    Manages batch inference for YOLOv5 across multiple subdirectories.
     """
 
-    def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the YOLOv5 predictor from a configuration dictionary.
-
-        Args:
-            config (Dict[str, Any]): Configuration object passed from the main
-                controller, containing YOLOv5, dataset, and runtime parameters.
-        """
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.logger = get_logger("yolo_cropper.YOLOv5Predictor")
         self.cfg = config
         
@@ -69,14 +55,14 @@ class YOLOv5Predictor:
         self.input_root = Path(
             self.main_cfg.get("input_dir", "data/original")
         ).resolve()
-        self.detect_root = Path(
+        self.detect_output_dir = Path(
             self.dataset_cfg.get("detect_output_dir", "runs/detect")
         ).resolve()
 
         self.saved_model_path = self.saved_model_dir / f"{self.model_name}.pt"
         self.logs_dir = self.yolov5_dir / "logs"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
-        self.detect_root.mkdir(parents=True, exist_ok=True)
+        self.detect_output_dir.mkdir(parents=True, exist_ok=True)
 
         self.device = str(self.train_cfg.get("device", "cpu"))
         self.save_crop = bool(self.train_cfg.get("save_crop", False))
@@ -84,31 +70,22 @@ class YOLOv5Predictor:
         self.save_conf = bool(self.train_cfg.get("save_conf", True))
         self.name_prefix = self.model_name
 
-        self.logger.info(f"YOLOv5Predictor initialized ({self.model_name.upper()})")
-        self.logger.debug(f"Repo Dir   : {self.yolov5_dir}")
-        self.logger.debug(f"Weights    : {self.saved_model_path}")
-        self.logger.debug(f"Source Dir : {self.input_root}")
-        self.logger.debug(f"Output Dir : {self.detect_root}")
+        self.logger.info(f"Initialized Predictor (Model: {self.model_name.upper()})")
 
-    def _run_inference(self, folder_path: Path):
+    def _run_inference(self, folder_path: Path) -> None:
         """
-        Execute YOLOv5 detection for a single input folder.
-
-        This method builds and runs a YOLOv5 command targeting a specific
-        subdirectory, logging output and deleting any existing results
-        before re-running to ensure clean outputs.
+        Executes YOLOv5 detection for a single input folder using subprocess.
         """
         if not folder_path.exists():
-            self.logger.warning(f"[!] Source folder not found: {folder_path}")
+            self.logger.warning(f"Source folder not found: {folder_path}")
             return
 
         exp_name = f"{self.name_prefix}_{folder_path.name}"
-        exp_dir = self.detect_root / exp_name
+        exp_dir = self.detect_output_dir / exp_name
 
-        # Remove old results (avoid exp/exp2 duplication)
+        # Clean up previous results to prevent duplication
         if exp_dir.exists():
             shutil.rmtree(exp_dir)
-            self.logger.info(f"Existing result folder deleted → {exp_dir}")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = self.logs_dir / f"detect_{folder_path.name}_{timestamp}.log"
@@ -116,16 +93,11 @@ class YOLOv5Predictor:
         cmd = [
             "python",
             "detect.py",
-            "--weights",
-            str(self.saved_model_path),
-            "--source",
-            str(folder_path),
-            "--project",
-            str(self.detect_root),
-            "--name",
-            exp_name,
-            "--device",
-            self.device,
+            "--weights", str(self.saved_model_path),
+            "--source", str(folder_path),
+            "--project", str(self.detect_output_dir),
+            "--name", exp_name,
+            "--device", self.device,
         ]
 
         if self.save_crop:
@@ -137,12 +109,9 @@ class YOLOv5Predictor:
 
         env = os.environ.copy()
         yolo_path = str(self.yolov5_dir)
-        app_path = str(self.project_root)
-
         env["PYTHONPATH"] = f"{yolo_path}:{env.get('PYTHONPATH', '')}"
 
-        self.logger.info(f"Running YOLOv5 detection → {folder_path.name}")
-        self.logger.debug(f"Command: {' '.join(cmd)}")
+        self.logger.info(f"Running detection on: {folder_path.name}")
 
         with open(log_path, "w", encoding="utf-8") as log_f:
             process = subprocess.run(
@@ -155,15 +124,17 @@ class YOLOv5Predictor:
 
         if process.returncode != 0:
             self.logger.error(
-                f"Detection failed ({folder_path.name}), code={process.returncode}. See log: {log_path}"
+                f"Detection failed for {folder_path.name} (Code: {process.returncode}). Check log: {log_path}"
             )
         else:
-            self.logger.info(f"Detection complete → {exp_dir}")
+            self.logger.info(f"Results saved to: {exp_dir}")
 
-    def run(self):
+    def run(self) -> None:
+        """
+        Orchestrates the inference process for all subdirectories in the input root.
+        """
         if self.demo_mode:
-            self.logger.info("Demo mode → Download fine-tuned YOLO weights")
-
+            self.logger.info("Demo mode: Downloading fine-tuned weights")
             download_fine_tuned_weights(
                 cfg=self.cfg,
                 model_name=self.model_name,
@@ -173,11 +144,9 @@ class YOLOv5Predictor:
 
         subfolders = [p for p in self.input_root.iterdir() if p.is_dir()]
         if not subfolders:
-            raise FileNotFoundError(f"No subfolders found under {self.input_root}")
+            raise FileNotFoundError(f"No subfolders found in {self.input_root}")
 
-        self.logger.info(
-            f"Found {len(subfolders)} folders → {[p.name for p in subfolders]}"
-        )
+        self.logger.info(f"Processing {len(subfolders)} folders")
 
         for folder in subfolders:
             self._run_inference(folder)

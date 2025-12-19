@@ -54,14 +54,6 @@ Inside the Docker Container: The container includes the full source code, fine-t
 3. Data Augmentation: Splits and balances the dataset.
 4. Classification: Trains MobileNetV2 (1 Epoch) and reports Accuracy/F1-Score.
 
-### API Key Configuration
-
-Export your Gemini API Key as an environment variable:
-
-```bash
-export GEMINI_API_KEY="your_api_key_here"
-```
-
 ## 3. Usage
 The project is orchestrated by src/main.py. The framework supports various configurations for ablation studies.
 
