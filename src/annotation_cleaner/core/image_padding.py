@@ -73,9 +73,7 @@ class ImagePadder:
 
         self.padding_color = self.DEFAULT_PADDING_COLOR
 
-        # --------------------------------------------------
         # Logging
-        # --------------------------------------------------
         self.logger.info("Initialized ImagePadder")
         self.logger.info(f" - Input dir  : {self.input_root}")
         self.logger.info(f" - Output dir : {self.output_root}")

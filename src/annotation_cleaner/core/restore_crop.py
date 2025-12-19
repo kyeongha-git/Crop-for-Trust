@@ -65,9 +65,7 @@ class RestoreCropper:
 
         test_mode = "test" in self.input_root.name
 
-        # --------------------------------------------------
         # Logging
-        # --------------------------------------------------
         self.logger.info("Initialized RestoreCropper")
         self.logger.info(f" - Input dir   : {self.input_root}")
         self.logger.info(f" - Output dir  : {self.output_root}")
