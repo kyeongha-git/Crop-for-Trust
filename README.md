@@ -10,7 +10,7 @@
 >
 > This repository contains the **official open-source implementation** of the paper *"Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning"*.
 >
-> **Author:** Kyeongha Hwang (Suwon University, Korea)
+> **Author:** Kyeongha Hwang (Suwon University, Korea), SeungHyeok Hong (Hankuk University of Foreign Studies, Korea)
 
 ---
 
@@ -168,7 +168,7 @@ If you find this work useful for your research, please cite our paper:
 ```bash
 @article{hwang2025cropfortrust,
   title={Crop for Trust: Reliability-Aware Industrial Image Classification via ROI Focusing and Generative Annotation Cleaning},
-  author={Kyeongha Hwang},
+  author={Kyeongha Hwang, SeungHyeok Hong},
   journal={Journal Name (Under Review)},
   year={2025}
 }
