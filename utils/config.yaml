@@ -183,7 +183,7 @@ classifier:
     metric_dir: metrics/classifier/sample/original_crop/yolov2
     check_dir: ./checkpoints/
   wandb:
-    enabled: false
+    enabled: true
     project: Crop-for-Trust
     entity: kyeonghah-university-of-suwon
     run_name_pattern: '{model}_{input_dir}'
