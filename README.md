@@ -41,8 +41,8 @@ For full reproducibility, including the ability to switch YOLO backbones (v2, v4
 
 **1. Clone the repository**
 ```bash
-git clone [https://github.com/kyeongha-git/Crop-for-Trust.git](https://github.com/kyeongha-git/Crop-for-Trust.git)
-cd crop-for-trust
+git clone https://github.com/kyeongha-git/Crop-for-Trust.git
+cd Crop-for-Trust
 ```
 
 **2. Build the Docker Image**
