@@ -1,0 +1,11 @@
+Run_ID,Classify_Model,Best_Val_Acc,Test_Acc,Test_F1
+1,mobilenet_v1,0.9102,0.8787,0.5405
+2,mobilenet_v1,0.8863,0.8636,0.7500
+3,mobilenet_v1,0.8945,0.8787,0.6977
+4,mobilenet_v1,0.8745,0.8636,0.7083
+5,mobilenet_v1,0.9000,0.8787,0.6000
+6,mobilenet_v1,0.8777,0.8560,0.7111
+7,mobilenet_v1,0.8788,0.8787,0.7083
+8,mobilenet_v1,0.8845,0.8636,0.6977
+9,mobilenet_v1,0.8775,0.8636,0.6010
+10,mobilenet_v1,0.8645,0.8484,0.6000

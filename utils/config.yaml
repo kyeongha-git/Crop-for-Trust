@@ -1,0 +1,197 @@
+main:
+  input_dir: data/sample/original
+  categories:
+  - repair
+  - replace
+  demo: true
+  annot_clean_test_mode: false
+  annot_clean: true
+  yolo_crop: true
+  yolo_model: yolov5
+  classify_model: mobilenet_v1
+  saved_model: saved_model/
+  metrics_dir: metrics/
+weights:
+  yolov2: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov2.weights
+  yolov4: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov4.weights
+  yolov5: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov5.pt
+  yolov8s: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8s.pt
+  yolov8m: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8m.pt
+  yolov8l: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8l.pt
+  yolov8x: https://github.com/kyeongha-git/Crop-for-Trust/releases/download/v1/yolov8x.pt
+annotation_cleaner:
+  main:
+    input_dir: data/sample/original
+    output_dir: data/sample/generation
+    metadata_name: padding_info.json
+    keep_metadata: true
+  image_padding:
+    input_dir: data/sample/annotation_cleaner/only_annotation_image
+    output_dir: data/sample/annotation_cleaner/only_annotation_image_padded
+    target_size: 1024
+  annotation_clean:
+    input_dir: data/sample/annotation_cleaner/only_annotation_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image_padded
+    test_mode: false
+    test_limit: 3
+    model: gemini-2.5-flash-image
+    api_key: ${GEMINI_API_KEY}
+    prompt: 'In this image, do not alter or modify the cracked or damaged area of
+      the glass in any way. Preserve this area exactly as it appears. Remove only
+      artificial annotations (lines, circles, arrows, or handwritten text of any color)
+      and any extraneous objects near the damaged area (such as fingers, hands, or
+      other human body parts). Ensure the surface of the window, including reflections
+      and lighting, remains natural and realistic after inpainting. The output image
+      must have exactly the same width and height as the input image, with no resizing,
+      scaling, or cropping. '
+    temperature: 0.0
+    max_retries: 3
+    timeout: 60
+  restore_crop:
+    input_dir: data/sample/annotation_cleaner/generated_image_padded
+    output_dir: data/sample/annotation_cleaner/generated_image
+    metadata_root: data/sample/annotation_cleaner/only_annotation_image_padded
+  evaluate:
+    dirs:
+      root: data/gac_eval
+      original: data/gac_eval/original
+      label: data/gac_eval/label
+      gac_full: data/gac_eval/gac
+      marked_full: data/gac_eval/marked
+      other_crack: data/gac_eval/other_crack
+      baseline_crop: data/gac_eval/baseline
+      anchor_root: data/gac_eval/anchors
+      results: results/annotation_cleaner_test
+    weights:
+      vgg: saved_model/classifier/original_crop/yolov5/vgg.pt
+    params:
+      seed: 777
+      marking:
+        thickness_min: 4
+        thickness_max: 6
+        points_count: 100
+      mix:
+        canny1: 30
+        canny2: 100
+        dilate_iter: 4
+        close_ksize: 7
+        min_area: 200
+        use_mixed_clone: false
+        alpha_boost: 0.0
+      benign:
+        blur_sigma: 1.0
+        jpeg_quality: 50
+    orig_dir: data/sample/annotation_cleaner/only_annotation_image
+    gen_dir: data/sample/annotation_cleaner/generated_image
+    yolo_model: saved_model/yolo_cropper/yolov5.pt
+yolo_cropper:
+  main:
+    model_name: yolov5
+    input_dir: data/sample/generation
+    output_dir: data/sample/generation_crop/yolov5
+    mode: detect
+  dataset:
+    results_dir: outputs/json_results
+    saved_model_dir: saved_model/yolo_cropper
+    detect_output_dir: runs/detect
+  train:
+    batch: 16
+    conf_thresh: 0.25
+    epochs: 400
+    iou_thresh: 0.45
+    imgsz: 416
+    device: cpu
+    save_crop: true
+    save_txt: true
+  darknet:
+    model_name: yolov5
+    build_mode: cpu
+    darknet_dir: third_party/darknet
+    modes:
+      cpu:
+        GPU: 0
+        CUDNN: 0
+        CUDNN_HALF: 0
+        OPENCV: 0
+        MAKE_JOBS: 4
+      gpu:
+        GPU: 1
+        CUDNN: 1
+        CUDNN_HALF: 1
+        OPENCV: 1
+        MAKE_JOBS: 8
+    cfg_overrides:
+      batch: 64
+      subdivisions: 16
+      width: 416
+      height: 416
+      channels: 3
+      momentum: 0.949
+      decay: 0.0005
+      learning_rate: 0.001
+      burn_in: 1000
+      max_batches: 6000
+      policy: steps
+      steps: 4800,5400
+      scales: .1,.1
+      mosaic: 0
+      saturation: 1.5
+      exposure: 1.5
+      hue: 0.1
+      iou_loss: ciou
+      nms_kind: greedynms
+      beta_nms: 0.6
+      iou_thresh: 0.213
+      cls_normalizer: 1.0
+      iou_normalizer: 0.07
+  yolov8:
+    model_name: yolov8x
+  yolov5:
+    model_name: yolov5
+    yolov5_dir: third_party/yolov5
+data_augmentor:
+  data:
+    input_dir: data/sample/generation_crop/yolov5
+    output_dir: data/sample/generation_crop/yolov5/dataset
+  split:
+    train_ratio: 0.8
+    valid_ratio: 0.1
+    test_ratio: 0.1
+  augmentation:
+    enable: true
+    random_resized_crop:
+      scale:
+      - 0.9
+      - 1.0
+      ratio:
+      - 0.95
+      - 1.05
+    random_hflip_p: 0.5
+    random_rotate_deg: 10
+    random_translate_ratio: 0.04
+    brightness_range:
+    - 0.9
+    - 1.1
+    contrast_range:
+    - 0.9
+    - 1.15
+    saturation_range:
+    - 0.9
+    - 1.15
+    hue_delta: 0.03
+classifier:
+  data:
+    input_dir: data/sample/generation_crop/yolov5/dataset
+  train:
+    model_name: mobilenet_v1
+    criterion: auto
+    batch_size: 32
+    epochs: 1
+    lr: 0.001
+    weight_decay: 1.0e-05
+    save_dir: saved_model/classifier/sample/generation_crop/yolov5
+    metric_dir: metrics/classifier/sample/generation_crop/yolov5
+    check_dir: checkpoints/classifier/sample/generation_crop/yolov5
+  wandb:
+    enabled: false
+    wandb_dir: wandb

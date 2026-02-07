@@ -1,0 +1,6 @@
+[tool.ruff]
+select = ["E", "F"]
+fix = true
+line-length = 88
+extend-ignore = ["E203", "E501", "E402"]
+unsafe-fixes = false

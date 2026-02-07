@@ -1,0 +1,2 @@
+model,precision,recall,mAP@0.5,timestamp
+yolov2,0.66,0.53,34.6028,2025-11-05_16:20:41
