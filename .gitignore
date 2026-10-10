@@ -276,3 +276,7 @@ temp_deploy_folder/
 .env
 *.pyc
 wandb/
+paper/
+paper_feedback.md
+paper_submitted.pdf
+.DS_Store
